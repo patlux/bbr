@@ -124,6 +124,23 @@ coverage and guest provenance after return and before upstream capture sealing.
 Fixture round trips and hostile archive tests are portable evidence only: real
 SSH transfer, native images and capture integration remain unverified.
 
+### Guest installation prerequisite
+
+`vm_install.py` consumes the Rust payload schema and an independently supplied
+manifest hash, compiled repository path and suite. It checks every shared file
+before writing, then copies only exact sources/artifacts into a fresh tree at
+the compiled paths. Before/after checks reject changed bytes, executable modes,
+missing/extra entries, symlinks/hardlinks, path collisions and incomplete copies.
+Copying/hashing has byte/count/deadline limits. It returns observed installed
+hashes for the later guest receipt, never a capture seal. There is no installer
+CLI, executable launch, destination remapping, reuse or overwrite. The adapter
+must prepare the parent directory only inside its approved disposable guest.
+
+Current evidence is synthetic installation plus real-payload read-only parsing;
+actual guest installation/execution and cleanup remain unverified. The real
+capture guard stays closed. Python transport helpers own neither comparison nor
+coverage/acceptance policy; those remain Rust/upstream responsibilities.
+
 ### Host-only producer preparation
 
 `just visual-prepare gallery /absolute/fresh/external/payload` (or `browser`)

@@ -162,6 +162,14 @@ change product rendering or weaken comparisons to obtain a pass.
 
 ## Delivery ledger
 
+**Guest installation prerequisite:** strict bounded transport now validates the
+Rust manifest against independent host identity, installs only in a fresh tree
+at compiled paths and returns rechecked observed hashes. Eight Python contracts
+and one Rust→Python two-suite fixture pass; consumer total 33, Python units 74.
+Earlier real payloads parse read-only, but are not installed or executed on the
+host. Actual guest bootstrap/installation/producer execution and supervised
+cleanup remain open. See current delivery for exact logs and limitations.
+
 **Current Rust host-preparation checkpoint:** `just visual-prepare` now builds
 and stages actual Gallery/browser payloads using bounded mbx and the existing
 Xcode route; 1,449 sealed sources plus one/two exact Cargo executables were

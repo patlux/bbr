@@ -309,6 +309,42 @@ probe stability, mbx/Xcode route and fresh output guards. Parallelism remains
 single-writer; VM transport wiring and independent coverage are next runnable
 work, while actual boot and Checkbox asset permission remain pending.
 
+### Guest installation contract checkpoint
+
+Continuation preflight: clean `main@716a3fd`, no index lock or active visual/Tart
+build process. Entire delivery queue reviewed; this owner may continue transport
+and coverage work locally, not activate other lanes. No subagent is authorized.
+
+Added `scripts/visual/vm_install.py`: bounded strict parsing of the Rust manifest,
+independently supplied hash/repo/suite, exact shared-file preflight and fresh
+compiled-path installation. Shared/installed bytes are reverified; no hardlinks,
+symlinks, traversal, unknown executables, source omission, extra directories,
+case/normalization aliases, file/directory collisions, mode drift or overwrite.
+Failures leave incomplete diagnostic trees and never emit a capture seal. No
+producer execution, sudo or VM boot is built into this transport module.
+
+Evidence: **8 new Python contracts** plus **1 Rust→Python contract** exercising
+both real Rust-staged suite formats with synthetic non-executed artifacts.
+`just visual-test` passes 74 Python units + separate CLI integration, immutable
+upstream tests and **33 consumer tests**; strict consumer Clippy/fmt pass.
+Logs: `/tmp/bbr-visual-vm-install-tests.log`,
+`/tmp/bbr-visual-vm-install-cross-language2.log`,
+`/tmp/bbr-visual-vm-install-visual-test.log`,
+`/tmp/bbr-visual-vm-install-clippy.log`. Initial cross-language compile caught an
+incorrect test-only assumption about upstream Output.stderr (not exposed); the
+fixture now uses the actual stdout/status API, without upstream modification.
+Read-only inspector also validates all 1,450/1,451 files of the earlier real
+Gallery/browser payloads; these remain stale diagnostic artifacts, not current
+capture evidence, and were **not installed** into the host checkout.
+
+Self-review checked strict manifest binding, APFS path collisions, nonblocking
+regular-file checks, exact post-copy inventory and failure/no-resume behavior.
+Real guest parent preparation, Python bootstrap, producer/receipt execution,
+SSH return and supervision/cleanup wiring remain open. Native guard stays closed;
+no baseline, product/performance or actual guest claim. Next runnable work is
+transport supervision and current Gallery coverage; VM/network and Checkbox
+asset approvals still remain external boundaries, not reasons to stop local work.
+
 ## Status vocabulary
 
 | Status | Meaning |
