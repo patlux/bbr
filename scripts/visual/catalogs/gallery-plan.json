@@ -1,0 +1,8825 @@
+{
+  "schema": 1,
+  "cases": [
+    {
+      "base": "gallery-00-state-00-standard-small",
+      "label": "Tokens",
+      "state": "default",
+      "group": "Foundations",
+      "ranges": [
+        [
+          0,
+          10
+        ]
+      ]
+    },
+    {
+      "base": "gallery-00-state-00-standard-normal",
+      "label": "Tokens",
+      "state": "default",
+      "group": "Foundations",
+      "ranges": [
+        [
+          0,
+          10
+        ]
+      ]
+    },
+    {
+      "base": "gallery-00-state-00-standard-extralarge",
+      "label": "Tokens",
+      "state": "default",
+      "group": "Foundations",
+      "ranges": [
+        [
+          0,
+          10
+        ]
+      ]
+    },
+    {
+      "base": "gallery-00-state-00-increased-small",
+      "label": "Tokens",
+      "state": "default",
+      "group": "Foundations",
+      "ranges": [
+        [
+          0,
+          10
+        ]
+      ]
+    },
+    {
+      "base": "gallery-00-state-00-increased-normal",
+      "label": "Tokens",
+      "state": "default",
+      "group": "Foundations",
+      "ranges": [
+        [
+          0,
+          10
+        ]
+      ]
+    },
+    {
+      "base": "gallery-00-state-00-increased-extralarge",
+      "label": "Tokens",
+      "state": "default",
+      "group": "Foundations",
+      "ranges": [
+        [
+          0,
+          10
+        ]
+      ]
+    },
+    {
+      "base": "gallery-01-state-00-standard-small",
+      "label": "Typography",
+      "state": "default",
+      "group": "Foundations",
+      "ranges": [
+        [
+          0,
+          7
+        ]
+      ]
+    },
+    {
+      "base": "gallery-01-state-00-standard-normal",
+      "label": "Typography",
+      "state": "default",
+      "group": "Foundations",
+      "ranges": [
+        [
+          0,
+          7
+        ]
+      ]
+    },
+    {
+      "base": "gallery-01-state-00-standard-extralarge",
+      "label": "Typography",
+      "state": "default",
+      "group": "Foundations",
+      "ranges": [
+        [
+          0,
+          7
+        ]
+      ]
+    },
+    {
+      "base": "gallery-01-state-00-increased-small",
+      "label": "Typography",
+      "state": "default",
+      "group": "Foundations",
+      "ranges": [
+        [
+          0,
+          7
+        ]
+      ]
+    },
+    {
+      "base": "gallery-01-state-00-increased-normal",
+      "label": "Typography",
+      "state": "default",
+      "group": "Foundations",
+      "ranges": [
+        [
+          0,
+          7
+        ]
+      ]
+    },
+    {
+      "base": "gallery-01-state-00-increased-extralarge",
+      "label": "Typography",
+      "state": "default",
+      "group": "Foundations",
+      "ranges": [
+        [
+          0,
+          7
+        ]
+      ]
+    },
+    {
+      "base": "gallery-02-state-00-standard-small",
+      "label": "Spacing / Radius",
+      "state": "default",
+      "group": "Foundations",
+      "ranges": [
+        [
+          0,
+          15
+        ]
+      ]
+    },
+    {
+      "base": "gallery-02-state-00-standard-normal",
+      "label": "Spacing / Radius",
+      "state": "default",
+      "group": "Foundations",
+      "ranges": [
+        [
+          0,
+          15
+        ]
+      ]
+    },
+    {
+      "base": "gallery-02-state-00-standard-extralarge",
+      "label": "Spacing / Radius",
+      "state": "default",
+      "group": "Foundations",
+      "ranges": [
+        [
+          0,
+          15
+        ]
+      ]
+    },
+    {
+      "base": "gallery-02-state-00-increased-small",
+      "label": "Spacing / Radius",
+      "state": "default",
+      "group": "Foundations",
+      "ranges": [
+        [
+          0,
+          15
+        ]
+      ]
+    },
+    {
+      "base": "gallery-02-state-00-increased-normal",
+      "label": "Spacing / Radius",
+      "state": "default",
+      "group": "Foundations",
+      "ranges": [
+        [
+          0,
+          15
+        ]
+      ]
+    },
+    {
+      "base": "gallery-02-state-00-increased-extralarge",
+      "label": "Spacing / Radius",
+      "state": "default",
+      "group": "Foundations",
+      "ranges": [
+        [
+          0,
+          15
+        ]
+      ]
+    },
+    {
+      "base": "gallery-03-state-00-standard-small",
+      "label": "Motion",
+      "state": "default",
+      "group": "Foundations",
+      "ranges": [
+        [
+          0,
+          24
+        ],
+        [
+          24,
+          27
+        ]
+      ]
+    },
+    {
+      "base": "gallery-03-state-00-standard-normal",
+      "label": "Motion",
+      "state": "default",
+      "group": "Foundations",
+      "ranges": [
+        [
+          0,
+          24
+        ],
+        [
+          24,
+          27
+        ]
+      ]
+    },
+    {
+      "base": "gallery-03-state-00-standard-extralarge",
+      "label": "Motion",
+      "state": "default",
+      "group": "Foundations",
+      "ranges": [
+        [
+          0,
+          24
+        ],
+        [
+          24,
+          27
+        ]
+      ]
+    },
+    {
+      "base": "gallery-03-state-00-increased-small",
+      "label": "Motion",
+      "state": "default",
+      "group": "Foundations",
+      "ranges": [
+        [
+          0,
+          24
+        ],
+        [
+          24,
+          27
+        ]
+      ]
+    },
+    {
+      "base": "gallery-03-state-00-increased-normal",
+      "label": "Motion",
+      "state": "default",
+      "group": "Foundations",
+      "ranges": [
+        [
+          0,
+          24
+        ],
+        [
+          24,
+          27
+        ]
+      ]
+    },
+    {
+      "base": "gallery-03-state-00-increased-extralarge",
+      "label": "Motion",
+      "state": "default",
+      "group": "Foundations",
+      "ranges": [
+        [
+          0,
+          24
+        ],
+        [
+          24,
+          27
+        ]
+      ]
+    },
+    {
+      "base": "gallery-04-state-00-standard-small",
+      "label": "Density",
+      "state": "default",
+      "group": "Foundations",
+      "ranges": [
+        [
+          0,
+          10
+        ]
+      ]
+    },
+    {
+      "base": "gallery-04-state-00-standard-normal",
+      "label": "Density",
+      "state": "default",
+      "group": "Foundations",
+      "ranges": [
+        [
+          0,
+          10
+        ]
+      ]
+    },
+    {
+      "base": "gallery-04-state-00-standard-extralarge",
+      "label": "Density",
+      "state": "default",
+      "group": "Foundations",
+      "ranges": [
+        [
+          0,
+          10
+        ]
+      ]
+    },
+    {
+      "base": "gallery-04-state-00-increased-small",
+      "label": "Density",
+      "state": "default",
+      "group": "Foundations",
+      "ranges": [
+        [
+          0,
+          10
+        ]
+      ]
+    },
+    {
+      "base": "gallery-04-state-00-increased-normal",
+      "label": "Density",
+      "state": "default",
+      "group": "Foundations",
+      "ranges": [
+        [
+          0,
+          10
+        ]
+      ]
+    },
+    {
+      "base": "gallery-04-state-00-increased-extralarge",
+      "label": "Density",
+      "state": "default",
+      "group": "Foundations",
+      "ranges": [
+        [
+          0,
+          10
+        ]
+      ]
+    },
+    {
+      "base": "gallery-05-state-00-standard-small",
+      "label": "Elevation",
+      "state": "default",
+      "group": "Foundations",
+      "ranges": [
+        [
+          0,
+          9
+        ]
+      ],
+      "dark_ranges": [
+        [
+          0,
+          8
+        ]
+      ]
+    },
+    {
+      "base": "gallery-05-state-00-standard-normal",
+      "label": "Elevation",
+      "state": "default",
+      "group": "Foundations",
+      "ranges": [
+        [
+          0,
+          9
+        ]
+      ],
+      "dark_ranges": [
+        [
+          0,
+          8
+        ]
+      ]
+    },
+    {
+      "base": "gallery-05-state-00-standard-extralarge",
+      "label": "Elevation",
+      "state": "default",
+      "group": "Foundations",
+      "ranges": [
+        [
+          0,
+          9
+        ]
+      ],
+      "dark_ranges": [
+        [
+          0,
+          8
+        ]
+      ]
+    },
+    {
+      "base": "gallery-05-state-00-increased-small",
+      "label": "Elevation",
+      "state": "default",
+      "group": "Foundations",
+      "ranges": [
+        [
+          0,
+          9
+        ]
+      ],
+      "dark_ranges": [
+        [
+          0,
+          8
+        ]
+      ]
+    },
+    {
+      "base": "gallery-05-state-00-increased-normal",
+      "label": "Elevation",
+      "state": "default",
+      "group": "Foundations",
+      "ranges": [
+        [
+          0,
+          9
+        ]
+      ],
+      "dark_ranges": [
+        [
+          0,
+          8
+        ]
+      ]
+    },
+    {
+      "base": "gallery-05-state-00-increased-extralarge",
+      "label": "Elevation",
+      "state": "default",
+      "group": "Foundations",
+      "ranges": [
+        [
+          0,
+          9
+        ]
+      ],
+      "dark_ranges": [
+        [
+          0,
+          8
+        ]
+      ]
+    },
+    {
+      "base": "gallery-06-state-00-standard-small",
+      "label": "Color",
+      "state": "default",
+      "group": "Foundations",
+      "ranges": [
+        [
+          0,
+          22
+        ],
+        [
+          22,
+          33
+        ]
+      ]
+    },
+    {
+      "base": "gallery-06-state-00-standard-normal",
+      "label": "Color",
+      "state": "default",
+      "group": "Foundations",
+      "ranges": [
+        [
+          0,
+          20
+        ],
+        [
+          20,
+          33
+        ]
+      ]
+    },
+    {
+      "base": "gallery-06-state-00-standard-extralarge",
+      "label": "Color",
+      "state": "default",
+      "group": "Foundations",
+      "ranges": [
+        [
+          0,
+          19
+        ],
+        [
+          19,
+          33
+        ]
+      ]
+    },
+    {
+      "base": "gallery-06-state-00-increased-small",
+      "label": "Color",
+      "state": "default",
+      "group": "Foundations",
+      "ranges": [
+        [
+          0,
+          22
+        ],
+        [
+          22,
+          33
+        ]
+      ]
+    },
+    {
+      "base": "gallery-06-state-00-increased-normal",
+      "label": "Color",
+      "state": "default",
+      "group": "Foundations",
+      "ranges": [
+        [
+          0,
+          20
+        ],
+        [
+          20,
+          33
+        ]
+      ]
+    },
+    {
+      "base": "gallery-06-state-00-increased-extralarge",
+      "label": "Color",
+      "state": "default",
+      "group": "Foundations",
+      "ranges": [
+        [
+          0,
+          19
+        ],
+        [
+          19,
+          33
+        ]
+      ]
+    },
+    {
+      "base": "gallery-07-state-00-standard-small",
+      "label": "States",
+      "state": "default",
+      "group": "Foundations",
+      "ranges": [
+        [
+          0,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-07-state-00-standard-normal",
+      "label": "States",
+      "state": "default",
+      "group": "Foundations",
+      "ranges": [
+        [
+          0,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-07-state-00-standard-extralarge",
+      "label": "States",
+      "state": "default",
+      "group": "Foundations",
+      "ranges": [
+        [
+          0,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-07-state-00-increased-small",
+      "label": "States",
+      "state": "default",
+      "group": "Foundations",
+      "ranges": [
+        [
+          0,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-07-state-00-increased-normal",
+      "label": "States",
+      "state": "default",
+      "group": "Foundations",
+      "ranges": [
+        [
+          0,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-07-state-00-increased-extralarge",
+      "label": "States",
+      "state": "default",
+      "group": "Foundations",
+      "ranges": [
+        [
+          0,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-07-state-01-standard-small",
+      "label": "States",
+      "state": "hover",
+      "group": "Foundations",
+      "ranges": [
+        [
+          0,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-07-state-01-standard-normal",
+      "label": "States",
+      "state": "hover",
+      "group": "Foundations",
+      "ranges": [
+        [
+          0,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-07-state-01-standard-extralarge",
+      "label": "States",
+      "state": "hover",
+      "group": "Foundations",
+      "ranges": [
+        [
+          0,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-07-state-01-increased-small",
+      "label": "States",
+      "state": "hover",
+      "group": "Foundations",
+      "ranges": [
+        [
+          0,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-07-state-01-increased-normal",
+      "label": "States",
+      "state": "hover",
+      "group": "Foundations",
+      "ranges": [
+        [
+          0,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-07-state-01-increased-extralarge",
+      "label": "States",
+      "state": "hover",
+      "group": "Foundations",
+      "ranges": [
+        [
+          0,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-07-state-02-standard-small",
+      "label": "States",
+      "state": "active",
+      "group": "Foundations",
+      "ranges": [
+        [
+          0,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-07-state-02-standard-normal",
+      "label": "States",
+      "state": "active",
+      "group": "Foundations",
+      "ranges": [
+        [
+          0,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-07-state-02-standard-extralarge",
+      "label": "States",
+      "state": "active",
+      "group": "Foundations",
+      "ranges": [
+        [
+          0,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-07-state-02-increased-small",
+      "label": "States",
+      "state": "active",
+      "group": "Foundations",
+      "ranges": [
+        [
+          0,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-07-state-02-increased-normal",
+      "label": "States",
+      "state": "active",
+      "group": "Foundations",
+      "ranges": [
+        [
+          0,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-07-state-02-increased-extralarge",
+      "label": "States",
+      "state": "active",
+      "group": "Foundations",
+      "ranges": [
+        [
+          0,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-07-state-03-standard-small",
+      "label": "States",
+      "state": "selected",
+      "group": "Foundations",
+      "ranges": [
+        [
+          0,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-07-state-03-standard-normal",
+      "label": "States",
+      "state": "selected",
+      "group": "Foundations",
+      "ranges": [
+        [
+          0,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-07-state-03-standard-extralarge",
+      "label": "States",
+      "state": "selected",
+      "group": "Foundations",
+      "ranges": [
+        [
+          0,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-07-state-03-increased-small",
+      "label": "States",
+      "state": "selected",
+      "group": "Foundations",
+      "ranges": [
+        [
+          0,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-07-state-03-increased-normal",
+      "label": "States",
+      "state": "selected",
+      "group": "Foundations",
+      "ranges": [
+        [
+          0,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-07-state-03-increased-extralarge",
+      "label": "States",
+      "state": "selected",
+      "group": "Foundations",
+      "ranges": [
+        [
+          0,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-07-state-04-standard-small",
+      "label": "States",
+      "state": "loading",
+      "group": "Foundations",
+      "ranges": [
+        [
+          0,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-07-state-04-standard-normal",
+      "label": "States",
+      "state": "loading",
+      "group": "Foundations",
+      "ranges": [
+        [
+          0,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-07-state-04-standard-extralarge",
+      "label": "States",
+      "state": "loading",
+      "group": "Foundations",
+      "ranges": [
+        [
+          0,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-07-state-04-increased-small",
+      "label": "States",
+      "state": "loading",
+      "group": "Foundations",
+      "ranges": [
+        [
+          0,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-07-state-04-increased-normal",
+      "label": "States",
+      "state": "loading",
+      "group": "Foundations",
+      "ranges": [
+        [
+          0,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-07-state-04-increased-extralarge",
+      "label": "States",
+      "state": "loading",
+      "group": "Foundations",
+      "ranges": [
+        [
+          0,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-07-state-05-standard-small",
+      "label": "States",
+      "state": "attention",
+      "group": "Foundations",
+      "ranges": [
+        [
+          0,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-07-state-05-standard-normal",
+      "label": "States",
+      "state": "attention",
+      "group": "Foundations",
+      "ranges": [
+        [
+          0,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-07-state-05-standard-extralarge",
+      "label": "States",
+      "state": "attention",
+      "group": "Foundations",
+      "ranges": [
+        [
+          0,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-07-state-05-increased-small",
+      "label": "States",
+      "state": "attention",
+      "group": "Foundations",
+      "ranges": [
+        [
+          0,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-07-state-05-increased-normal",
+      "label": "States",
+      "state": "attention",
+      "group": "Foundations",
+      "ranges": [
+        [
+          0,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-07-state-05-increased-extralarge",
+      "label": "States",
+      "state": "attention",
+      "group": "Foundations",
+      "ranges": [
+        [
+          0,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-07-state-06-standard-small",
+      "label": "States",
+      "state": "error",
+      "group": "Foundations",
+      "ranges": [
+        [
+          0,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-07-state-06-standard-normal",
+      "label": "States",
+      "state": "error",
+      "group": "Foundations",
+      "ranges": [
+        [
+          0,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-07-state-06-standard-extralarge",
+      "label": "States",
+      "state": "error",
+      "group": "Foundations",
+      "ranges": [
+        [
+          0,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-07-state-06-increased-small",
+      "label": "States",
+      "state": "error",
+      "group": "Foundations",
+      "ranges": [
+        [
+          0,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-07-state-06-increased-normal",
+      "label": "States",
+      "state": "error",
+      "group": "Foundations",
+      "ranges": [
+        [
+          0,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-07-state-06-increased-extralarge",
+      "label": "States",
+      "state": "error",
+      "group": "Foundations",
+      "ranges": [
+        [
+          0,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-07-state-07-standard-small",
+      "label": "States",
+      "state": "disabled",
+      "group": "Foundations",
+      "ranges": [
+        [
+          0,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-07-state-07-standard-normal",
+      "label": "States",
+      "state": "disabled",
+      "group": "Foundations",
+      "ranges": [
+        [
+          0,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-07-state-07-standard-extralarge",
+      "label": "States",
+      "state": "disabled",
+      "group": "Foundations",
+      "ranges": [
+        [
+          0,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-07-state-07-increased-small",
+      "label": "States",
+      "state": "disabled",
+      "group": "Foundations",
+      "ranges": [
+        [
+          0,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-07-state-07-increased-normal",
+      "label": "States",
+      "state": "disabled",
+      "group": "Foundations",
+      "ranges": [
+        [
+          0,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-07-state-07-increased-extralarge",
+      "label": "States",
+      "state": "disabled",
+      "group": "Foundations",
+      "ranges": [
+        [
+          0,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-07-state-08-standard-small",
+      "label": "States",
+      "state": "dragging",
+      "group": "Foundations",
+      "ranges": [
+        [
+          0,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-07-state-08-standard-normal",
+      "label": "States",
+      "state": "dragging",
+      "group": "Foundations",
+      "ranges": [
+        [
+          0,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-07-state-08-standard-extralarge",
+      "label": "States",
+      "state": "dragging",
+      "group": "Foundations",
+      "ranges": [
+        [
+          0,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-07-state-08-increased-small",
+      "label": "States",
+      "state": "dragging",
+      "group": "Foundations",
+      "ranges": [
+        [
+          0,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-07-state-08-increased-normal",
+      "label": "States",
+      "state": "dragging",
+      "group": "Foundations",
+      "ranges": [
+        [
+          0,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-07-state-08-increased-extralarge",
+      "label": "States",
+      "state": "dragging",
+      "group": "Foundations",
+      "ranges": [
+        [
+          0,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-07-state-09-standard-small",
+      "label": "States",
+      "state": "drag-target",
+      "group": "Foundations",
+      "ranges": [
+        [
+          0,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-07-state-09-standard-normal",
+      "label": "States",
+      "state": "drag-target",
+      "group": "Foundations",
+      "ranges": [
+        [
+          0,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-07-state-09-standard-extralarge",
+      "label": "States",
+      "state": "drag-target",
+      "group": "Foundations",
+      "ranges": [
+        [
+          0,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-07-state-09-increased-small",
+      "label": "States",
+      "state": "drag-target",
+      "group": "Foundations",
+      "ranges": [
+        [
+          0,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-07-state-09-increased-normal",
+      "label": "States",
+      "state": "drag-target",
+      "group": "Foundations",
+      "ranges": [
+        [
+          0,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-07-state-09-increased-extralarge",
+      "label": "States",
+      "state": "drag-target",
+      "group": "Foundations",
+      "ranges": [
+        [
+          0,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-07-state-10-standard-small",
+      "label": "States",
+      "state": "focused",
+      "group": "Foundations",
+      "ranges": [
+        [
+          0,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-07-state-10-standard-normal",
+      "label": "States",
+      "state": "focused",
+      "group": "Foundations",
+      "ranges": [
+        [
+          0,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-07-state-10-standard-extralarge",
+      "label": "States",
+      "state": "focused",
+      "group": "Foundations",
+      "ranges": [
+        [
+          0,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-07-state-10-increased-small",
+      "label": "States",
+      "state": "focused",
+      "group": "Foundations",
+      "ranges": [
+        [
+          0,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-07-state-10-increased-normal",
+      "label": "States",
+      "state": "focused",
+      "group": "Foundations",
+      "ranges": [
+        [
+          0,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-07-state-10-increased-extralarge",
+      "label": "States",
+      "state": "focused",
+      "group": "Foundations",
+      "ranges": [
+        [
+          0,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-08-state-00-standard-small",
+      "label": "Iconography",
+      "state": "default",
+      "group": "Foundations",
+      "ranges": [
+        [
+          0,
+          24
+        ],
+        [
+          24,
+          25
+        ]
+      ]
+    },
+    {
+      "base": "gallery-08-state-00-standard-normal",
+      "label": "Iconography",
+      "state": "default",
+      "group": "Foundations",
+      "ranges": [
+        [
+          0,
+          24
+        ],
+        [
+          24,
+          25
+        ]
+      ]
+    },
+    {
+      "base": "gallery-08-state-00-standard-extralarge",
+      "label": "Iconography",
+      "state": "default",
+      "group": "Foundations",
+      "ranges": [
+        [
+          0,
+          24
+        ],
+        [
+          24,
+          25
+        ]
+      ]
+    },
+    {
+      "base": "gallery-08-state-00-increased-small",
+      "label": "Iconography",
+      "state": "default",
+      "group": "Foundations",
+      "ranges": [
+        [
+          0,
+          24
+        ],
+        [
+          24,
+          25
+        ]
+      ]
+    },
+    {
+      "base": "gallery-08-state-00-increased-normal",
+      "label": "Iconography",
+      "state": "default",
+      "group": "Foundations",
+      "ranges": [
+        [
+          0,
+          24
+        ],
+        [
+          24,
+          25
+        ]
+      ]
+    },
+    {
+      "base": "gallery-08-state-00-increased-extralarge",
+      "label": "Iconography",
+      "state": "default",
+      "group": "Foundations",
+      "ranges": [
+        [
+          0,
+          24
+        ],
+        [
+          24,
+          25
+        ]
+      ]
+    },
+    {
+      "base": "gallery-09-state-00-standard-small",
+      "label": "Brand",
+      "state": "default",
+      "group": "Foundations",
+      "ranges": [
+        [
+          0,
+          1
+        ]
+      ]
+    },
+    {
+      "base": "gallery-09-state-00-standard-normal",
+      "label": "Brand",
+      "state": "default",
+      "group": "Foundations",
+      "ranges": [
+        [
+          0,
+          1
+        ]
+      ]
+    },
+    {
+      "base": "gallery-09-state-00-standard-extralarge",
+      "label": "Brand",
+      "state": "default",
+      "group": "Foundations",
+      "ranges": [
+        [
+          0,
+          1
+        ]
+      ]
+    },
+    {
+      "base": "gallery-09-state-00-increased-small",
+      "label": "Brand",
+      "state": "default",
+      "group": "Foundations",
+      "ranges": [
+        [
+          0,
+          1
+        ]
+      ]
+    },
+    {
+      "base": "gallery-09-state-00-increased-normal",
+      "label": "Brand",
+      "state": "default",
+      "group": "Foundations",
+      "ranges": [
+        [
+          0,
+          1
+        ]
+      ]
+    },
+    {
+      "base": "gallery-09-state-00-increased-extralarge",
+      "label": "Brand",
+      "state": "default",
+      "group": "Foundations",
+      "ranges": [
+        [
+          0,
+          1
+        ]
+      ]
+    },
+    {
+      "base": "gallery-10-state-00-standard-small",
+      "label": "Favicon tile",
+      "state": "default",
+      "group": "Primitives",
+      "ranges": [
+        [
+          0,
+          8
+        ]
+      ]
+    },
+    {
+      "base": "gallery-10-state-00-standard-normal",
+      "label": "Favicon tile",
+      "state": "default",
+      "group": "Primitives",
+      "ranges": [
+        [
+          0,
+          8
+        ]
+      ]
+    },
+    {
+      "base": "gallery-10-state-00-standard-extralarge",
+      "label": "Favicon tile",
+      "state": "default",
+      "group": "Primitives",
+      "ranges": [
+        [
+          0,
+          8
+        ]
+      ]
+    },
+    {
+      "base": "gallery-10-state-00-increased-small",
+      "label": "Favicon tile",
+      "state": "default",
+      "group": "Primitives",
+      "ranges": [
+        [
+          0,
+          8
+        ]
+      ]
+    },
+    {
+      "base": "gallery-10-state-00-increased-normal",
+      "label": "Favicon tile",
+      "state": "default",
+      "group": "Primitives",
+      "ranges": [
+        [
+          0,
+          8
+        ]
+      ]
+    },
+    {
+      "base": "gallery-10-state-00-increased-extralarge",
+      "label": "Favicon tile",
+      "state": "default",
+      "group": "Primitives",
+      "ranges": [
+        [
+          0,
+          8
+        ]
+      ]
+    },
+    {
+      "base": "gallery-10-state-01-standard-small",
+      "label": "Favicon tile",
+      "state": "loading",
+      "group": "Primitives",
+      "ranges": [
+        [
+          0,
+          8
+        ]
+      ]
+    },
+    {
+      "base": "gallery-10-state-01-standard-normal",
+      "label": "Favicon tile",
+      "state": "loading",
+      "group": "Primitives",
+      "ranges": [
+        [
+          0,
+          8
+        ]
+      ]
+    },
+    {
+      "base": "gallery-10-state-01-standard-extralarge",
+      "label": "Favicon tile",
+      "state": "loading",
+      "group": "Primitives",
+      "ranges": [
+        [
+          0,
+          8
+        ]
+      ]
+    },
+    {
+      "base": "gallery-10-state-01-increased-small",
+      "label": "Favicon tile",
+      "state": "loading",
+      "group": "Primitives",
+      "ranges": [
+        [
+          0,
+          8
+        ]
+      ]
+    },
+    {
+      "base": "gallery-10-state-01-increased-normal",
+      "label": "Favicon tile",
+      "state": "loading",
+      "group": "Primitives",
+      "ranges": [
+        [
+          0,
+          8
+        ]
+      ]
+    },
+    {
+      "base": "gallery-10-state-01-increased-extralarge",
+      "label": "Favicon tile",
+      "state": "loading",
+      "group": "Primitives",
+      "ranges": [
+        [
+          0,
+          8
+        ]
+      ]
+    },
+    {
+      "base": "gallery-10-state-02-standard-small",
+      "label": "Favicon tile",
+      "state": "error",
+      "group": "Primitives",
+      "ranges": [
+        [
+          0,
+          8
+        ]
+      ]
+    },
+    {
+      "base": "gallery-10-state-02-standard-normal",
+      "label": "Favicon tile",
+      "state": "error",
+      "group": "Primitives",
+      "ranges": [
+        [
+          0,
+          8
+        ]
+      ]
+    },
+    {
+      "base": "gallery-10-state-02-standard-extralarge",
+      "label": "Favicon tile",
+      "state": "error",
+      "group": "Primitives",
+      "ranges": [
+        [
+          0,
+          8
+        ]
+      ]
+    },
+    {
+      "base": "gallery-10-state-02-increased-small",
+      "label": "Favicon tile",
+      "state": "error",
+      "group": "Primitives",
+      "ranges": [
+        [
+          0,
+          8
+        ]
+      ]
+    },
+    {
+      "base": "gallery-10-state-02-increased-normal",
+      "label": "Favicon tile",
+      "state": "error",
+      "group": "Primitives",
+      "ranges": [
+        [
+          0,
+          8
+        ]
+      ]
+    },
+    {
+      "base": "gallery-10-state-02-increased-extralarge",
+      "label": "Favicon tile",
+      "state": "error",
+      "group": "Primitives",
+      "ranges": [
+        [
+          0,
+          8
+        ]
+      ]
+    },
+    {
+      "base": "gallery-11-state-00-standard-small",
+      "label": "Profile chip",
+      "state": "default",
+      "group": "Primitives",
+      "ranges": [
+        [
+          0,
+          7
+        ]
+      ]
+    },
+    {
+      "base": "gallery-11-state-00-standard-normal",
+      "label": "Profile chip",
+      "state": "default",
+      "group": "Primitives",
+      "ranges": [
+        [
+          0,
+          7
+        ]
+      ]
+    },
+    {
+      "base": "gallery-11-state-00-standard-extralarge",
+      "label": "Profile chip",
+      "state": "default",
+      "group": "Primitives",
+      "ranges": [
+        [
+          0,
+          7
+        ]
+      ]
+    },
+    {
+      "base": "gallery-11-state-00-increased-small",
+      "label": "Profile chip",
+      "state": "default",
+      "group": "Primitives",
+      "ranges": [
+        [
+          0,
+          7
+        ]
+      ]
+    },
+    {
+      "base": "gallery-11-state-00-increased-normal",
+      "label": "Profile chip",
+      "state": "default",
+      "group": "Primitives",
+      "ranges": [
+        [
+          0,
+          7
+        ]
+      ]
+    },
+    {
+      "base": "gallery-11-state-00-increased-extralarge",
+      "label": "Profile chip",
+      "state": "default",
+      "group": "Primitives",
+      "ranges": [
+        [
+          0,
+          7
+        ]
+      ]
+    },
+    {
+      "base": "gallery-12-state-00-standard-small",
+      "label": "Section label",
+      "state": "default",
+      "group": "Primitives",
+      "ranges": [
+        [
+          0,
+          9
+        ]
+      ]
+    },
+    {
+      "base": "gallery-12-state-00-standard-normal",
+      "label": "Section label",
+      "state": "default",
+      "group": "Primitives",
+      "ranges": [
+        [
+          0,
+          9
+        ]
+      ]
+    },
+    {
+      "base": "gallery-12-state-00-standard-extralarge",
+      "label": "Section label",
+      "state": "default",
+      "group": "Primitives",
+      "ranges": [
+        [
+          0,
+          9
+        ]
+      ]
+    },
+    {
+      "base": "gallery-12-state-00-increased-small",
+      "label": "Section label",
+      "state": "default",
+      "group": "Primitives",
+      "ranges": [
+        [
+          0,
+          9
+        ]
+      ]
+    },
+    {
+      "base": "gallery-12-state-00-increased-normal",
+      "label": "Section label",
+      "state": "default",
+      "group": "Primitives",
+      "ranges": [
+        [
+          0,
+          9
+        ]
+      ]
+    },
+    {
+      "base": "gallery-12-state-00-increased-extralarge",
+      "label": "Section label",
+      "state": "default",
+      "group": "Primitives",
+      "ranges": [
+        [
+          0,
+          9
+        ]
+      ]
+    },
+    {
+      "base": "gallery-13-state-00-standard-small",
+      "label": "Loading arc",
+      "state": "default",
+      "group": "Primitives",
+      "ranges": [
+        [
+          0,
+          6
+        ]
+      ]
+    },
+    {
+      "base": "gallery-13-state-00-standard-normal",
+      "label": "Loading arc",
+      "state": "default",
+      "group": "Primitives",
+      "ranges": [
+        [
+          0,
+          6
+        ]
+      ]
+    },
+    {
+      "base": "gallery-13-state-00-standard-extralarge",
+      "label": "Loading arc",
+      "state": "default",
+      "group": "Primitives",
+      "ranges": [
+        [
+          0,
+          6
+        ]
+      ]
+    },
+    {
+      "base": "gallery-13-state-00-increased-small",
+      "label": "Loading arc",
+      "state": "default",
+      "group": "Primitives",
+      "ranges": [
+        [
+          0,
+          6
+        ]
+      ]
+    },
+    {
+      "base": "gallery-13-state-00-increased-normal",
+      "label": "Loading arc",
+      "state": "default",
+      "group": "Primitives",
+      "ranges": [
+        [
+          0,
+          6
+        ]
+      ]
+    },
+    {
+      "base": "gallery-13-state-00-increased-extralarge",
+      "label": "Loading arc",
+      "state": "default",
+      "group": "Primitives",
+      "ranges": [
+        [
+          0,
+          6
+        ]
+      ]
+    },
+    {
+      "base": "gallery-14-state-00-standard-small",
+      "label": "Button",
+      "state": "default",
+      "group": "Core controls",
+      "ranges": [
+        [
+          0,
+          7
+        ]
+      ]
+    },
+    {
+      "base": "gallery-14-state-00-standard-normal",
+      "label": "Button",
+      "state": "default",
+      "group": "Core controls",
+      "ranges": [
+        [
+          0,
+          7
+        ]
+      ]
+    },
+    {
+      "base": "gallery-14-state-00-standard-extralarge",
+      "label": "Button",
+      "state": "default",
+      "group": "Core controls",
+      "ranges": [
+        [
+          0,
+          7
+        ]
+      ]
+    },
+    {
+      "base": "gallery-14-state-00-increased-small",
+      "label": "Button",
+      "state": "default",
+      "group": "Core controls",
+      "ranges": [
+        [
+          0,
+          7
+        ]
+      ]
+    },
+    {
+      "base": "gallery-14-state-00-increased-normal",
+      "label": "Button",
+      "state": "default",
+      "group": "Core controls",
+      "ranges": [
+        [
+          0,
+          7
+        ]
+      ]
+    },
+    {
+      "base": "gallery-14-state-00-increased-extralarge",
+      "label": "Button",
+      "state": "default",
+      "group": "Core controls",
+      "ranges": [
+        [
+          0,
+          7
+        ]
+      ]
+    },
+    {
+      "base": "gallery-15-state-00-standard-small",
+      "label": "Input",
+      "state": "default",
+      "group": "Core controls",
+      "ranges": [
+        [
+          0,
+          6
+        ]
+      ]
+    },
+    {
+      "base": "gallery-15-state-00-standard-normal",
+      "label": "Input",
+      "state": "default",
+      "group": "Core controls",
+      "ranges": [
+        [
+          0,
+          6
+        ]
+      ]
+    },
+    {
+      "base": "gallery-15-state-00-standard-extralarge",
+      "label": "Input",
+      "state": "default",
+      "group": "Core controls",
+      "ranges": [
+        [
+          0,
+          6
+        ]
+      ]
+    },
+    {
+      "base": "gallery-15-state-00-increased-small",
+      "label": "Input",
+      "state": "default",
+      "group": "Core controls",
+      "ranges": [
+        [
+          0,
+          6
+        ]
+      ]
+    },
+    {
+      "base": "gallery-15-state-00-increased-normal",
+      "label": "Input",
+      "state": "default",
+      "group": "Core controls",
+      "ranges": [
+        [
+          0,
+          6
+        ]
+      ]
+    },
+    {
+      "base": "gallery-15-state-00-increased-extralarge",
+      "label": "Input",
+      "state": "default",
+      "group": "Core controls",
+      "ranges": [
+        [
+          0,
+          6
+        ]
+      ]
+    },
+    {
+      "base": "gallery-16-state-00-standard-small",
+      "label": "Checkbox",
+      "state": "default",
+      "group": "Core controls",
+      "ranges": [
+        [
+          0,
+          5
+        ]
+      ]
+    },
+    {
+      "base": "gallery-16-state-00-standard-normal",
+      "label": "Checkbox",
+      "state": "default",
+      "group": "Core controls",
+      "ranges": [
+        [
+          0,
+          5
+        ]
+      ]
+    },
+    {
+      "base": "gallery-16-state-00-standard-extralarge",
+      "label": "Checkbox",
+      "state": "default",
+      "group": "Core controls",
+      "ranges": [
+        [
+          0,
+          5
+        ]
+      ]
+    },
+    {
+      "base": "gallery-16-state-00-increased-small",
+      "label": "Checkbox",
+      "state": "default",
+      "group": "Core controls",
+      "ranges": [
+        [
+          0,
+          5
+        ]
+      ]
+    },
+    {
+      "base": "gallery-16-state-00-increased-normal",
+      "label": "Checkbox",
+      "state": "default",
+      "group": "Core controls",
+      "ranges": [
+        [
+          0,
+          5
+        ]
+      ]
+    },
+    {
+      "base": "gallery-16-state-00-increased-extralarge",
+      "label": "Checkbox",
+      "state": "default",
+      "group": "Core controls",
+      "ranges": [
+        [
+          0,
+          5
+        ]
+      ]
+    },
+    {
+      "base": "gallery-17-state-00-standard-small",
+      "label": "Switch",
+      "state": "default",
+      "group": "Core controls",
+      "ranges": [
+        [
+          0,
+          5
+        ]
+      ]
+    },
+    {
+      "base": "gallery-17-state-00-standard-normal",
+      "label": "Switch",
+      "state": "default",
+      "group": "Core controls",
+      "ranges": [
+        [
+          0,
+          5
+        ]
+      ]
+    },
+    {
+      "base": "gallery-17-state-00-standard-extralarge",
+      "label": "Switch",
+      "state": "default",
+      "group": "Core controls",
+      "ranges": [
+        [
+          0,
+          5
+        ]
+      ]
+    },
+    {
+      "base": "gallery-17-state-00-increased-small",
+      "label": "Switch",
+      "state": "default",
+      "group": "Core controls",
+      "ranges": [
+        [
+          0,
+          5
+        ]
+      ]
+    },
+    {
+      "base": "gallery-17-state-00-increased-normal",
+      "label": "Switch",
+      "state": "default",
+      "group": "Core controls",
+      "ranges": [
+        [
+          0,
+          5
+        ]
+      ]
+    },
+    {
+      "base": "gallery-17-state-00-increased-extralarge",
+      "label": "Switch",
+      "state": "default",
+      "group": "Core controls",
+      "ranges": [
+        [
+          0,
+          5
+        ]
+      ]
+    },
+    {
+      "base": "gallery-18-state-00-standard-small",
+      "label": "Radio",
+      "state": "default",
+      "group": "Core controls",
+      "ranges": [
+        [
+          0,
+          5
+        ]
+      ]
+    },
+    {
+      "base": "gallery-18-state-00-standard-normal",
+      "label": "Radio",
+      "state": "default",
+      "group": "Core controls",
+      "ranges": [
+        [
+          0,
+          5
+        ]
+      ]
+    },
+    {
+      "base": "gallery-18-state-00-standard-extralarge",
+      "label": "Radio",
+      "state": "default",
+      "group": "Core controls",
+      "ranges": [
+        [
+          0,
+          5
+        ]
+      ]
+    },
+    {
+      "base": "gallery-18-state-00-increased-small",
+      "label": "Radio",
+      "state": "default",
+      "group": "Core controls",
+      "ranges": [
+        [
+          0,
+          5
+        ]
+      ]
+    },
+    {
+      "base": "gallery-18-state-00-increased-normal",
+      "label": "Radio",
+      "state": "default",
+      "group": "Core controls",
+      "ranges": [
+        [
+          0,
+          5
+        ]
+      ]
+    },
+    {
+      "base": "gallery-18-state-00-increased-extralarge",
+      "label": "Radio",
+      "state": "default",
+      "group": "Core controls",
+      "ranges": [
+        [
+          0,
+          5
+        ]
+      ]
+    },
+    {
+      "base": "gallery-19-state-00-standard-small",
+      "label": "Slider",
+      "state": "default",
+      "group": "Core controls",
+      "ranges": [
+        [
+          0,
+          5
+        ]
+      ]
+    },
+    {
+      "base": "gallery-19-state-00-standard-normal",
+      "label": "Slider",
+      "state": "default",
+      "group": "Core controls",
+      "ranges": [
+        [
+          0,
+          5
+        ]
+      ]
+    },
+    {
+      "base": "gallery-19-state-00-standard-extralarge",
+      "label": "Slider",
+      "state": "default",
+      "group": "Core controls",
+      "ranges": [
+        [
+          0,
+          5
+        ]
+      ]
+    },
+    {
+      "base": "gallery-19-state-00-increased-small",
+      "label": "Slider",
+      "state": "default",
+      "group": "Core controls",
+      "ranges": [
+        [
+          0,
+          5
+        ]
+      ]
+    },
+    {
+      "base": "gallery-19-state-00-increased-normal",
+      "label": "Slider",
+      "state": "default",
+      "group": "Core controls",
+      "ranges": [
+        [
+          0,
+          5
+        ]
+      ]
+    },
+    {
+      "base": "gallery-19-state-00-increased-extralarge",
+      "label": "Slider",
+      "state": "default",
+      "group": "Core controls",
+      "ranges": [
+        [
+          0,
+          5
+        ]
+      ]
+    },
+    {
+      "base": "gallery-20-state-00-standard-small",
+      "label": "Progress",
+      "state": "default",
+      "group": "Core controls",
+      "ranges": [
+        [
+          0,
+          8
+        ]
+      ]
+    },
+    {
+      "base": "gallery-20-state-00-standard-normal",
+      "label": "Progress",
+      "state": "default",
+      "group": "Core controls",
+      "ranges": [
+        [
+          0,
+          8
+        ]
+      ]
+    },
+    {
+      "base": "gallery-20-state-00-standard-extralarge",
+      "label": "Progress",
+      "state": "default",
+      "group": "Core controls",
+      "ranges": [
+        [
+          0,
+          8
+        ]
+      ]
+    },
+    {
+      "base": "gallery-20-state-00-increased-small",
+      "label": "Progress",
+      "state": "default",
+      "group": "Core controls",
+      "ranges": [
+        [
+          0,
+          8
+        ]
+      ]
+    },
+    {
+      "base": "gallery-20-state-00-increased-normal",
+      "label": "Progress",
+      "state": "default",
+      "group": "Core controls",
+      "ranges": [
+        [
+          0,
+          8
+        ]
+      ]
+    },
+    {
+      "base": "gallery-20-state-00-increased-extralarge",
+      "label": "Progress",
+      "state": "default",
+      "group": "Core controls",
+      "ranges": [
+        [
+          0,
+          8
+        ]
+      ]
+    },
+    {
+      "base": "gallery-21-state-00-standard-small",
+      "label": "Status line",
+      "state": "default",
+      "group": "Browser components",
+      "ranges": [
+        [
+          0,
+          8
+        ]
+      ]
+    },
+    {
+      "base": "gallery-21-state-00-standard-normal",
+      "label": "Status line",
+      "state": "default",
+      "group": "Browser components",
+      "ranges": [
+        [
+          0,
+          8
+        ]
+      ]
+    },
+    {
+      "base": "gallery-21-state-00-standard-extralarge",
+      "label": "Status line",
+      "state": "default",
+      "group": "Browser components",
+      "ranges": [
+        [
+          0,
+          8
+        ]
+      ]
+    },
+    {
+      "base": "gallery-21-state-00-increased-small",
+      "label": "Status line",
+      "state": "default",
+      "group": "Browser components",
+      "ranges": [
+        [
+          0,
+          8
+        ]
+      ]
+    },
+    {
+      "base": "gallery-21-state-00-increased-normal",
+      "label": "Status line",
+      "state": "default",
+      "group": "Browser components",
+      "ranges": [
+        [
+          0,
+          8
+        ]
+      ]
+    },
+    {
+      "base": "gallery-21-state-00-increased-extralarge",
+      "label": "Status line",
+      "state": "default",
+      "group": "Browser components",
+      "ranges": [
+        [
+          0,
+          8
+        ]
+      ]
+    },
+    {
+      "base": "gallery-22-state-00-standard-small",
+      "label": "Tab Row",
+      "state": "default",
+      "group": "Browser components",
+      "ranges": [
+        [
+          0,
+          14
+        ],
+        [
+          14,
+          32
+        ]
+      ]
+    },
+    {
+      "base": "gallery-22-state-00-standard-normal",
+      "label": "Tab Row",
+      "state": "default",
+      "group": "Browser components",
+      "ranges": [
+        [
+          0,
+          14
+        ],
+        [
+          14,
+          32
+        ]
+      ]
+    },
+    {
+      "base": "gallery-22-state-00-standard-extralarge",
+      "label": "Tab Row",
+      "state": "default",
+      "group": "Browser components",
+      "ranges": [
+        [
+          0,
+          13
+        ],
+        [
+          13,
+          29
+        ],
+        [
+          29,
+          32
+        ]
+      ]
+    },
+    {
+      "base": "gallery-22-state-00-increased-small",
+      "label": "Tab Row",
+      "state": "default",
+      "group": "Browser components",
+      "ranges": [
+        [
+          0,
+          14
+        ],
+        [
+          14,
+          32
+        ]
+      ]
+    },
+    {
+      "base": "gallery-22-state-00-increased-normal",
+      "label": "Tab Row",
+      "state": "default",
+      "group": "Browser components",
+      "ranges": [
+        [
+          0,
+          14
+        ],
+        [
+          14,
+          32
+        ]
+      ]
+    },
+    {
+      "base": "gallery-22-state-00-increased-extralarge",
+      "label": "Tab Row",
+      "state": "default",
+      "group": "Browser components",
+      "ranges": [
+        [
+          0,
+          13
+        ],
+        [
+          13,
+          29
+        ],
+        [
+          29,
+          32
+        ]
+      ]
+    },
+    {
+      "base": "gallery-23-state-00-standard-small",
+      "label": "Library row",
+      "state": "default",
+      "group": "Browser components",
+      "ranges": [
+        [
+          0,
+          9
+        ]
+      ]
+    },
+    {
+      "base": "gallery-23-state-00-standard-normal",
+      "label": "Library row",
+      "state": "default",
+      "group": "Browser components",
+      "ranges": [
+        [
+          0,
+          9
+        ]
+      ]
+    },
+    {
+      "base": "gallery-23-state-00-standard-extralarge",
+      "label": "Library row",
+      "state": "default",
+      "group": "Browser components",
+      "ranges": [
+        [
+          0,
+          9
+        ]
+      ]
+    },
+    {
+      "base": "gallery-23-state-00-increased-small",
+      "label": "Library row",
+      "state": "default",
+      "group": "Browser components",
+      "ranges": [
+        [
+          0,
+          9
+        ]
+      ]
+    },
+    {
+      "base": "gallery-23-state-00-increased-normal",
+      "label": "Library row",
+      "state": "default",
+      "group": "Browser components",
+      "ranges": [
+        [
+          0,
+          9
+        ]
+      ]
+    },
+    {
+      "base": "gallery-23-state-00-increased-extralarge",
+      "label": "Library row",
+      "state": "default",
+      "group": "Browser components",
+      "ranges": [
+        [
+          0,
+          9
+        ]
+      ]
+    },
+    {
+      "base": "gallery-23-state-01-standard-small",
+      "label": "Library row",
+      "state": "selected",
+      "group": "Browser components",
+      "ranges": [
+        [
+          0,
+          9
+        ]
+      ]
+    },
+    {
+      "base": "gallery-23-state-01-standard-normal",
+      "label": "Library row",
+      "state": "selected",
+      "group": "Browser components",
+      "ranges": [
+        [
+          0,
+          9
+        ]
+      ]
+    },
+    {
+      "base": "gallery-23-state-01-standard-extralarge",
+      "label": "Library row",
+      "state": "selected",
+      "group": "Browser components",
+      "ranges": [
+        [
+          0,
+          9
+        ]
+      ]
+    },
+    {
+      "base": "gallery-23-state-01-increased-small",
+      "label": "Library row",
+      "state": "selected",
+      "group": "Browser components",
+      "ranges": [
+        [
+          0,
+          9
+        ]
+      ]
+    },
+    {
+      "base": "gallery-23-state-01-increased-normal",
+      "label": "Library row",
+      "state": "selected",
+      "group": "Browser components",
+      "ranges": [
+        [
+          0,
+          9
+        ]
+      ]
+    },
+    {
+      "base": "gallery-23-state-01-increased-extralarge",
+      "label": "Library row",
+      "state": "selected",
+      "group": "Browser components",
+      "ranges": [
+        [
+          0,
+          9
+        ]
+      ]
+    },
+    {
+      "base": "gallery-23-state-02-standard-small",
+      "label": "Library row",
+      "state": "editing",
+      "group": "Browser components",
+      "ranges": [
+        [
+          0,
+          9
+        ]
+      ]
+    },
+    {
+      "base": "gallery-23-state-02-standard-normal",
+      "label": "Library row",
+      "state": "editing",
+      "group": "Browser components",
+      "ranges": [
+        [
+          0,
+          9
+        ]
+      ]
+    },
+    {
+      "base": "gallery-23-state-02-standard-extralarge",
+      "label": "Library row",
+      "state": "editing",
+      "group": "Browser components",
+      "ranges": [
+        [
+          0,
+          9
+        ]
+      ]
+    },
+    {
+      "base": "gallery-23-state-02-increased-small",
+      "label": "Library row",
+      "state": "editing",
+      "group": "Browser components",
+      "ranges": [
+        [
+          0,
+          9
+        ]
+      ]
+    },
+    {
+      "base": "gallery-23-state-02-increased-normal",
+      "label": "Library row",
+      "state": "editing",
+      "group": "Browser components",
+      "ranges": [
+        [
+          0,
+          9
+        ]
+      ]
+    },
+    {
+      "base": "gallery-23-state-02-increased-extralarge",
+      "label": "Library row",
+      "state": "editing",
+      "group": "Browser components",
+      "ranges": [
+        [
+          0,
+          9
+        ]
+      ]
+    },
+    {
+      "base": "gallery-24-state-00-standard-small",
+      "label": "Library collection row",
+      "state": "default",
+      "group": "Browser components",
+      "ranges": [
+        [
+          0,
+          4
+        ]
+      ]
+    },
+    {
+      "base": "gallery-24-state-00-standard-normal",
+      "label": "Library collection row",
+      "state": "default",
+      "group": "Browser components",
+      "ranges": [
+        [
+          0,
+          4
+        ]
+      ]
+    },
+    {
+      "base": "gallery-24-state-00-standard-extralarge",
+      "label": "Library collection row",
+      "state": "default",
+      "group": "Browser components",
+      "ranges": [
+        [
+          0,
+          4
+        ]
+      ]
+    },
+    {
+      "base": "gallery-24-state-00-increased-small",
+      "label": "Library collection row",
+      "state": "default",
+      "group": "Browser components",
+      "ranges": [
+        [
+          0,
+          4
+        ]
+      ]
+    },
+    {
+      "base": "gallery-24-state-00-increased-normal",
+      "label": "Library collection row",
+      "state": "default",
+      "group": "Browser components",
+      "ranges": [
+        [
+          0,
+          4
+        ]
+      ]
+    },
+    {
+      "base": "gallery-24-state-00-increased-extralarge",
+      "label": "Library collection row",
+      "state": "default",
+      "group": "Browser components",
+      "ranges": [
+        [
+          0,
+          4
+        ]
+      ]
+    },
+    {
+      "base": "gallery-25-state-00-standard-small",
+      "label": "Library search",
+      "state": "empty",
+      "group": "Browser components",
+      "ranges": [
+        [
+          0,
+          5
+        ]
+      ]
+    },
+    {
+      "base": "gallery-25-state-00-standard-normal",
+      "label": "Library search",
+      "state": "empty",
+      "group": "Browser components",
+      "ranges": [
+        [
+          0,
+          5
+        ]
+      ]
+    },
+    {
+      "base": "gallery-25-state-00-standard-extralarge",
+      "label": "Library search",
+      "state": "empty",
+      "group": "Browser components",
+      "ranges": [
+        [
+          0,
+          5
+        ]
+      ]
+    },
+    {
+      "base": "gallery-25-state-00-increased-small",
+      "label": "Library search",
+      "state": "empty",
+      "group": "Browser components",
+      "ranges": [
+        [
+          0,
+          5
+        ]
+      ]
+    },
+    {
+      "base": "gallery-25-state-00-increased-normal",
+      "label": "Library search",
+      "state": "empty",
+      "group": "Browser components",
+      "ranges": [
+        [
+          0,
+          5
+        ]
+      ]
+    },
+    {
+      "base": "gallery-25-state-00-increased-extralarge",
+      "label": "Library search",
+      "state": "empty",
+      "group": "Browser components",
+      "ranges": [
+        [
+          0,
+          5
+        ]
+      ]
+    },
+    {
+      "base": "gallery-25-state-01-standard-small",
+      "label": "Library search",
+      "state": "typed",
+      "group": "Browser components",
+      "ranges": [
+        [
+          0,
+          5
+        ]
+      ]
+    },
+    {
+      "base": "gallery-25-state-01-standard-normal",
+      "label": "Library search",
+      "state": "typed",
+      "group": "Browser components",
+      "ranges": [
+        [
+          0,
+          5
+        ]
+      ]
+    },
+    {
+      "base": "gallery-25-state-01-standard-extralarge",
+      "label": "Library search",
+      "state": "typed",
+      "group": "Browser components",
+      "ranges": [
+        [
+          0,
+          5
+        ]
+      ]
+    },
+    {
+      "base": "gallery-25-state-01-increased-small",
+      "label": "Library search",
+      "state": "typed",
+      "group": "Browser components",
+      "ranges": [
+        [
+          0,
+          5
+        ]
+      ]
+    },
+    {
+      "base": "gallery-25-state-01-increased-normal",
+      "label": "Library search",
+      "state": "typed",
+      "group": "Browser components",
+      "ranges": [
+        [
+          0,
+          5
+        ]
+      ]
+    },
+    {
+      "base": "gallery-25-state-01-increased-extralarge",
+      "label": "Library search",
+      "state": "typed",
+      "group": "Browser components",
+      "ranges": [
+        [
+          0,
+          5
+        ]
+      ]
+    },
+    {
+      "base": "gallery-25-state-02-standard-small",
+      "label": "Library search",
+      "state": "focused",
+      "group": "Browser components",
+      "ranges": [
+        [
+          0,
+          5
+        ]
+      ]
+    },
+    {
+      "base": "gallery-25-state-02-standard-normal",
+      "label": "Library search",
+      "state": "focused",
+      "group": "Browser components",
+      "ranges": [
+        [
+          0,
+          5
+        ]
+      ]
+    },
+    {
+      "base": "gallery-25-state-02-standard-extralarge",
+      "label": "Library search",
+      "state": "focused",
+      "group": "Browser components",
+      "ranges": [
+        [
+          0,
+          5
+        ]
+      ]
+    },
+    {
+      "base": "gallery-25-state-02-increased-small",
+      "label": "Library search",
+      "state": "focused",
+      "group": "Browser components",
+      "ranges": [
+        [
+          0,
+          5
+        ]
+      ]
+    },
+    {
+      "base": "gallery-25-state-02-increased-normal",
+      "label": "Library search",
+      "state": "focused",
+      "group": "Browser components",
+      "ranges": [
+        [
+          0,
+          5
+        ]
+      ]
+    },
+    {
+      "base": "gallery-25-state-02-increased-extralarge",
+      "label": "Library search",
+      "state": "focused",
+      "group": "Browser components",
+      "ranges": [
+        [
+          0,
+          5
+        ]
+      ]
+    },
+    {
+      "base": "gallery-26-state-00-standard-small",
+      "label": "Library sort",
+      "state": "default",
+      "group": "Browser components",
+      "ranges": [
+        [
+          0,
+          6
+        ]
+      ]
+    },
+    {
+      "base": "gallery-26-state-00-standard-normal",
+      "label": "Library sort",
+      "state": "default",
+      "group": "Browser components",
+      "ranges": [
+        [
+          0,
+          6
+        ]
+      ]
+    },
+    {
+      "base": "gallery-26-state-00-standard-extralarge",
+      "label": "Library sort",
+      "state": "default",
+      "group": "Browser components",
+      "ranges": [
+        [
+          0,
+          6
+        ]
+      ]
+    },
+    {
+      "base": "gallery-26-state-00-increased-small",
+      "label": "Library sort",
+      "state": "default",
+      "group": "Browser components",
+      "ranges": [
+        [
+          0,
+          6
+        ]
+      ]
+    },
+    {
+      "base": "gallery-26-state-00-increased-normal",
+      "label": "Library sort",
+      "state": "default",
+      "group": "Browser components",
+      "ranges": [
+        [
+          0,
+          6
+        ]
+      ]
+    },
+    {
+      "base": "gallery-26-state-00-increased-extralarge",
+      "label": "Library sort",
+      "state": "default",
+      "group": "Browser components",
+      "ranges": [
+        [
+          0,
+          6
+        ]
+      ]
+    },
+    {
+      "base": "gallery-27-state-00-standard-small",
+      "label": "Library count",
+      "state": "default",
+      "group": "Browser components",
+      "ranges": [
+        [
+          0,
+          5
+        ]
+      ]
+    },
+    {
+      "base": "gallery-27-state-00-standard-normal",
+      "label": "Library count",
+      "state": "default",
+      "group": "Browser components",
+      "ranges": [
+        [
+          0,
+          5
+        ]
+      ]
+    },
+    {
+      "base": "gallery-27-state-00-standard-extralarge",
+      "label": "Library count",
+      "state": "default",
+      "group": "Browser components",
+      "ranges": [
+        [
+          0,
+          5
+        ]
+      ]
+    },
+    {
+      "base": "gallery-27-state-00-increased-small",
+      "label": "Library count",
+      "state": "default",
+      "group": "Browser components",
+      "ranges": [
+        [
+          0,
+          5
+        ]
+      ]
+    },
+    {
+      "base": "gallery-27-state-00-increased-normal",
+      "label": "Library count",
+      "state": "default",
+      "group": "Browser components",
+      "ranges": [
+        [
+          0,
+          5
+        ]
+      ]
+    },
+    {
+      "base": "gallery-27-state-00-increased-extralarge",
+      "label": "Library count",
+      "state": "default",
+      "group": "Browser components",
+      "ranges": [
+        [
+          0,
+          5
+        ]
+      ]
+    },
+    {
+      "base": "gallery-28-state-00-standard-small",
+      "label": "Library remove confirm",
+      "state": "single",
+      "group": "Browser components",
+      "ranges": [
+        [
+          0,
+          4
+        ]
+      ]
+    },
+    {
+      "base": "gallery-28-state-00-standard-normal",
+      "label": "Library remove confirm",
+      "state": "single",
+      "group": "Browser components",
+      "ranges": [
+        [
+          0,
+          4
+        ]
+      ]
+    },
+    {
+      "base": "gallery-28-state-00-standard-extralarge",
+      "label": "Library remove confirm",
+      "state": "single",
+      "group": "Browser components",
+      "ranges": [
+        [
+          0,
+          4
+        ]
+      ]
+    },
+    {
+      "base": "gallery-28-state-00-increased-small",
+      "label": "Library remove confirm",
+      "state": "single",
+      "group": "Browser components",
+      "ranges": [
+        [
+          0,
+          4
+        ]
+      ]
+    },
+    {
+      "base": "gallery-28-state-00-increased-normal",
+      "label": "Library remove confirm",
+      "state": "single",
+      "group": "Browser components",
+      "ranges": [
+        [
+          0,
+          4
+        ]
+      ]
+    },
+    {
+      "base": "gallery-28-state-00-increased-extralarge",
+      "label": "Library remove confirm",
+      "state": "single",
+      "group": "Browser components",
+      "ranges": [
+        [
+          0,
+          4
+        ]
+      ]
+    },
+    {
+      "base": "gallery-28-state-01-standard-small",
+      "label": "Library remove confirm",
+      "state": "multi",
+      "group": "Browser components",
+      "ranges": [
+        [
+          0,
+          4
+        ]
+      ]
+    },
+    {
+      "base": "gallery-28-state-01-standard-normal",
+      "label": "Library remove confirm",
+      "state": "multi",
+      "group": "Browser components",
+      "ranges": [
+        [
+          0,
+          4
+        ]
+      ]
+    },
+    {
+      "base": "gallery-28-state-01-standard-extralarge",
+      "label": "Library remove confirm",
+      "state": "multi",
+      "group": "Browser components",
+      "ranges": [
+        [
+          0,
+          4
+        ]
+      ]
+    },
+    {
+      "base": "gallery-28-state-01-increased-small",
+      "label": "Library remove confirm",
+      "state": "multi",
+      "group": "Browser components",
+      "ranges": [
+        [
+          0,
+          4
+        ]
+      ]
+    },
+    {
+      "base": "gallery-28-state-01-increased-normal",
+      "label": "Library remove confirm",
+      "state": "multi",
+      "group": "Browser components",
+      "ranges": [
+        [
+          0,
+          4
+        ]
+      ]
+    },
+    {
+      "base": "gallery-28-state-01-increased-extralarge",
+      "label": "Library remove confirm",
+      "state": "multi",
+      "group": "Browser components",
+      "ranges": [
+        [
+          0,
+          4
+        ]
+      ]
+    },
+    {
+      "base": "gallery-29-state-00-standard-small",
+      "label": "Library state rows",
+      "state": "default",
+      "group": "Browser components",
+      "ranges": [
+        [
+          0,
+          7
+        ]
+      ]
+    },
+    {
+      "base": "gallery-29-state-00-standard-normal",
+      "label": "Library state rows",
+      "state": "default",
+      "group": "Browser components",
+      "ranges": [
+        [
+          0,
+          7
+        ]
+      ]
+    },
+    {
+      "base": "gallery-29-state-00-standard-extralarge",
+      "label": "Library state rows",
+      "state": "default",
+      "group": "Browser components",
+      "ranges": [
+        [
+          0,
+          7
+        ]
+      ]
+    },
+    {
+      "base": "gallery-29-state-00-increased-small",
+      "label": "Library state rows",
+      "state": "default",
+      "group": "Browser components",
+      "ranges": [
+        [
+          0,
+          7
+        ]
+      ]
+    },
+    {
+      "base": "gallery-29-state-00-increased-normal",
+      "label": "Library state rows",
+      "state": "default",
+      "group": "Browser components",
+      "ranges": [
+        [
+          0,
+          7
+        ]
+      ]
+    },
+    {
+      "base": "gallery-29-state-00-increased-extralarge",
+      "label": "Library state rows",
+      "state": "default",
+      "group": "Browser components",
+      "ranges": [
+        [
+          0,
+          7
+        ]
+      ]
+    },
+    {
+      "base": "gallery-30-state-00-standard-small",
+      "label": "Library",
+      "state": "empty",
+      "group": "Compositions",
+      "ranges": [
+        [
+          0,
+          4
+        ]
+      ]
+    },
+    {
+      "base": "gallery-30-state-00-standard-normal",
+      "label": "Library",
+      "state": "empty",
+      "group": "Compositions",
+      "ranges": [
+        [
+          0,
+          4
+        ]
+      ]
+    },
+    {
+      "base": "gallery-30-state-00-standard-extralarge",
+      "label": "Library",
+      "state": "empty",
+      "group": "Compositions",
+      "ranges": [
+        [
+          0,
+          4
+        ]
+      ]
+    },
+    {
+      "base": "gallery-30-state-00-increased-small",
+      "label": "Library",
+      "state": "empty",
+      "group": "Compositions",
+      "ranges": [
+        [
+          0,
+          4
+        ]
+      ]
+    },
+    {
+      "base": "gallery-30-state-00-increased-normal",
+      "label": "Library",
+      "state": "empty",
+      "group": "Compositions",
+      "ranges": [
+        [
+          0,
+          4
+        ]
+      ]
+    },
+    {
+      "base": "gallery-30-state-00-increased-extralarge",
+      "label": "Library",
+      "state": "empty",
+      "group": "Compositions",
+      "ranges": [
+        [
+          0,
+          4
+        ]
+      ]
+    },
+    {
+      "base": "gallery-30-state-01-standard-small",
+      "label": "Library",
+      "state": "loading",
+      "group": "Compositions",
+      "ranges": [
+        [
+          0,
+          4
+        ]
+      ]
+    },
+    {
+      "base": "gallery-30-state-01-standard-normal",
+      "label": "Library",
+      "state": "loading",
+      "group": "Compositions",
+      "ranges": [
+        [
+          0,
+          4
+        ]
+      ]
+    },
+    {
+      "base": "gallery-30-state-01-standard-extralarge",
+      "label": "Library",
+      "state": "loading",
+      "group": "Compositions",
+      "ranges": [
+        [
+          0,
+          4
+        ]
+      ]
+    },
+    {
+      "base": "gallery-30-state-01-increased-small",
+      "label": "Library",
+      "state": "loading",
+      "group": "Compositions",
+      "ranges": [
+        [
+          0,
+          4
+        ]
+      ]
+    },
+    {
+      "base": "gallery-30-state-01-increased-normal",
+      "label": "Library",
+      "state": "loading",
+      "group": "Compositions",
+      "ranges": [
+        [
+          0,
+          4
+        ]
+      ]
+    },
+    {
+      "base": "gallery-30-state-01-increased-extralarge",
+      "label": "Library",
+      "state": "loading",
+      "group": "Compositions",
+      "ranges": [
+        [
+          0,
+          4
+        ]
+      ]
+    },
+    {
+      "base": "gallery-30-state-02-standard-small",
+      "label": "Library",
+      "state": "populated",
+      "group": "Compositions",
+      "ranges": [
+        [
+          0,
+          4
+        ]
+      ]
+    },
+    {
+      "base": "gallery-30-state-02-standard-normal",
+      "label": "Library",
+      "state": "populated",
+      "group": "Compositions",
+      "ranges": [
+        [
+          0,
+          4
+        ]
+      ]
+    },
+    {
+      "base": "gallery-30-state-02-standard-extralarge",
+      "label": "Library",
+      "state": "populated",
+      "group": "Compositions",
+      "ranges": [
+        [
+          0,
+          4
+        ]
+      ]
+    },
+    {
+      "base": "gallery-30-state-02-increased-small",
+      "label": "Library",
+      "state": "populated",
+      "group": "Compositions",
+      "ranges": [
+        [
+          0,
+          4
+        ]
+      ]
+    },
+    {
+      "base": "gallery-30-state-02-increased-normal",
+      "label": "Library",
+      "state": "populated",
+      "group": "Compositions",
+      "ranges": [
+        [
+          0,
+          4
+        ]
+      ]
+    },
+    {
+      "base": "gallery-30-state-02-increased-extralarge",
+      "label": "Library",
+      "state": "populated",
+      "group": "Compositions",
+      "ranges": [
+        [
+          0,
+          4
+        ]
+      ]
+    },
+    {
+      "base": "gallery-30-state-03-standard-small",
+      "label": "Library",
+      "state": "no results",
+      "group": "Compositions",
+      "ranges": [
+        [
+          0,
+          4
+        ]
+      ]
+    },
+    {
+      "base": "gallery-30-state-03-standard-normal",
+      "label": "Library",
+      "state": "no results",
+      "group": "Compositions",
+      "ranges": [
+        [
+          0,
+          4
+        ]
+      ]
+    },
+    {
+      "base": "gallery-30-state-03-standard-extralarge",
+      "label": "Library",
+      "state": "no results",
+      "group": "Compositions",
+      "ranges": [
+        [
+          0,
+          4
+        ]
+      ]
+    },
+    {
+      "base": "gallery-30-state-03-increased-small",
+      "label": "Library",
+      "state": "no results",
+      "group": "Compositions",
+      "ranges": [
+        [
+          0,
+          4
+        ]
+      ]
+    },
+    {
+      "base": "gallery-30-state-03-increased-normal",
+      "label": "Library",
+      "state": "no results",
+      "group": "Compositions",
+      "ranges": [
+        [
+          0,
+          4
+        ]
+      ]
+    },
+    {
+      "base": "gallery-30-state-03-increased-extralarge",
+      "label": "Library",
+      "state": "no results",
+      "group": "Compositions",
+      "ranges": [
+        [
+          0,
+          4
+        ]
+      ]
+    },
+    {
+      "base": "gallery-30-state-04-standard-small",
+      "label": "Library",
+      "state": "selection",
+      "group": "Compositions",
+      "ranges": [
+        [
+          0,
+          4
+        ]
+      ]
+    },
+    {
+      "base": "gallery-30-state-04-standard-normal",
+      "label": "Library",
+      "state": "selection",
+      "group": "Compositions",
+      "ranges": [
+        [
+          0,
+          4
+        ]
+      ]
+    },
+    {
+      "base": "gallery-30-state-04-standard-extralarge",
+      "label": "Library",
+      "state": "selection",
+      "group": "Compositions",
+      "ranges": [
+        [
+          0,
+          4
+        ]
+      ]
+    },
+    {
+      "base": "gallery-30-state-04-increased-small",
+      "label": "Library",
+      "state": "selection",
+      "group": "Compositions",
+      "ranges": [
+        [
+          0,
+          4
+        ]
+      ]
+    },
+    {
+      "base": "gallery-30-state-04-increased-normal",
+      "label": "Library",
+      "state": "selection",
+      "group": "Compositions",
+      "ranges": [
+        [
+          0,
+          4
+        ]
+      ]
+    },
+    {
+      "base": "gallery-30-state-04-increased-extralarge",
+      "label": "Library",
+      "state": "selection",
+      "group": "Compositions",
+      "ranges": [
+        [
+          0,
+          4
+        ]
+      ]
+    },
+    {
+      "base": "gallery-30-state-05-standard-small",
+      "label": "Library",
+      "state": "multi",
+      "group": "Compositions",
+      "ranges": [
+        [
+          0,
+          4
+        ]
+      ]
+    },
+    {
+      "base": "gallery-30-state-05-standard-normal",
+      "label": "Library",
+      "state": "multi",
+      "group": "Compositions",
+      "ranges": [
+        [
+          0,
+          4
+        ]
+      ]
+    },
+    {
+      "base": "gallery-30-state-05-standard-extralarge",
+      "label": "Library",
+      "state": "multi",
+      "group": "Compositions",
+      "ranges": [
+        [
+          0,
+          4
+        ]
+      ]
+    },
+    {
+      "base": "gallery-30-state-05-increased-small",
+      "label": "Library",
+      "state": "multi",
+      "group": "Compositions",
+      "ranges": [
+        [
+          0,
+          4
+        ]
+      ]
+    },
+    {
+      "base": "gallery-30-state-05-increased-normal",
+      "label": "Library",
+      "state": "multi",
+      "group": "Compositions",
+      "ranges": [
+        [
+          0,
+          4
+        ]
+      ]
+    },
+    {
+      "base": "gallery-30-state-05-increased-extralarge",
+      "label": "Library",
+      "state": "multi",
+      "group": "Compositions",
+      "ranges": [
+        [
+          0,
+          4
+        ]
+      ]
+    },
+    {
+      "base": "gallery-30-state-06-standard-small",
+      "label": "Library",
+      "state": "destructive",
+      "group": "Compositions",
+      "ranges": [
+        [
+          0,
+          4
+        ]
+      ]
+    },
+    {
+      "base": "gallery-30-state-06-standard-normal",
+      "label": "Library",
+      "state": "destructive",
+      "group": "Compositions",
+      "ranges": [
+        [
+          0,
+          4
+        ]
+      ]
+    },
+    {
+      "base": "gallery-30-state-06-standard-extralarge",
+      "label": "Library",
+      "state": "destructive",
+      "group": "Compositions",
+      "ranges": [
+        [
+          0,
+          4
+        ]
+      ]
+    },
+    {
+      "base": "gallery-30-state-06-increased-small",
+      "label": "Library",
+      "state": "destructive",
+      "group": "Compositions",
+      "ranges": [
+        [
+          0,
+          4
+        ]
+      ]
+    },
+    {
+      "base": "gallery-30-state-06-increased-normal",
+      "label": "Library",
+      "state": "destructive",
+      "group": "Compositions",
+      "ranges": [
+        [
+          0,
+          4
+        ]
+      ]
+    },
+    {
+      "base": "gallery-30-state-06-increased-extralarge",
+      "label": "Library",
+      "state": "destructive",
+      "group": "Compositions",
+      "ranges": [
+        [
+          0,
+          4
+        ]
+      ]
+    },
+    {
+      "base": "gallery-30-state-07-standard-small",
+      "label": "Library",
+      "state": "long",
+      "group": "Compositions",
+      "ranges": [
+        [
+          0,
+          4
+        ]
+      ]
+    },
+    {
+      "base": "gallery-30-state-07-standard-normal",
+      "label": "Library",
+      "state": "long",
+      "group": "Compositions",
+      "ranges": [
+        [
+          0,
+          4
+        ]
+      ]
+    },
+    {
+      "base": "gallery-30-state-07-standard-extralarge",
+      "label": "Library",
+      "state": "long",
+      "group": "Compositions",
+      "ranges": [
+        [
+          0,
+          4
+        ]
+      ]
+    },
+    {
+      "base": "gallery-30-state-07-increased-small",
+      "label": "Library",
+      "state": "long",
+      "group": "Compositions",
+      "ranges": [
+        [
+          0,
+          4
+        ]
+      ]
+    },
+    {
+      "base": "gallery-30-state-07-increased-normal",
+      "label": "Library",
+      "state": "long",
+      "group": "Compositions",
+      "ranges": [
+        [
+          0,
+          4
+        ]
+      ]
+    },
+    {
+      "base": "gallery-30-state-07-increased-extralarge",
+      "label": "Library",
+      "state": "long",
+      "group": "Compositions",
+      "ranges": [
+        [
+          0,
+          4
+        ]
+      ]
+    },
+    {
+      "base": "gallery-30-state-08-standard-small",
+      "label": "Library",
+      "state": "missing favicon",
+      "group": "Compositions",
+      "ranges": [
+        [
+          0,
+          4
+        ]
+      ]
+    },
+    {
+      "base": "gallery-30-state-08-standard-normal",
+      "label": "Library",
+      "state": "missing favicon",
+      "group": "Compositions",
+      "ranges": [
+        [
+          0,
+          4
+        ]
+      ]
+    },
+    {
+      "base": "gallery-30-state-08-standard-extralarge",
+      "label": "Library",
+      "state": "missing favicon",
+      "group": "Compositions",
+      "ranges": [
+        [
+          0,
+          4
+        ]
+      ]
+    },
+    {
+      "base": "gallery-30-state-08-increased-small",
+      "label": "Library",
+      "state": "missing favicon",
+      "group": "Compositions",
+      "ranges": [
+        [
+          0,
+          4
+        ]
+      ]
+    },
+    {
+      "base": "gallery-30-state-08-increased-normal",
+      "label": "Library",
+      "state": "missing favicon",
+      "group": "Compositions",
+      "ranges": [
+        [
+          0,
+          4
+        ]
+      ]
+    },
+    {
+      "base": "gallery-30-state-08-increased-extralarge",
+      "label": "Library",
+      "state": "missing favicon",
+      "group": "Compositions",
+      "ranges": [
+        [
+          0,
+          4
+        ]
+      ]
+    },
+    {
+      "base": "gallery-30-state-09-standard-small",
+      "label": "Library",
+      "state": "large 1k",
+      "group": "Compositions",
+      "ranges": [
+        [
+          0,
+          4
+        ]
+      ]
+    },
+    {
+      "base": "gallery-30-state-09-standard-normal",
+      "label": "Library",
+      "state": "large 1k",
+      "group": "Compositions",
+      "ranges": [
+        [
+          0,
+          4
+        ]
+      ]
+    },
+    {
+      "base": "gallery-30-state-09-standard-extralarge",
+      "label": "Library",
+      "state": "large 1k",
+      "group": "Compositions",
+      "ranges": [
+        [
+          0,
+          4
+        ]
+      ]
+    },
+    {
+      "base": "gallery-30-state-09-increased-small",
+      "label": "Library",
+      "state": "large 1k",
+      "group": "Compositions",
+      "ranges": [
+        [
+          0,
+          4
+        ]
+      ]
+    },
+    {
+      "base": "gallery-30-state-09-increased-normal",
+      "label": "Library",
+      "state": "large 1k",
+      "group": "Compositions",
+      "ranges": [
+        [
+          0,
+          4
+        ]
+      ]
+    },
+    {
+      "base": "gallery-30-state-09-increased-extralarge",
+      "label": "Library",
+      "state": "large 1k",
+      "group": "Compositions",
+      "ranges": [
+        [
+          0,
+          4
+        ]
+      ]
+    },
+    {
+      "base": "gallery-30-state-10-standard-small",
+      "label": "Library",
+      "state": "rename",
+      "group": "Compositions",
+      "ranges": [
+        [
+          0,
+          4
+        ]
+      ]
+    },
+    {
+      "base": "gallery-30-state-10-standard-normal",
+      "label": "Library",
+      "state": "rename",
+      "group": "Compositions",
+      "ranges": [
+        [
+          0,
+          4
+        ]
+      ]
+    },
+    {
+      "base": "gallery-30-state-10-standard-extralarge",
+      "label": "Library",
+      "state": "rename",
+      "group": "Compositions",
+      "ranges": [
+        [
+          0,
+          4
+        ]
+      ]
+    },
+    {
+      "base": "gallery-30-state-10-increased-small",
+      "label": "Library",
+      "state": "rename",
+      "group": "Compositions",
+      "ranges": [
+        [
+          0,
+          4
+        ]
+      ]
+    },
+    {
+      "base": "gallery-30-state-10-increased-normal",
+      "label": "Library",
+      "state": "rename",
+      "group": "Compositions",
+      "ranges": [
+        [
+          0,
+          4
+        ]
+      ]
+    },
+    {
+      "base": "gallery-30-state-10-increased-extralarge",
+      "label": "Library",
+      "state": "rename",
+      "group": "Compositions",
+      "ranges": [
+        [
+          0,
+          4
+        ]
+      ]
+    },
+    {
+      "base": "gallery-31-state-00-standard-small",
+      "label": "Address control",
+      "state": "default",
+      "group": "Address / Input",
+      "ranges": [
+        [
+          0,
+          16
+        ]
+      ]
+    },
+    {
+      "base": "gallery-31-state-00-standard-normal",
+      "label": "Address control",
+      "state": "default",
+      "group": "Address / Input",
+      "ranges": [
+        [
+          0,
+          16
+        ]
+      ]
+    },
+    {
+      "base": "gallery-31-state-00-standard-extralarge",
+      "label": "Address control",
+      "state": "default",
+      "group": "Address / Input",
+      "ranges": [
+        [
+          0,
+          15
+        ],
+        [
+          15,
+          16
+        ]
+      ]
+    },
+    {
+      "base": "gallery-31-state-00-increased-small",
+      "label": "Address control",
+      "state": "default",
+      "group": "Address / Input",
+      "ranges": [
+        [
+          0,
+          16
+        ]
+      ]
+    },
+    {
+      "base": "gallery-31-state-00-increased-normal",
+      "label": "Address control",
+      "state": "default",
+      "group": "Address / Input",
+      "ranges": [
+        [
+          0,
+          16
+        ]
+      ]
+    },
+    {
+      "base": "gallery-31-state-00-increased-extralarge",
+      "label": "Address control",
+      "state": "default",
+      "group": "Address / Input",
+      "ranges": [
+        [
+          0,
+          15
+        ],
+        [
+          15,
+          16
+        ]
+      ]
+    },
+    {
+      "base": "gallery-32-state-00-standard-small",
+      "label": "Command staging",
+      "state": "default",
+      "group": "Address / Input",
+      "ranges": [
+        [
+          0,
+          12
+        ]
+      ]
+    },
+    {
+      "base": "gallery-32-state-00-standard-normal",
+      "label": "Command staging",
+      "state": "default",
+      "group": "Address / Input",
+      "ranges": [
+        [
+          0,
+          12
+        ]
+      ]
+    },
+    {
+      "base": "gallery-32-state-00-standard-extralarge",
+      "label": "Command staging",
+      "state": "default",
+      "group": "Address / Input",
+      "ranges": [
+        [
+          0,
+          12
+        ]
+      ]
+    },
+    {
+      "base": "gallery-32-state-00-increased-small",
+      "label": "Command staging",
+      "state": "default",
+      "group": "Address / Input",
+      "ranges": [
+        [
+          0,
+          12
+        ]
+      ]
+    },
+    {
+      "base": "gallery-32-state-00-increased-normal",
+      "label": "Command staging",
+      "state": "default",
+      "group": "Address / Input",
+      "ranges": [
+        [
+          0,
+          12
+        ]
+      ]
+    },
+    {
+      "base": "gallery-32-state-00-increased-extralarge",
+      "label": "Command staging",
+      "state": "default",
+      "group": "Address / Input",
+      "ranges": [
+        [
+          0,
+          12
+        ]
+      ]
+    },
+    {
+      "base": "gallery-33-state-00-standard-small",
+      "label": "Favorites grid",
+      "state": "default",
+      "group": "Sidebar components",
+      "ranges": [
+        [
+          0,
+          15
+        ],
+        [
+          15,
+          23
+        ]
+      ]
+    },
+    {
+      "base": "gallery-33-state-00-standard-normal",
+      "label": "Favorites grid",
+      "state": "default",
+      "group": "Sidebar components",
+      "ranges": [
+        [
+          0,
+          15
+        ],
+        [
+          15,
+          23
+        ]
+      ]
+    },
+    {
+      "base": "gallery-33-state-00-standard-extralarge",
+      "label": "Favorites grid",
+      "state": "default",
+      "group": "Sidebar components",
+      "ranges": [
+        [
+          0,
+          14
+        ],
+        [
+          14,
+          23
+        ]
+      ]
+    },
+    {
+      "base": "gallery-33-state-00-increased-small",
+      "label": "Favorites grid",
+      "state": "default",
+      "group": "Sidebar components",
+      "ranges": [
+        [
+          0,
+          15
+        ],
+        [
+          15,
+          23
+        ]
+      ]
+    },
+    {
+      "base": "gallery-33-state-00-increased-normal",
+      "label": "Favorites grid",
+      "state": "default",
+      "group": "Sidebar components",
+      "ranges": [
+        [
+          0,
+          15
+        ],
+        [
+          15,
+          23
+        ]
+      ]
+    },
+    {
+      "base": "gallery-33-state-00-increased-extralarge",
+      "label": "Favorites grid",
+      "state": "default",
+      "group": "Sidebar components",
+      "ranges": [
+        [
+          0,
+          14
+        ],
+        [
+          14,
+          23
+        ]
+      ]
+    },
+    {
+      "base": "gallery-34-state-00-standard-small",
+      "label": "Folders",
+      "state": "default",
+      "group": "Sidebar components",
+      "ranges": [
+        [
+          0,
+          15
+        ]
+      ]
+    },
+    {
+      "base": "gallery-34-state-00-standard-normal",
+      "label": "Folders",
+      "state": "default",
+      "group": "Sidebar components",
+      "ranges": [
+        [
+          0,
+          15
+        ]
+      ]
+    },
+    {
+      "base": "gallery-34-state-00-standard-extralarge",
+      "label": "Folders",
+      "state": "default",
+      "group": "Sidebar components",
+      "ranges": [
+        [
+          0,
+          12
+        ],
+        [
+          12,
+          15
+        ]
+      ]
+    },
+    {
+      "base": "gallery-34-state-00-increased-small",
+      "label": "Folders",
+      "state": "default",
+      "group": "Sidebar components",
+      "ranges": [
+        [
+          0,
+          15
+        ]
+      ]
+    },
+    {
+      "base": "gallery-34-state-00-increased-normal",
+      "label": "Folders",
+      "state": "default",
+      "group": "Sidebar components",
+      "ranges": [
+        [
+          0,
+          15
+        ]
+      ]
+    },
+    {
+      "base": "gallery-34-state-00-increased-extralarge",
+      "label": "Folders",
+      "state": "default",
+      "group": "Sidebar components",
+      "ranges": [
+        [
+          0,
+          12
+        ],
+        [
+          12,
+          15
+        ]
+      ]
+    },
+    {
+      "base": "gallery-35-state-00-standard-small",
+      "label": "Footer",
+      "state": "default",
+      "group": "Sidebar components",
+      "ranges": [
+        [
+          0,
+          20
+        ]
+      ]
+    },
+    {
+      "base": "gallery-35-state-00-standard-normal",
+      "label": "Footer",
+      "state": "default",
+      "group": "Sidebar components",
+      "ranges": [
+        [
+          0,
+          18
+        ],
+        [
+          18,
+          20
+        ]
+      ]
+    },
+    {
+      "base": "gallery-35-state-00-standard-extralarge",
+      "label": "Footer",
+      "state": "default",
+      "group": "Sidebar components",
+      "ranges": [
+        [
+          0,
+          15
+        ],
+        [
+          15,
+          20
+        ]
+      ]
+    },
+    {
+      "base": "gallery-35-state-00-increased-small",
+      "label": "Footer",
+      "state": "default",
+      "group": "Sidebar components",
+      "ranges": [
+        [
+          0,
+          20
+        ]
+      ]
+    },
+    {
+      "base": "gallery-35-state-00-increased-normal",
+      "label": "Footer",
+      "state": "default",
+      "group": "Sidebar components",
+      "ranges": [
+        [
+          0,
+          18
+        ],
+        [
+          18,
+          20
+        ]
+      ]
+    },
+    {
+      "base": "gallery-35-state-00-increased-extralarge",
+      "label": "Footer",
+      "state": "default",
+      "group": "Sidebar components",
+      "ranges": [
+        [
+          0,
+          15
+        ],
+        [
+          15,
+          20
+        ]
+      ]
+    },
+    {
+      "base": "gallery-36-state-00-standard-small",
+      "label": "Profile chip (S/N/XL)",
+      "state": "default",
+      "group": "Sidebar components",
+      "ranges": [
+        [
+          0,
+          18
+        ],
+        [
+          18,
+          20
+        ]
+      ]
+    },
+    {
+      "base": "gallery-36-state-00-standard-normal",
+      "label": "Profile chip (S/N/XL)",
+      "state": "default",
+      "group": "Sidebar components",
+      "ranges": [
+        [
+          0,
+          17
+        ],
+        [
+          17,
+          20
+        ]
+      ]
+    },
+    {
+      "base": "gallery-36-state-00-standard-extralarge",
+      "label": "Profile chip (S/N/XL)",
+      "state": "default",
+      "group": "Sidebar components",
+      "ranges": [
+        [
+          0,
+          17
+        ],
+        [
+          17,
+          20
+        ]
+      ]
+    },
+    {
+      "base": "gallery-36-state-00-increased-small",
+      "label": "Profile chip (S/N/XL)",
+      "state": "default",
+      "group": "Sidebar components",
+      "ranges": [
+        [
+          0,
+          18
+        ],
+        [
+          18,
+          20
+        ]
+      ]
+    },
+    {
+      "base": "gallery-36-state-00-increased-normal",
+      "label": "Profile chip (S/N/XL)",
+      "state": "default",
+      "group": "Sidebar components",
+      "ranges": [
+        [
+          0,
+          17
+        ],
+        [
+          17,
+          20
+        ]
+      ]
+    },
+    {
+      "base": "gallery-36-state-00-increased-extralarge",
+      "label": "Profile chip (S/N/XL)",
+      "state": "default",
+      "group": "Sidebar components",
+      "ranges": [
+        [
+          0,
+          17
+        ],
+        [
+          17,
+          20
+        ]
+      ]
+    },
+    {
+      "base": "gallery-37-state-00-standard-small",
+      "label": "Plus menu",
+      "state": "default",
+      "group": "Sidebar components",
+      "ranges": [
+        [
+          0,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-37-state-00-standard-normal",
+      "label": "Plus menu",
+      "state": "default",
+      "group": "Sidebar components",
+      "ranges": [
+        [
+          0,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-37-state-00-standard-extralarge",
+      "label": "Plus menu",
+      "state": "default",
+      "group": "Sidebar components",
+      "ranges": [
+        [
+          0,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-37-state-00-increased-small",
+      "label": "Plus menu",
+      "state": "default",
+      "group": "Sidebar components",
+      "ranges": [
+        [
+          0,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-37-state-00-increased-normal",
+      "label": "Plus menu",
+      "state": "default",
+      "group": "Sidebar components",
+      "ranges": [
+        [
+          0,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-37-state-00-increased-extralarge",
+      "label": "Plus menu",
+      "state": "default",
+      "group": "Sidebar components",
+      "ranges": [
+        [
+          0,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-38-state-00-standard-small",
+      "label": "Downloads panel",
+      "state": "default",
+      "group": "Downloads",
+      "ranges": [
+        [
+          0,
+          11
+        ],
+        [
+          11,
+          15
+        ],
+        [
+          15,
+          26
+        ],
+        [
+          26,
+          31
+        ]
+      ]
+    },
+    {
+      "base": "gallery-38-state-00-standard-normal",
+      "label": "Downloads panel",
+      "state": "default",
+      "group": "Downloads",
+      "ranges": [
+        [
+          0,
+          10
+        ],
+        [
+          10,
+          15
+        ],
+        [
+          15,
+          24
+        ],
+        [
+          24,
+          31
+        ]
+      ]
+    },
+    {
+      "base": "gallery-38-state-00-standard-extralarge",
+      "label": "Downloads panel",
+      "state": "default",
+      "group": "Downloads",
+      "ranges": [
+        [
+          0,
+          9
+        ],
+        [
+          9,
+          13
+        ],
+        [
+          13,
+          16
+        ],
+        [
+          16,
+          31
+        ]
+      ]
+    },
+    {
+      "base": "gallery-38-state-00-increased-small",
+      "label": "Downloads panel",
+      "state": "default",
+      "group": "Downloads",
+      "ranges": [
+        [
+          0,
+          11
+        ],
+        [
+          11,
+          15
+        ],
+        [
+          15,
+          26
+        ],
+        [
+          26,
+          31
+        ]
+      ]
+    },
+    {
+      "base": "gallery-38-state-00-increased-normal",
+      "label": "Downloads panel",
+      "state": "default",
+      "group": "Downloads",
+      "ranges": [
+        [
+          0,
+          10
+        ],
+        [
+          10,
+          15
+        ],
+        [
+          15,
+          24
+        ],
+        [
+          24,
+          31
+        ]
+      ]
+    },
+    {
+      "base": "gallery-38-state-00-increased-extralarge",
+      "label": "Downloads panel",
+      "state": "default",
+      "group": "Downloads",
+      "ranges": [
+        [
+          0,
+          9
+        ],
+        [
+          9,
+          13
+        ],
+        [
+          13,
+          16
+        ],
+        [
+          16,
+          31
+        ]
+      ]
+    },
+    {
+      "base": "gallery-39-state-00-standard-small",
+      "label": "Find bar",
+      "state": "default",
+      "group": "Find",
+      "ranges": [
+        [
+          0,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-39-state-00-standard-normal",
+      "label": "Find bar",
+      "state": "default",
+      "group": "Find",
+      "ranges": [
+        [
+          0,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-39-state-00-standard-extralarge",
+      "label": "Find bar",
+      "state": "default",
+      "group": "Find",
+      "ranges": [
+        [
+          0,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-39-state-00-increased-small",
+      "label": "Find bar",
+      "state": "default",
+      "group": "Find",
+      "ranges": [
+        [
+          0,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-39-state-00-increased-normal",
+      "label": "Find bar",
+      "state": "default",
+      "group": "Find",
+      "ranges": [
+        [
+          0,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-39-state-00-increased-extralarge",
+      "label": "Find bar",
+      "state": "default",
+      "group": "Find",
+      "ranges": [
+        [
+          0,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-40-state-00-standard-small",
+      "label": "Error surface",
+      "state": "default",
+      "group": "Error / Crash",
+      "ranges": [
+        [
+          0,
+          7
+        ],
+        [
+          7,
+          10
+        ],
+        [
+          10,
+          13
+        ],
+        [
+          13,
+          16
+        ],
+        [
+          16,
+          19
+        ],
+        [
+          19,
+          24
+        ]
+      ]
+    },
+    {
+      "base": "gallery-40-state-00-standard-normal",
+      "label": "Error surface",
+      "state": "default",
+      "group": "Error / Crash",
+      "ranges": [
+        [
+          0,
+          7
+        ],
+        [
+          7,
+          10
+        ],
+        [
+          10,
+          13
+        ],
+        [
+          13,
+          16
+        ],
+        [
+          16,
+          19
+        ],
+        [
+          19,
+          24
+        ]
+      ]
+    },
+    {
+      "base": "gallery-40-state-00-standard-extralarge",
+      "label": "Error surface",
+      "state": "default",
+      "group": "Error / Crash",
+      "ranges": [
+        [
+          0,
+          7
+        ],
+        [
+          7,
+          10
+        ],
+        [
+          10,
+          13
+        ],
+        [
+          13,
+          16
+        ],
+        [
+          16,
+          19
+        ],
+        [
+          19,
+          24
+        ]
+      ]
+    },
+    {
+      "base": "gallery-40-state-00-increased-small",
+      "label": "Error surface",
+      "state": "default",
+      "group": "Error / Crash",
+      "ranges": [
+        [
+          0,
+          7
+        ],
+        [
+          7,
+          10
+        ],
+        [
+          10,
+          13
+        ],
+        [
+          13,
+          16
+        ],
+        [
+          16,
+          19
+        ],
+        [
+          19,
+          24
+        ]
+      ]
+    },
+    {
+      "base": "gallery-40-state-00-increased-normal",
+      "label": "Error surface",
+      "state": "default",
+      "group": "Error / Crash",
+      "ranges": [
+        [
+          0,
+          7
+        ],
+        [
+          7,
+          10
+        ],
+        [
+          10,
+          13
+        ],
+        [
+          13,
+          16
+        ],
+        [
+          16,
+          19
+        ],
+        [
+          19,
+          24
+        ]
+      ]
+    },
+    {
+      "base": "gallery-40-state-00-increased-extralarge",
+      "label": "Error surface",
+      "state": "default",
+      "group": "Error / Crash",
+      "ranges": [
+        [
+          0,
+          7
+        ],
+        [
+          7,
+          10
+        ],
+        [
+          10,
+          13
+        ],
+        [
+          13,
+          16
+        ],
+        [
+          16,
+          19
+        ],
+        [
+          19,
+          24
+        ]
+      ]
+    },
+    {
+      "base": "gallery-41-state-00-standard-small",
+      "label": "Crash / Empty panes",
+      "state": "default",
+      "group": "Error / Crash",
+      "ranges": [
+        [
+          0,
+          8
+        ]
+      ]
+    },
+    {
+      "base": "gallery-41-state-00-standard-normal",
+      "label": "Crash / Empty panes",
+      "state": "default",
+      "group": "Error / Crash",
+      "ranges": [
+        [
+          0,
+          8
+        ]
+      ]
+    },
+    {
+      "base": "gallery-41-state-00-standard-extralarge",
+      "label": "Crash / Empty panes",
+      "state": "default",
+      "group": "Error / Crash",
+      "ranges": [
+        [
+          0,
+          8
+        ]
+      ]
+    },
+    {
+      "base": "gallery-41-state-00-increased-small",
+      "label": "Crash / Empty panes",
+      "state": "default",
+      "group": "Error / Crash",
+      "ranges": [
+        [
+          0,
+          8
+        ]
+      ]
+    },
+    {
+      "base": "gallery-41-state-00-increased-normal",
+      "label": "Crash / Empty panes",
+      "state": "default",
+      "group": "Error / Crash",
+      "ranges": [
+        [
+          0,
+          8
+        ]
+      ]
+    },
+    {
+      "base": "gallery-41-state-00-increased-extralarge",
+      "label": "Crash / Empty panes",
+      "state": "default",
+      "group": "Error / Crash",
+      "ranges": [
+        [
+          0,
+          8
+        ]
+      ]
+    },
+    {
+      "base": "gallery-42-state-00-standard-small",
+      "label": "Auth sheet",
+      "state": "default",
+      "group": "Auth",
+      "ranges": [
+        [
+          0,
+          8
+        ],
+        [
+          8,
+          11
+        ],
+        [
+          11,
+          17
+        ],
+        [
+          17,
+          18
+        ]
+      ]
+    },
+    {
+      "base": "gallery-42-state-00-standard-normal",
+      "label": "Auth sheet",
+      "state": "default",
+      "group": "Auth",
+      "ranges": [
+        [
+          0,
+          8
+        ],
+        [
+          8,
+          11
+        ],
+        [
+          11,
+          15
+        ],
+        [
+          15,
+          18
+        ]
+      ]
+    },
+    {
+      "base": "gallery-42-state-00-standard-extralarge",
+      "label": "Auth sheet",
+      "state": "default",
+      "group": "Auth",
+      "ranges": [
+        [
+          0,
+          8
+        ],
+        [
+          8,
+          10
+        ],
+        [
+          10,
+          12
+        ],
+        [
+          12,
+          18
+        ]
+      ]
+    },
+    {
+      "base": "gallery-42-state-00-increased-small",
+      "label": "Auth sheet",
+      "state": "default",
+      "group": "Auth",
+      "ranges": [
+        [
+          0,
+          8
+        ],
+        [
+          8,
+          11
+        ],
+        [
+          11,
+          17
+        ],
+        [
+          17,
+          18
+        ]
+      ]
+    },
+    {
+      "base": "gallery-42-state-00-increased-normal",
+      "label": "Auth sheet",
+      "state": "default",
+      "group": "Auth",
+      "ranges": [
+        [
+          0,
+          8
+        ],
+        [
+          8,
+          11
+        ],
+        [
+          11,
+          15
+        ],
+        [
+          15,
+          18
+        ]
+      ]
+    },
+    {
+      "base": "gallery-42-state-00-increased-extralarge",
+      "label": "Auth sheet",
+      "state": "default",
+      "group": "Auth",
+      "ranges": [
+        [
+          0,
+          8
+        ],
+        [
+          8,
+          10
+        ],
+        [
+          10,
+          12
+        ],
+        [
+          12,
+          18
+        ]
+      ]
+    },
+    {
+      "base": "gallery-43-state-00-standard-small",
+      "label": "Context menu",
+      "state": "default",
+      "group": "Context menu",
+      "ranges": [
+        [
+          0,
+          8
+        ],
+        [
+          8,
+          12
+        ],
+        [
+          12,
+          18
+        ]
+      ]
+    },
+    {
+      "base": "gallery-43-state-00-standard-normal",
+      "label": "Context menu",
+      "state": "default",
+      "group": "Context menu",
+      "ranges": [
+        [
+          0,
+          8
+        ],
+        [
+          8,
+          12
+        ],
+        [
+          12,
+          18
+        ]
+      ]
+    },
+    {
+      "base": "gallery-43-state-00-standard-extralarge",
+      "label": "Context menu",
+      "state": "default",
+      "group": "Context menu",
+      "ranges": [
+        [
+          0,
+          8
+        ],
+        [
+          8,
+          12
+        ],
+        [
+          12,
+          18
+        ]
+      ]
+    },
+    {
+      "base": "gallery-43-state-00-increased-small",
+      "label": "Context menu",
+      "state": "default",
+      "group": "Context menu",
+      "ranges": [
+        [
+          0,
+          8
+        ],
+        [
+          8,
+          12
+        ],
+        [
+          12,
+          18
+        ]
+      ]
+    },
+    {
+      "base": "gallery-43-state-00-increased-normal",
+      "label": "Context menu",
+      "state": "default",
+      "group": "Context menu",
+      "ranges": [
+        [
+          0,
+          8
+        ],
+        [
+          8,
+          12
+        ],
+        [
+          12,
+          18
+        ]
+      ]
+    },
+    {
+      "base": "gallery-43-state-00-increased-extralarge",
+      "label": "Context menu",
+      "state": "default",
+      "group": "Context menu",
+      "ranges": [
+        [
+          0,
+          8
+        ],
+        [
+          8,
+          12
+        ],
+        [
+          12,
+          18
+        ]
+      ]
+    },
+    {
+      "base": "gallery-44-state-00-standard-small",
+      "label": "Sidebar",
+      "state": "N open rail — full composition",
+      "group": "Sidebar composition",
+      "ranges": [
+        [
+          0,
+          8
+        ],
+        [
+          8,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-44-state-00-standard-normal",
+      "label": "Sidebar",
+      "state": "N open rail — full composition",
+      "group": "Sidebar composition",
+      "ranges": [
+        [
+          0,
+          8
+        ],
+        [
+          8,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-44-state-00-standard-extralarge",
+      "label": "Sidebar",
+      "state": "N open rail — full composition",
+      "group": "Sidebar composition",
+      "ranges": [
+        [
+          0,
+          8
+        ],
+        [
+          8,
+          13
+        ],
+        [
+          13,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-44-state-00-increased-small",
+      "label": "Sidebar",
+      "state": "N open rail — full composition",
+      "group": "Sidebar composition",
+      "ranges": [
+        [
+          0,
+          8
+        ],
+        [
+          8,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-44-state-00-increased-normal",
+      "label": "Sidebar",
+      "state": "N open rail — full composition",
+      "group": "Sidebar composition",
+      "ranges": [
+        [
+          0,
+          8
+        ],
+        [
+          8,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-44-state-00-increased-extralarge",
+      "label": "Sidebar",
+      "state": "N open rail — full composition",
+      "group": "Sidebar composition",
+      "ranges": [
+        [
+          0,
+          8
+        ],
+        [
+          8,
+          13
+        ],
+        [
+          13,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-44-state-01-standard-small",
+      "label": "Sidebar",
+      "state": "S dense 500-tab windowed rail",
+      "group": "Sidebar composition",
+      "ranges": [
+        [
+          0,
+          8
+        ],
+        [
+          8,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-44-state-01-standard-normal",
+      "label": "Sidebar",
+      "state": "S dense 500-tab windowed rail",
+      "group": "Sidebar composition",
+      "ranges": [
+        [
+          0,
+          8
+        ],
+        [
+          8,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-44-state-01-standard-extralarge",
+      "label": "Sidebar",
+      "state": "S dense 500-tab windowed rail",
+      "group": "Sidebar composition",
+      "ranges": [
+        [
+          0,
+          8
+        ],
+        [
+          8,
+          13
+        ],
+        [
+          13,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-44-state-01-increased-small",
+      "label": "Sidebar",
+      "state": "S dense 500-tab windowed rail",
+      "group": "Sidebar composition",
+      "ranges": [
+        [
+          0,
+          8
+        ],
+        [
+          8,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-44-state-01-increased-normal",
+      "label": "Sidebar",
+      "state": "S dense 500-tab windowed rail",
+      "group": "Sidebar composition",
+      "ranges": [
+        [
+          0,
+          8
+        ],
+        [
+          8,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-44-state-01-increased-extralarge",
+      "label": "Sidebar",
+      "state": "S dense 500-tab windowed rail",
+      "group": "Sidebar composition",
+      "ranges": [
+        [
+          0,
+          8
+        ],
+        [
+          8,
+          13
+        ],
+        [
+          13,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-44-state-02-standard-small",
+      "label": "Sidebar",
+      "state": "compact window — content floor clamp",
+      "group": "Sidebar composition",
+      "ranges": [
+        [
+          0,
+          8
+        ],
+        [
+          8,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-44-state-02-standard-normal",
+      "label": "Sidebar",
+      "state": "compact window — content floor clamp",
+      "group": "Sidebar composition",
+      "ranges": [
+        [
+          0,
+          8
+        ],
+        [
+          8,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-44-state-02-standard-extralarge",
+      "label": "Sidebar",
+      "state": "compact window — content floor clamp",
+      "group": "Sidebar composition",
+      "ranges": [
+        [
+          0,
+          8
+        ],
+        [
+          8,
+          13
+        ],
+        [
+          13,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-44-state-02-increased-small",
+      "label": "Sidebar",
+      "state": "compact window — content floor clamp",
+      "group": "Sidebar composition",
+      "ranges": [
+        [
+          0,
+          8
+        ],
+        [
+          8,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-44-state-02-increased-normal",
+      "label": "Sidebar",
+      "state": "compact window — content floor clamp",
+      "group": "Sidebar composition",
+      "ranges": [
+        [
+          0,
+          8
+        ],
+        [
+          8,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-44-state-02-increased-extralarge",
+      "label": "Sidebar",
+      "state": "compact window — content floor clamp",
+      "group": "Sidebar composition",
+      "ranges": [
+        [
+          0,
+          8
+        ],
+        [
+          8,
+          13
+        ],
+        [
+          13,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-44-state-03-standard-small",
+      "label": "Sidebar",
+      "state": "wide rail — full 400 pt",
+      "group": "Sidebar composition",
+      "ranges": [
+        [
+          0,
+          8
+        ],
+        [
+          8,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-44-state-03-standard-normal",
+      "label": "Sidebar",
+      "state": "wide rail — full 400 pt",
+      "group": "Sidebar composition",
+      "ranges": [
+        [
+          0,
+          8
+        ],
+        [
+          8,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-44-state-03-standard-extralarge",
+      "label": "Sidebar",
+      "state": "wide rail — full 400 pt",
+      "group": "Sidebar composition",
+      "ranges": [
+        [
+          0,
+          8
+        ],
+        [
+          8,
+          13
+        ],
+        [
+          13,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-44-state-03-increased-small",
+      "label": "Sidebar",
+      "state": "wide rail — full 400 pt",
+      "group": "Sidebar composition",
+      "ranges": [
+        [
+          0,
+          8
+        ],
+        [
+          8,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-44-state-03-increased-normal",
+      "label": "Sidebar",
+      "state": "wide rail — full 400 pt",
+      "group": "Sidebar composition",
+      "ranges": [
+        [
+          0,
+          8
+        ],
+        [
+          8,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-44-state-03-increased-extralarge",
+      "label": "Sidebar",
+      "state": "wide rail — full 400 pt",
+      "group": "Sidebar composition",
+      "ranges": [
+        [
+          0,
+          8
+        ],
+        [
+          8,
+          13
+        ],
+        [
+          13,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-44-state-04-standard-small",
+      "label": "Sidebar",
+      "state": "collapsed rail — width 0",
+      "group": "Sidebar composition",
+      "ranges": [
+        [
+          0,
+          8
+        ],
+        [
+          8,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-44-state-04-standard-normal",
+      "label": "Sidebar",
+      "state": "collapsed rail — width 0",
+      "group": "Sidebar composition",
+      "ranges": [
+        [
+          0,
+          8
+        ],
+        [
+          8,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-44-state-04-standard-extralarge",
+      "label": "Sidebar",
+      "state": "collapsed rail — width 0",
+      "group": "Sidebar composition",
+      "ranges": [
+        [
+          0,
+          8
+        ],
+        [
+          8,
+          13
+        ],
+        [
+          13,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-44-state-04-increased-small",
+      "label": "Sidebar",
+      "state": "collapsed rail — width 0",
+      "group": "Sidebar composition",
+      "ranges": [
+        [
+          0,
+          8
+        ],
+        [
+          8,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-44-state-04-increased-normal",
+      "label": "Sidebar",
+      "state": "collapsed rail — width 0",
+      "group": "Sidebar composition",
+      "ranges": [
+        [
+          0,
+          8
+        ],
+        [
+          8,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-44-state-04-increased-extralarge",
+      "label": "Sidebar",
+      "state": "collapsed rail — width 0",
+      "group": "Sidebar composition",
+      "ranges": [
+        [
+          0,
+          8
+        ],
+        [
+          8,
+          13
+        ],
+        [
+          13,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-44-state-05-standard-small",
+      "label": "Sidebar",
+      "state": "empty rail — no tabs/favorites/folders",
+      "group": "Sidebar composition",
+      "ranges": [
+        [
+          0,
+          8
+        ],
+        [
+          8,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-44-state-05-standard-normal",
+      "label": "Sidebar",
+      "state": "empty rail — no tabs/favorites/folders",
+      "group": "Sidebar composition",
+      "ranges": [
+        [
+          0,
+          8
+        ],
+        [
+          8,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-44-state-05-standard-extralarge",
+      "label": "Sidebar",
+      "state": "empty rail — no tabs/favorites/folders",
+      "group": "Sidebar composition",
+      "ranges": [
+        [
+          0,
+          8
+        ],
+        [
+          8,
+          13
+        ],
+        [
+          13,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-44-state-05-increased-small",
+      "label": "Sidebar",
+      "state": "empty rail — no tabs/favorites/folders",
+      "group": "Sidebar composition",
+      "ranges": [
+        [
+          0,
+          8
+        ],
+        [
+          8,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-44-state-05-increased-normal",
+      "label": "Sidebar",
+      "state": "empty rail — no tabs/favorites/folders",
+      "group": "Sidebar composition",
+      "ranges": [
+        [
+          0,
+          8
+        ],
+        [
+          8,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-44-state-05-increased-extralarge",
+      "label": "Sidebar",
+      "state": "empty rail — no tabs/favorites/folders",
+      "group": "Sidebar composition",
+      "ranges": [
+        [
+          0,
+          8
+        ],
+        [
+          8,
+          13
+        ],
+        [
+          13,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-44-state-06-standard-small",
+      "label": "Sidebar",
+      "state": "long-title + missing-icon rows",
+      "group": "Sidebar composition",
+      "ranges": [
+        [
+          0,
+          8
+        ],
+        [
+          8,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-44-state-06-standard-normal",
+      "label": "Sidebar",
+      "state": "long-title + missing-icon rows",
+      "group": "Sidebar composition",
+      "ranges": [
+        [
+          0,
+          8
+        ],
+        [
+          8,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-44-state-06-standard-extralarge",
+      "label": "Sidebar",
+      "state": "long-title + missing-icon rows",
+      "group": "Sidebar composition",
+      "ranges": [
+        [
+          0,
+          8
+        ],
+        [
+          8,
+          13
+        ],
+        [
+          13,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-44-state-06-increased-small",
+      "label": "Sidebar",
+      "state": "long-title + missing-icon rows",
+      "group": "Sidebar composition",
+      "ranges": [
+        [
+          0,
+          8
+        ],
+        [
+          8,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-44-state-06-increased-normal",
+      "label": "Sidebar",
+      "state": "long-title + missing-icon rows",
+      "group": "Sidebar composition",
+      "ranges": [
+        [
+          0,
+          8
+        ],
+        [
+          8,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-44-state-06-increased-extralarge",
+      "label": "Sidebar",
+      "state": "long-title + missing-icon rows",
+      "group": "Sidebar composition",
+      "ranges": [
+        [
+          0,
+          8
+        ],
+        [
+          8,
+          13
+        ],
+        [
+          13,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-44-state-07-standard-small",
+      "label": "Sidebar",
+      "state": "cross-profile — profile hint + strip identity",
+      "group": "Sidebar composition",
+      "ranges": [
+        [
+          0,
+          8
+        ],
+        [
+          8,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-44-state-07-standard-normal",
+      "label": "Sidebar",
+      "state": "cross-profile — profile hint + strip identity",
+      "group": "Sidebar composition",
+      "ranges": [
+        [
+          0,
+          8
+        ],
+        [
+          8,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-44-state-07-standard-extralarge",
+      "label": "Sidebar",
+      "state": "cross-profile — profile hint + strip identity",
+      "group": "Sidebar composition",
+      "ranges": [
+        [
+          0,
+          8
+        ],
+        [
+          8,
+          13
+        ],
+        [
+          13,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-44-state-07-increased-small",
+      "label": "Sidebar",
+      "state": "cross-profile — profile hint + strip identity",
+      "group": "Sidebar composition",
+      "ranges": [
+        [
+          0,
+          8
+        ],
+        [
+          8,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-44-state-07-increased-normal",
+      "label": "Sidebar",
+      "state": "cross-profile — profile hint + strip identity",
+      "group": "Sidebar composition",
+      "ranges": [
+        [
+          0,
+          8
+        ],
+        [
+          8,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-44-state-07-increased-extralarge",
+      "label": "Sidebar",
+      "state": "cross-profile — profile hint + strip identity",
+      "group": "Sidebar composition",
+      "ranges": [
+        [
+          0,
+          8
+        ],
+        [
+          8,
+          13
+        ],
+        [
+          13,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-44-state-08-standard-small",
+      "label": "Sidebar",
+      "state": "plus menu open — selection 1",
+      "group": "Sidebar composition",
+      "ranges": [
+        [
+          0,
+          8
+        ],
+        [
+          8,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-44-state-08-standard-normal",
+      "label": "Sidebar",
+      "state": "plus menu open — selection 1",
+      "group": "Sidebar composition",
+      "ranges": [
+        [
+          0,
+          8
+        ],
+        [
+          8,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-44-state-08-standard-extralarge",
+      "label": "Sidebar",
+      "state": "plus menu open — selection 1",
+      "group": "Sidebar composition",
+      "ranges": [
+        [
+          0,
+          8
+        ],
+        [
+          8,
+          13
+        ],
+        [
+          13,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-44-state-08-increased-small",
+      "label": "Sidebar",
+      "state": "plus menu open — selection 1",
+      "group": "Sidebar composition",
+      "ranges": [
+        [
+          0,
+          8
+        ],
+        [
+          8,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-44-state-08-increased-normal",
+      "label": "Sidebar",
+      "state": "plus menu open — selection 1",
+      "group": "Sidebar composition",
+      "ranges": [
+        [
+          0,
+          8
+        ],
+        [
+          8,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-44-state-08-increased-extralarge",
+      "label": "Sidebar",
+      "state": "plus menu open — selection 1",
+      "group": "Sidebar composition",
+      "ranges": [
+        [
+          0,
+          8
+        ],
+        [
+          8,
+          13
+        ],
+        [
+          13,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-44-state-09-standard-small",
+      "label": "Sidebar",
+      "state": "command staging + results child",
+      "group": "Sidebar composition",
+      "ranges": [
+        [
+          0,
+          8
+        ],
+        [
+          8,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-44-state-09-standard-normal",
+      "label": "Sidebar",
+      "state": "command staging + results child",
+      "group": "Sidebar composition",
+      "ranges": [
+        [
+          0,
+          8
+        ],
+        [
+          8,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-44-state-09-standard-extralarge",
+      "label": "Sidebar",
+      "state": "command staging + results child",
+      "group": "Sidebar composition",
+      "ranges": [
+        [
+          0,
+          8
+        ],
+        [
+          8,
+          13
+        ],
+        [
+          13,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-44-state-09-increased-small",
+      "label": "Sidebar",
+      "state": "command staging + results child",
+      "group": "Sidebar composition",
+      "ranges": [
+        [
+          0,
+          8
+        ],
+        [
+          8,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-44-state-09-increased-normal",
+      "label": "Sidebar",
+      "state": "command staging + results child",
+      "group": "Sidebar composition",
+      "ranges": [
+        [
+          0,
+          8
+        ],
+        [
+          8,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-44-state-09-increased-extralarge",
+      "label": "Sidebar",
+      "state": "command staging + results child",
+      "group": "Sidebar composition",
+      "ranges": [
+        [
+          0,
+          8
+        ],
+        [
+          8,
+          13
+        ],
+        [
+          13,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-44-state-10-standard-small",
+      "label": "Sidebar",
+      "state": "downloads panel child + running count",
+      "group": "Sidebar composition",
+      "ranges": [
+        [
+          0,
+          8
+        ],
+        [
+          8,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-44-state-10-standard-normal",
+      "label": "Sidebar",
+      "state": "downloads panel child + running count",
+      "group": "Sidebar composition",
+      "ranges": [
+        [
+          0,
+          8
+        ],
+        [
+          8,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-44-state-10-standard-extralarge",
+      "label": "Sidebar",
+      "state": "downloads panel child + running count",
+      "group": "Sidebar composition",
+      "ranges": [
+        [
+          0,
+          8
+        ],
+        [
+          8,
+          13
+        ],
+        [
+          13,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-44-state-10-increased-small",
+      "label": "Sidebar",
+      "state": "downloads panel child + running count",
+      "group": "Sidebar composition",
+      "ranges": [
+        [
+          0,
+          8
+        ],
+        [
+          8,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-44-state-10-increased-normal",
+      "label": "Sidebar",
+      "state": "downloads panel child + running count",
+      "group": "Sidebar composition",
+      "ranges": [
+        [
+          0,
+          8
+        ],
+        [
+          8,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-44-state-10-increased-extralarge",
+      "label": "Sidebar",
+      "state": "downloads panel child + running count",
+      "group": "Sidebar composition",
+      "ranges": [
+        [
+          0,
+          8
+        ],
+        [
+          8,
+          13
+        ],
+        [
+          13,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-44-state-11-standard-small",
+      "label": "Sidebar",
+      "state": "hover/pressed/focus/drag/key paths",
+      "group": "Sidebar composition",
+      "ranges": [
+        [
+          0,
+          8
+        ],
+        [
+          8,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-44-state-11-standard-normal",
+      "label": "Sidebar",
+      "state": "hover/pressed/focus/drag/key paths",
+      "group": "Sidebar composition",
+      "ranges": [
+        [
+          0,
+          8
+        ],
+        [
+          8,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-44-state-11-standard-extralarge",
+      "label": "Sidebar",
+      "state": "hover/pressed/focus/drag/key paths",
+      "group": "Sidebar composition",
+      "ranges": [
+        [
+          0,
+          8
+        ],
+        [
+          8,
+          13
+        ],
+        [
+          13,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-44-state-11-increased-small",
+      "label": "Sidebar",
+      "state": "hover/pressed/focus/drag/key paths",
+      "group": "Sidebar composition",
+      "ranges": [
+        [
+          0,
+          8
+        ],
+        [
+          8,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-44-state-11-increased-normal",
+      "label": "Sidebar",
+      "state": "hover/pressed/focus/drag/key paths",
+      "group": "Sidebar composition",
+      "ranges": [
+        [
+          0,
+          8
+        ],
+        [
+          8,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-44-state-11-increased-extralarge",
+      "label": "Sidebar",
+      "state": "hover/pressed/focus/drag/key paths",
+      "group": "Sidebar composition",
+      "ranges": [
+        [
+          0,
+          8
+        ],
+        [
+          8,
+          13
+        ],
+        [
+          13,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-44-state-12-standard-small",
+      "label": "Sidebar",
+      "state": "reduced-motion + increased contrast",
+      "group": "Sidebar composition",
+      "ranges": [
+        [
+          0,
+          8
+        ],
+        [
+          8,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-44-state-12-standard-normal",
+      "label": "Sidebar",
+      "state": "reduced-motion + increased contrast",
+      "group": "Sidebar composition",
+      "ranges": [
+        [
+          0,
+          8
+        ],
+        [
+          8,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-44-state-12-standard-extralarge",
+      "label": "Sidebar",
+      "state": "reduced-motion + increased contrast",
+      "group": "Sidebar composition",
+      "ranges": [
+        [
+          0,
+          8
+        ],
+        [
+          8,
+          13
+        ],
+        [
+          13,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-44-state-12-increased-small",
+      "label": "Sidebar",
+      "state": "reduced-motion + increased contrast",
+      "group": "Sidebar composition",
+      "ranges": [
+        [
+          0,
+          8
+        ],
+        [
+          8,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-44-state-12-increased-normal",
+      "label": "Sidebar",
+      "state": "reduced-motion + increased contrast",
+      "group": "Sidebar composition",
+      "ranges": [
+        [
+          0,
+          8
+        ],
+        [
+          8,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-44-state-12-increased-extralarge",
+      "label": "Sidebar",
+      "state": "reduced-motion + increased contrast",
+      "group": "Sidebar composition",
+      "ranges": [
+        [
+          0,
+          8
+        ],
+        [
+          8,
+          13
+        ],
+        [
+          13,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-44-state-13-standard-small",
+      "label": "Sidebar",
+      "state": "titlebar nav — full history + live session",
+      "group": "Sidebar composition",
+      "ranges": [
+        [
+          0,
+          8
+        ],
+        [
+          8,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-44-state-13-standard-normal",
+      "label": "Sidebar",
+      "state": "titlebar nav — full history + live session",
+      "group": "Sidebar composition",
+      "ranges": [
+        [
+          0,
+          8
+        ],
+        [
+          8,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-44-state-13-standard-extralarge",
+      "label": "Sidebar",
+      "state": "titlebar nav — full history + live session",
+      "group": "Sidebar composition",
+      "ranges": [
+        [
+          0,
+          8
+        ],
+        [
+          8,
+          13
+        ],
+        [
+          13,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-44-state-13-increased-small",
+      "label": "Sidebar",
+      "state": "titlebar nav — full history + live session",
+      "group": "Sidebar composition",
+      "ranges": [
+        [
+          0,
+          8
+        ],
+        [
+          8,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-44-state-13-increased-normal",
+      "label": "Sidebar",
+      "state": "titlebar nav — full history + live session",
+      "group": "Sidebar composition",
+      "ranges": [
+        [
+          0,
+          8
+        ],
+        [
+          8,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-44-state-13-increased-extralarge",
+      "label": "Sidebar",
+      "state": "titlebar nav — full history + live session",
+      "group": "Sidebar composition",
+      "ranges": [
+        [
+          0,
+          8
+        ],
+        [
+          8,
+          13
+        ],
+        [
+          13,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-44-state-14-standard-small",
+      "label": "Sidebar",
+      "state": "titlebar nav — no history, no live session",
+      "group": "Sidebar composition",
+      "ranges": [
+        [
+          0,
+          8
+        ],
+        [
+          8,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-44-state-14-standard-normal",
+      "label": "Sidebar",
+      "state": "titlebar nav — no history, no live session",
+      "group": "Sidebar composition",
+      "ranges": [
+        [
+          0,
+          8
+        ],
+        [
+          8,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-44-state-14-standard-extralarge",
+      "label": "Sidebar",
+      "state": "titlebar nav — no history, no live session",
+      "group": "Sidebar composition",
+      "ranges": [
+        [
+          0,
+          8
+        ],
+        [
+          8,
+          13
+        ],
+        [
+          13,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-44-state-14-increased-small",
+      "label": "Sidebar",
+      "state": "titlebar nav — no history, no live session",
+      "group": "Sidebar composition",
+      "ranges": [
+        [
+          0,
+          8
+        ],
+        [
+          8,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-44-state-14-increased-normal",
+      "label": "Sidebar",
+      "state": "titlebar nav — no history, no live session",
+      "group": "Sidebar composition",
+      "ranges": [
+        [
+          0,
+          8
+        ],
+        [
+          8,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-44-state-14-increased-extralarge",
+      "label": "Sidebar",
+      "state": "titlebar nav — no history, no live session",
+      "group": "Sidebar composition",
+      "ranges": [
+        [
+          0,
+          8
+        ],
+        [
+          8,
+          13
+        ],
+        [
+          13,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-44-state-15-standard-small",
+      "label": "Sidebar",
+      "state": "favorites drop band — empty grid during tab drag",
+      "group": "Sidebar composition",
+      "ranges": [
+        [
+          0,
+          8
+        ],
+        [
+          8,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-44-state-15-standard-normal",
+      "label": "Sidebar",
+      "state": "favorites drop band — empty grid during tab drag",
+      "group": "Sidebar composition",
+      "ranges": [
+        [
+          0,
+          8
+        ],
+        [
+          8,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-44-state-15-standard-extralarge",
+      "label": "Sidebar",
+      "state": "favorites drop band — empty grid during tab drag",
+      "group": "Sidebar composition",
+      "ranges": [
+        [
+          0,
+          8
+        ],
+        [
+          8,
+          13
+        ],
+        [
+          13,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-44-state-15-increased-small",
+      "label": "Sidebar",
+      "state": "favorites drop band — empty grid during tab drag",
+      "group": "Sidebar composition",
+      "ranges": [
+        [
+          0,
+          8
+        ],
+        [
+          8,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-44-state-15-increased-normal",
+      "label": "Sidebar",
+      "state": "favorites drop band — empty grid during tab drag",
+      "group": "Sidebar composition",
+      "ranges": [
+        [
+          0,
+          8
+        ],
+        [
+          8,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-44-state-15-increased-extralarge",
+      "label": "Sidebar",
+      "state": "favorites drop band — empty grid during tab drag",
+      "group": "Sidebar composition",
+      "ranges": [
+        [
+          0,
+          8
+        ],
+        [
+          8,
+          13
+        ],
+        [
+          13,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-45-state-00-standard-small",
+      "label": "Command palette / overlay",
+      "state": "closed / inactive — no surface",
+      "group": "Command composition",
+      "ranges": [
+        [
+          0,
+          12
+        ]
+      ]
+    },
+    {
+      "base": "gallery-45-state-00-standard-normal",
+      "label": "Command palette / overlay",
+      "state": "closed / inactive — no surface",
+      "group": "Command composition",
+      "ranges": [
+        [
+          0,
+          12
+        ]
+      ]
+    },
+    {
+      "base": "gallery-45-state-00-standard-extralarge",
+      "label": "Command palette / overlay",
+      "state": "closed / inactive — no surface",
+      "group": "Command composition",
+      "ranges": [
+        [
+          0,
+          12
+        ]
+      ]
+    },
+    {
+      "base": "gallery-45-state-00-increased-small",
+      "label": "Command palette / overlay",
+      "state": "closed / inactive — no surface",
+      "group": "Command composition",
+      "ranges": [
+        [
+          0,
+          12
+        ]
+      ]
+    },
+    {
+      "base": "gallery-45-state-00-increased-normal",
+      "label": "Command palette / overlay",
+      "state": "closed / inactive — no surface",
+      "group": "Command composition",
+      "ranges": [
+        [
+          0,
+          12
+        ]
+      ]
+    },
+    {
+      "base": "gallery-45-state-00-increased-extralarge",
+      "label": "Command palette / overlay",
+      "state": "closed / inactive — no surface",
+      "group": "Command composition",
+      "ranges": [
+        [
+          0,
+          12
+        ]
+      ]
+    },
+    {
+      "base": "gallery-45-state-01-standard-small",
+      "label": "Command palette / overlay",
+      "state": "centered palette — results (selected 1)",
+      "group": "Command composition",
+      "ranges": [
+        [
+          0,
+          12
+        ]
+      ]
+    },
+    {
+      "base": "gallery-45-state-01-standard-normal",
+      "label": "Command palette / overlay",
+      "state": "centered palette — results (selected 1)",
+      "group": "Command composition",
+      "ranges": [
+        [
+          0,
+          12
+        ]
+      ]
+    },
+    {
+      "base": "gallery-45-state-01-standard-extralarge",
+      "label": "Command palette / overlay",
+      "state": "centered palette — results (selected 1)",
+      "group": "Command composition",
+      "ranges": [
+        [
+          0,
+          12
+        ]
+      ]
+    },
+    {
+      "base": "gallery-45-state-01-increased-small",
+      "label": "Command palette / overlay",
+      "state": "centered palette — results (selected 1)",
+      "group": "Command composition",
+      "ranges": [
+        [
+          0,
+          12
+        ]
+      ]
+    },
+    {
+      "base": "gallery-45-state-01-increased-normal",
+      "label": "Command palette / overlay",
+      "state": "centered palette — results (selected 1)",
+      "group": "Command composition",
+      "ranges": [
+        [
+          0,
+          12
+        ]
+      ]
+    },
+    {
+      "base": "gallery-45-state-01-increased-extralarge",
+      "label": "Command palette / overlay",
+      "state": "centered palette — results (selected 1)",
+      "group": "Command composition",
+      "ranges": [
+        [
+          0,
+          12
+        ]
+      ]
+    },
+    {
+      "base": "gallery-45-state-02-standard-small",
+      "label": "Command palette / overlay",
+      "state": "centered palette — loading",
+      "group": "Command composition",
+      "ranges": [
+        [
+          0,
+          12
+        ]
+      ]
+    },
+    {
+      "base": "gallery-45-state-02-standard-normal",
+      "label": "Command palette / overlay",
+      "state": "centered palette — loading",
+      "group": "Command composition",
+      "ranges": [
+        [
+          0,
+          12
+        ]
+      ]
+    },
+    {
+      "base": "gallery-45-state-02-standard-extralarge",
+      "label": "Command palette / overlay",
+      "state": "centered palette — loading",
+      "group": "Command composition",
+      "ranges": [
+        [
+          0,
+          12
+        ]
+      ]
+    },
+    {
+      "base": "gallery-45-state-02-increased-small",
+      "label": "Command palette / overlay",
+      "state": "centered palette — loading",
+      "group": "Command composition",
+      "ranges": [
+        [
+          0,
+          12
+        ]
+      ]
+    },
+    {
+      "base": "gallery-45-state-02-increased-normal",
+      "label": "Command palette / overlay",
+      "state": "centered palette — loading",
+      "group": "Command composition",
+      "ranges": [
+        [
+          0,
+          12
+        ]
+      ]
+    },
+    {
+      "base": "gallery-45-state-02-increased-extralarge",
+      "label": "Command palette / overlay",
+      "state": "centered palette — loading",
+      "group": "Command composition",
+      "ranges": [
+        [
+          0,
+          12
+        ]
+      ]
+    },
+    {
+      "base": "gallery-45-state-03-standard-small",
+      "label": "Command palette / overlay",
+      "state": "centered palette — empty",
+      "group": "Command composition",
+      "ranges": [
+        [
+          0,
+          12
+        ]
+      ]
+    },
+    {
+      "base": "gallery-45-state-03-standard-normal",
+      "label": "Command palette / overlay",
+      "state": "centered palette — empty",
+      "group": "Command composition",
+      "ranges": [
+        [
+          0,
+          12
+        ]
+      ]
+    },
+    {
+      "base": "gallery-45-state-03-standard-extralarge",
+      "label": "Command palette / overlay",
+      "state": "centered palette — empty",
+      "group": "Command composition",
+      "ranges": [
+        [
+          0,
+          12
+        ]
+      ]
+    },
+    {
+      "base": "gallery-45-state-03-increased-small",
+      "label": "Command palette / overlay",
+      "state": "centered palette — empty",
+      "group": "Command composition",
+      "ranges": [
+        [
+          0,
+          12
+        ]
+      ]
+    },
+    {
+      "base": "gallery-45-state-03-increased-normal",
+      "label": "Command palette / overlay",
+      "state": "centered palette — empty",
+      "group": "Command composition",
+      "ranges": [
+        [
+          0,
+          12
+        ]
+      ]
+    },
+    {
+      "base": "gallery-45-state-03-increased-extralarge",
+      "label": "Command palette / overlay",
+      "state": "centered palette — empty",
+      "group": "Command composition",
+      "ranges": [
+        [
+          0,
+          12
+        ]
+      ]
+    },
+    {
+      "base": "gallery-45-state-04-standard-small",
+      "label": "Command palette / overlay",
+      "state": "centered palette — activation error",
+      "group": "Command composition",
+      "ranges": [
+        [
+          0,
+          12
+        ]
+      ]
+    },
+    {
+      "base": "gallery-45-state-04-standard-normal",
+      "label": "Command palette / overlay",
+      "state": "centered palette — activation error",
+      "group": "Command composition",
+      "ranges": [
+        [
+          0,
+          12
+        ]
+      ]
+    },
+    {
+      "base": "gallery-45-state-04-standard-extralarge",
+      "label": "Command palette / overlay",
+      "state": "centered palette — activation error",
+      "group": "Command composition",
+      "ranges": [
+        [
+          0,
+          12
+        ]
+      ]
+    },
+    {
+      "base": "gallery-45-state-04-increased-small",
+      "label": "Command palette / overlay",
+      "state": "centered palette — activation error",
+      "group": "Command composition",
+      "ranges": [
+        [
+          0,
+          12
+        ]
+      ]
+    },
+    {
+      "base": "gallery-45-state-04-increased-normal",
+      "label": "Command palette / overlay",
+      "state": "centered palette — activation error",
+      "group": "Command composition",
+      "ranges": [
+        [
+          0,
+          12
+        ]
+      ]
+    },
+    {
+      "base": "gallery-45-state-04-increased-extralarge",
+      "label": "Command palette / overlay",
+      "state": "centered palette — activation error",
+      "group": "Command composition",
+      "ranges": [
+        [
+          0,
+          12
+        ]
+      ]
+    },
+    {
+      "base": "gallery-45-state-05-standard-small",
+      "label": "Command palette / overlay",
+      "state": "anchored overlay — results (selected 0)",
+      "group": "Command composition",
+      "ranges": [
+        [
+          0,
+          12
+        ]
+      ]
+    },
+    {
+      "base": "gallery-45-state-05-standard-normal",
+      "label": "Command palette / overlay",
+      "state": "anchored overlay — results (selected 0)",
+      "group": "Command composition",
+      "ranges": [
+        [
+          0,
+          12
+        ]
+      ]
+    },
+    {
+      "base": "gallery-45-state-05-standard-extralarge",
+      "label": "Command palette / overlay",
+      "state": "anchored overlay — results (selected 0)",
+      "group": "Command composition",
+      "ranges": [
+        [
+          0,
+          12
+        ]
+      ]
+    },
+    {
+      "base": "gallery-45-state-05-increased-small",
+      "label": "Command palette / overlay",
+      "state": "anchored overlay — results (selected 0)",
+      "group": "Command composition",
+      "ranges": [
+        [
+          0,
+          12
+        ]
+      ]
+    },
+    {
+      "base": "gallery-45-state-05-increased-normal",
+      "label": "Command palette / overlay",
+      "state": "anchored overlay — results (selected 0)",
+      "group": "Command composition",
+      "ranges": [
+        [
+          0,
+          12
+        ]
+      ]
+    },
+    {
+      "base": "gallery-45-state-05-increased-extralarge",
+      "label": "Command palette / overlay",
+      "state": "anchored overlay — results (selected 0)",
+      "group": "Command composition",
+      "ranges": [
+        [
+          0,
+          12
+        ]
+      ]
+    },
+    {
+      "base": "gallery-45-state-06-standard-small",
+      "label": "Command palette / overlay",
+      "state": "anchored overlay — loading",
+      "group": "Command composition",
+      "ranges": [
+        [
+          0,
+          12
+        ]
+      ]
+    },
+    {
+      "base": "gallery-45-state-06-standard-normal",
+      "label": "Command palette / overlay",
+      "state": "anchored overlay — loading",
+      "group": "Command composition",
+      "ranges": [
+        [
+          0,
+          12
+        ]
+      ]
+    },
+    {
+      "base": "gallery-45-state-06-standard-extralarge",
+      "label": "Command palette / overlay",
+      "state": "anchored overlay — loading",
+      "group": "Command composition",
+      "ranges": [
+        [
+          0,
+          12
+        ]
+      ]
+    },
+    {
+      "base": "gallery-45-state-06-increased-small",
+      "label": "Command palette / overlay",
+      "state": "anchored overlay — loading",
+      "group": "Command composition",
+      "ranges": [
+        [
+          0,
+          12
+        ]
+      ]
+    },
+    {
+      "base": "gallery-45-state-06-increased-normal",
+      "label": "Command palette / overlay",
+      "state": "anchored overlay — loading",
+      "group": "Command composition",
+      "ranges": [
+        [
+          0,
+          12
+        ]
+      ]
+    },
+    {
+      "base": "gallery-45-state-06-increased-extralarge",
+      "label": "Command palette / overlay",
+      "state": "anchored overlay — loading",
+      "group": "Command composition",
+      "ranges": [
+        [
+          0,
+          12
+        ]
+      ]
+    },
+    {
+      "base": "gallery-45-state-07-standard-small",
+      "label": "Command palette / overlay",
+      "state": "anchored overlay — empty",
+      "group": "Command composition",
+      "ranges": [
+        [
+          0,
+          12
+        ]
+      ]
+    },
+    {
+      "base": "gallery-45-state-07-standard-normal",
+      "label": "Command palette / overlay",
+      "state": "anchored overlay — empty",
+      "group": "Command composition",
+      "ranges": [
+        [
+          0,
+          12
+        ]
+      ]
+    },
+    {
+      "base": "gallery-45-state-07-standard-extralarge",
+      "label": "Command palette / overlay",
+      "state": "anchored overlay — empty",
+      "group": "Command composition",
+      "ranges": [
+        [
+          0,
+          12
+        ]
+      ]
+    },
+    {
+      "base": "gallery-45-state-07-increased-small",
+      "label": "Command palette / overlay",
+      "state": "anchored overlay — empty",
+      "group": "Command composition",
+      "ranges": [
+        [
+          0,
+          12
+        ]
+      ]
+    },
+    {
+      "base": "gallery-45-state-07-increased-normal",
+      "label": "Command palette / overlay",
+      "state": "anchored overlay — empty",
+      "group": "Command composition",
+      "ranges": [
+        [
+          0,
+          12
+        ]
+      ]
+    },
+    {
+      "base": "gallery-45-state-07-increased-extralarge",
+      "label": "Command palette / overlay",
+      "state": "anchored overlay — empty",
+      "group": "Command composition",
+      "ranges": [
+        [
+          0,
+          12
+        ]
+      ]
+    },
+    {
+      "base": "gallery-45-state-08-standard-small",
+      "label": "Command palette / overlay",
+      "state": "anchored overlay — activation error",
+      "group": "Command composition",
+      "ranges": [
+        [
+          0,
+          12
+        ]
+      ]
+    },
+    {
+      "base": "gallery-45-state-08-standard-normal",
+      "label": "Command palette / overlay",
+      "state": "anchored overlay — activation error",
+      "group": "Command composition",
+      "ranges": [
+        [
+          0,
+          12
+        ]
+      ]
+    },
+    {
+      "base": "gallery-45-state-08-standard-extralarge",
+      "label": "Command palette / overlay",
+      "state": "anchored overlay — activation error",
+      "group": "Command composition",
+      "ranges": [
+        [
+          0,
+          12
+        ]
+      ]
+    },
+    {
+      "base": "gallery-45-state-08-increased-small",
+      "label": "Command palette / overlay",
+      "state": "anchored overlay — activation error",
+      "group": "Command composition",
+      "ranges": [
+        [
+          0,
+          12
+        ]
+      ]
+    },
+    {
+      "base": "gallery-45-state-08-increased-normal",
+      "label": "Command palette / overlay",
+      "state": "anchored overlay — activation error",
+      "group": "Command composition",
+      "ranges": [
+        [
+          0,
+          12
+        ]
+      ]
+    },
+    {
+      "base": "gallery-45-state-08-increased-extralarge",
+      "label": "Command palette / overlay",
+      "state": "anchored overlay — activation error",
+      "group": "Command composition",
+      "ranges": [
+        [
+          0,
+          12
+        ]
+      ]
+    },
+    {
+      "base": "gallery-45-state-09-standard-small",
+      "label": "Command palette / overlay",
+      "state": "centered palette — selected + destructive rows",
+      "group": "Command composition",
+      "ranges": [
+        [
+          0,
+          12
+        ]
+      ]
+    },
+    {
+      "base": "gallery-45-state-09-standard-normal",
+      "label": "Command palette / overlay",
+      "state": "centered palette — selected + destructive rows",
+      "group": "Command composition",
+      "ranges": [
+        [
+          0,
+          12
+        ]
+      ]
+    },
+    {
+      "base": "gallery-45-state-09-standard-extralarge",
+      "label": "Command palette / overlay",
+      "state": "centered palette — selected + destructive rows",
+      "group": "Command composition",
+      "ranges": [
+        [
+          0,
+          12
+        ]
+      ]
+    },
+    {
+      "base": "gallery-45-state-09-increased-small",
+      "label": "Command palette / overlay",
+      "state": "centered palette — selected + destructive rows",
+      "group": "Command composition",
+      "ranges": [
+        [
+          0,
+          12
+        ]
+      ]
+    },
+    {
+      "base": "gallery-45-state-09-increased-normal",
+      "label": "Command palette / overlay",
+      "state": "centered palette — selected + destructive rows",
+      "group": "Command composition",
+      "ranges": [
+        [
+          0,
+          12
+        ]
+      ]
+    },
+    {
+      "base": "gallery-45-state-09-increased-extralarge",
+      "label": "Command palette / overlay",
+      "state": "centered palette — selected + destructive rows",
+      "group": "Command composition",
+      "ranges": [
+        [
+          0,
+          12
+        ]
+      ]
+    },
+    {
+      "base": "gallery-45-state-10-standard-small",
+      "label": "Command palette / overlay",
+      "state": "anchored overlay — long-title truncation",
+      "group": "Command composition",
+      "ranges": [
+        [
+          0,
+          12
+        ]
+      ]
+    },
+    {
+      "base": "gallery-45-state-10-standard-normal",
+      "label": "Command palette / overlay",
+      "state": "anchored overlay — long-title truncation",
+      "group": "Command composition",
+      "ranges": [
+        [
+          0,
+          12
+        ]
+      ]
+    },
+    {
+      "base": "gallery-45-state-10-standard-extralarge",
+      "label": "Command palette / overlay",
+      "state": "anchored overlay — long-title truncation",
+      "group": "Command composition",
+      "ranges": [
+        [
+          0,
+          12
+        ]
+      ]
+    },
+    {
+      "base": "gallery-45-state-10-increased-small",
+      "label": "Command palette / overlay",
+      "state": "anchored overlay — long-title truncation",
+      "group": "Command composition",
+      "ranges": [
+        [
+          0,
+          12
+        ]
+      ]
+    },
+    {
+      "base": "gallery-45-state-10-increased-normal",
+      "label": "Command palette / overlay",
+      "state": "anchored overlay — long-title truncation",
+      "group": "Command composition",
+      "ranges": [
+        [
+          0,
+          12
+        ]
+      ]
+    },
+    {
+      "base": "gallery-45-state-10-increased-extralarge",
+      "label": "Command palette / overlay",
+      "state": "anchored overlay — long-title truncation",
+      "group": "Command composition",
+      "ranges": [
+        [
+          0,
+          12
+        ]
+      ]
+    },
+    {
+      "base": "gallery-45-state-11-standard-small",
+      "label": "Command palette / overlay",
+      "state": "centered palette — reduced-motion + increased contrast",
+      "group": "Command composition",
+      "ranges": [
+        [
+          0,
+          12
+        ]
+      ]
+    },
+    {
+      "base": "gallery-45-state-11-standard-normal",
+      "label": "Command palette / overlay",
+      "state": "centered palette — reduced-motion + increased contrast",
+      "group": "Command composition",
+      "ranges": [
+        [
+          0,
+          12
+        ]
+      ]
+    },
+    {
+      "base": "gallery-45-state-11-standard-extralarge",
+      "label": "Command palette / overlay",
+      "state": "centered palette — reduced-motion + increased contrast",
+      "group": "Command composition",
+      "ranges": [
+        [
+          0,
+          12
+        ]
+      ]
+    },
+    {
+      "base": "gallery-45-state-11-increased-small",
+      "label": "Command palette / overlay",
+      "state": "centered palette — reduced-motion + increased contrast",
+      "group": "Command composition",
+      "ranges": [
+        [
+          0,
+          12
+        ]
+      ]
+    },
+    {
+      "base": "gallery-45-state-11-increased-normal",
+      "label": "Command palette / overlay",
+      "state": "centered palette — reduced-motion + increased contrast",
+      "group": "Command composition",
+      "ranges": [
+        [
+          0,
+          12
+        ]
+      ]
+    },
+    {
+      "base": "gallery-45-state-11-increased-extralarge",
+      "label": "Command palette / overlay",
+      "state": "centered palette — reduced-motion + increased contrast",
+      "group": "Command composition",
+      "ranges": [
+        [
+          0,
+          12
+        ]
+      ]
+    },
+    {
+      "base": "gallery-46-state-00-standard-small",
+      "label": "Space configuration",
+      "state": "Fresh defaults",
+      "group": "Space configuration",
+      "ranges": [
+        [
+          0,
+          5
+        ],
+        [
+          5,
+          6
+        ]
+      ]
+    },
+    {
+      "base": "gallery-46-state-00-standard-normal",
+      "label": "Space configuration",
+      "state": "Fresh defaults",
+      "group": "Space configuration",
+      "ranges": [
+        [
+          0,
+          5
+        ],
+        [
+          5,
+          6
+        ]
+      ]
+    },
+    {
+      "base": "gallery-46-state-00-standard-extralarge",
+      "label": "Space configuration",
+      "state": "Fresh defaults",
+      "group": "Space configuration",
+      "ranges": [
+        [
+          0,
+          5
+        ],
+        [
+          5,
+          6
+        ]
+      ]
+    },
+    {
+      "base": "gallery-46-state-00-increased-small",
+      "label": "Space configuration",
+      "state": "Fresh defaults",
+      "group": "Space configuration",
+      "ranges": [
+        [
+          0,
+          5
+        ],
+        [
+          5,
+          6
+        ]
+      ]
+    },
+    {
+      "base": "gallery-46-state-00-increased-normal",
+      "label": "Space configuration",
+      "state": "Fresh defaults",
+      "group": "Space configuration",
+      "ranges": [
+        [
+          0,
+          5
+        ],
+        [
+          5,
+          6
+        ]
+      ]
+    },
+    {
+      "base": "gallery-46-state-00-increased-extralarge",
+      "label": "Space configuration",
+      "state": "Fresh defaults",
+      "group": "Space configuration",
+      "ranges": [
+        [
+          0,
+          5
+        ],
+        [
+          5,
+          6
+        ]
+      ]
+    },
+    {
+      "base": "gallery-46-state-01-standard-small",
+      "label": "Space configuration",
+      "state": "Emoji identity",
+      "group": "Space configuration",
+      "ranges": [
+        [
+          0,
+          5
+        ],
+        [
+          5,
+          6
+        ]
+      ]
+    },
+    {
+      "base": "gallery-46-state-01-standard-normal",
+      "label": "Space configuration",
+      "state": "Emoji identity",
+      "group": "Space configuration",
+      "ranges": [
+        [
+          0,
+          5
+        ],
+        [
+          5,
+          6
+        ]
+      ]
+    },
+    {
+      "base": "gallery-46-state-01-standard-extralarge",
+      "label": "Space configuration",
+      "state": "Emoji identity",
+      "group": "Space configuration",
+      "ranges": [
+        [
+          0,
+          5
+        ],
+        [
+          5,
+          6
+        ]
+      ]
+    },
+    {
+      "base": "gallery-46-state-01-increased-small",
+      "label": "Space configuration",
+      "state": "Emoji identity",
+      "group": "Space configuration",
+      "ranges": [
+        [
+          0,
+          5
+        ],
+        [
+          5,
+          6
+        ]
+      ]
+    },
+    {
+      "base": "gallery-46-state-01-increased-normal",
+      "label": "Space configuration",
+      "state": "Emoji identity",
+      "group": "Space configuration",
+      "ranges": [
+        [
+          0,
+          5
+        ],
+        [
+          5,
+          6
+        ]
+      ]
+    },
+    {
+      "base": "gallery-46-state-01-increased-extralarge",
+      "label": "Space configuration",
+      "state": "Emoji identity",
+      "group": "Space configuration",
+      "ranges": [
+        [
+          0,
+          5
+        ],
+        [
+          5,
+          6
+        ]
+      ]
+    },
+    {
+      "base": "gallery-46-state-02-standard-small",
+      "label": "Space configuration",
+      "state": "BBR glyph identity",
+      "group": "Space configuration",
+      "ranges": [
+        [
+          0,
+          5
+        ],
+        [
+          5,
+          6
+        ]
+      ]
+    },
+    {
+      "base": "gallery-46-state-02-standard-normal",
+      "label": "Space configuration",
+      "state": "BBR glyph identity",
+      "group": "Space configuration",
+      "ranges": [
+        [
+          0,
+          5
+        ],
+        [
+          5,
+          6
+        ]
+      ]
+    },
+    {
+      "base": "gallery-46-state-02-standard-extralarge",
+      "label": "Space configuration",
+      "state": "BBR glyph identity",
+      "group": "Space configuration",
+      "ranges": [
+        [
+          0,
+          5
+        ],
+        [
+          5,
+          6
+        ]
+      ]
+    },
+    {
+      "base": "gallery-46-state-02-increased-small",
+      "label": "Space configuration",
+      "state": "BBR glyph identity",
+      "group": "Space configuration",
+      "ranges": [
+        [
+          0,
+          5
+        ],
+        [
+          5,
+          6
+        ]
+      ]
+    },
+    {
+      "base": "gallery-46-state-02-increased-normal",
+      "label": "Space configuration",
+      "state": "BBR glyph identity",
+      "group": "Space configuration",
+      "ranges": [
+        [
+          0,
+          5
+        ],
+        [
+          5,
+          6
+        ]
+      ]
+    },
+    {
+      "base": "gallery-46-state-02-increased-extralarge",
+      "label": "Space configuration",
+      "state": "BBR glyph identity",
+      "group": "Space configuration",
+      "ranges": [
+        [
+          0,
+          5
+        ],
+        [
+          5,
+          6
+        ]
+      ]
+    },
+    {
+      "base": "gallery-46-state-03-standard-small",
+      "label": "Space configuration",
+      "state": "Renamed draft",
+      "group": "Space configuration",
+      "ranges": [
+        [
+          0,
+          5
+        ],
+        [
+          5,
+          6
+        ]
+      ]
+    },
+    {
+      "base": "gallery-46-state-03-standard-normal",
+      "label": "Space configuration",
+      "state": "Renamed draft",
+      "group": "Space configuration",
+      "ranges": [
+        [
+          0,
+          5
+        ],
+        [
+          5,
+          6
+        ]
+      ]
+    },
+    {
+      "base": "gallery-46-state-03-standard-extralarge",
+      "label": "Space configuration",
+      "state": "Renamed draft",
+      "group": "Space configuration",
+      "ranges": [
+        [
+          0,
+          5
+        ],
+        [
+          5,
+          6
+        ]
+      ]
+    },
+    {
+      "base": "gallery-46-state-03-increased-small",
+      "label": "Space configuration",
+      "state": "Renamed draft",
+      "group": "Space configuration",
+      "ranges": [
+        [
+          0,
+          5
+        ],
+        [
+          5,
+          6
+        ]
+      ]
+    },
+    {
+      "base": "gallery-46-state-03-increased-normal",
+      "label": "Space configuration",
+      "state": "Renamed draft",
+      "group": "Space configuration",
+      "ranges": [
+        [
+          0,
+          5
+        ],
+        [
+          5,
+          6
+        ]
+      ]
+    },
+    {
+      "base": "gallery-46-state-03-increased-extralarge",
+      "label": "Space configuration",
+      "state": "Renamed draft",
+      "group": "Space configuration",
+      "ranges": [
+        [
+          0,
+          5
+        ],
+        [
+          5,
+          6
+        ]
+      ]
+    },
+    {
+      "base": "gallery-47-state-00-standard-small",
+      "label": "Tab / Favorite menu",
+      "state": "default",
+      "group": "Tab / Favorite menu",
+      "ranges": [
+        [
+          0,
+          6
+        ],
+        [
+          6,
+          7
+        ],
+        [
+          7,
+          8
+        ],
+        [
+          8,
+          9
+        ],
+        [
+          9,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-47-state-00-standard-normal",
+      "label": "Tab / Favorite menu",
+      "state": "default",
+      "group": "Tab / Favorite menu",
+      "ranges": [
+        [
+          0,
+          6
+        ],
+        [
+          6,
+          7
+        ],
+        [
+          7,
+          8
+        ],
+        [
+          8,
+          9
+        ],
+        [
+          9,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-47-state-00-standard-extralarge",
+      "label": "Tab / Favorite menu",
+      "state": "default",
+      "group": "Tab / Favorite menu",
+      "ranges": [
+        [
+          0,
+          6
+        ],
+        [
+          6,
+          7
+        ],
+        [
+          7,
+          8
+        ],
+        [
+          8,
+          9
+        ],
+        [
+          9,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-47-state-00-increased-small",
+      "label": "Tab / Favorite menu",
+      "state": "default",
+      "group": "Tab / Favorite menu",
+      "ranges": [
+        [
+          0,
+          6
+        ],
+        [
+          6,
+          7
+        ],
+        [
+          7,
+          8
+        ],
+        [
+          8,
+          9
+        ],
+        [
+          9,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-47-state-00-increased-normal",
+      "label": "Tab / Favorite menu",
+      "state": "default",
+      "group": "Tab / Favorite menu",
+      "ranges": [
+        [
+          0,
+          6
+        ],
+        [
+          6,
+          7
+        ],
+        [
+          7,
+          8
+        ],
+        [
+          8,
+          9
+        ],
+        [
+          9,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-47-state-00-increased-extralarge",
+      "label": "Tab / Favorite menu",
+      "state": "default",
+      "group": "Tab / Favorite menu",
+      "ranges": [
+        [
+          0,
+          6
+        ],
+        [
+          6,
+          7
+        ],
+        [
+          7,
+          8
+        ],
+        [
+          8,
+          9
+        ],
+        [
+          9,
+          14
+        ]
+      ]
+    },
+    {
+      "base": "gallery-48-state-00-standard-small",
+      "label": "Page menu",
+      "state": "default",
+      "group": "Page menu composition",
+      "ranges": [
+        [
+          0,
+          6
+        ],
+        [
+          6,
+          7
+        ]
+      ]
+    },
+    {
+      "base": "gallery-48-state-00-standard-normal",
+      "label": "Page menu",
+      "state": "default",
+      "group": "Page menu composition",
+      "ranges": [
+        [
+          0,
+          6
+        ],
+        [
+          6,
+          7
+        ]
+      ]
+    },
+    {
+      "base": "gallery-48-state-00-standard-extralarge",
+      "label": "Page menu",
+      "state": "default",
+      "group": "Page menu composition",
+      "ranges": [
+        [
+          0,
+          6
+        ],
+        [
+          6,
+          7
+        ]
+      ]
+    },
+    {
+      "base": "gallery-48-state-00-increased-small",
+      "label": "Page menu",
+      "state": "default",
+      "group": "Page menu composition",
+      "ranges": [
+        [
+          0,
+          6
+        ],
+        [
+          6,
+          7
+        ]
+      ]
+    },
+    {
+      "base": "gallery-48-state-00-increased-normal",
+      "label": "Page menu",
+      "state": "default",
+      "group": "Page menu composition",
+      "ranges": [
+        [
+          0,
+          6
+        ],
+        [
+          6,
+          7
+        ]
+      ]
+    },
+    {
+      "base": "gallery-48-state-00-increased-extralarge",
+      "label": "Page menu",
+      "state": "default",
+      "group": "Page menu composition",
+      "ranges": [
+        [
+          0,
+          6
+        ],
+        [
+          6,
+          7
+        ]
+      ]
+    }
+  ]
+}

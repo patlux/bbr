@@ -93,6 +93,41 @@ The Rust-consumer/VM pilot, coverage/selection and full repeat evidence remain
 open. Self-review checked import hashes, immutable upstream authority, feature
 and dependency boundaries, old CLI adapter contracts, and no protected-file diff.
 
+### Recovered portable consumer checkpoint
+
+Recovered only committed Rust consumer files from `74b94eb07120ddb62e6dda5c7a935b2deaee21b1`
+through `/tmp/bbr-visual-consumer-source.6aogir`, with the current standalone
+manifest API and an independent lockfile. No stopped-lane working file was read.
+The consumer calls upstream Collection/acceptance, gate and process APIs; its
+page validator rejects missing/extra/duplicate/reordered pages and checks RGBA8
+and dimensions before identity-only renames. Historical catalogs remain an
+unaudited fixture contract, not current complete Gallery coverage.
+
+Both `produce` and `check` now fail closed before native builds/output while
+Tart is unwired. No environment-variable host bypass exists. Portable `doctor`
+remains available; the recovered environment probe is host-only and is not guest
+rendering evidence. Existing Python capture commands stay unexecuted and retain
+the documented no-host boundary; their removal waits for real VM parity.
+
+Fresh evidence: consumer 17/17 portable tests, strict all-target Clippy and fmt
+pass. Tests include real CLI explicit-only multi-suite acceptance, no writes on
+stale report/source or invalid selection, exact page-plan checks, cancellation
+on INT/TERM/HUP, descendant reaping before both leases release, and unwired
+native-entrypoint refusal. `just visual-test` now includes this consumer and
+passes alongside the unchanged upstream/Python fixture gates. Logs:
+`/tmp/bbr-visual-consumer-recovered-tests2.log`,
+`/tmp/bbr-visual-consumer-clippy.log`,
+`/tmp/bbr-visual-consumer-visual-test.log`. Clippy measured 24.90s; implementation
+and review wall time were not instrumented. Self-review inspected source export
+integrity, library authority, output guards, acceptance journals, no product graph
+or baseline changes and host refusal. No GUI, VM, performance or fresh pixel
+coverage evidence is claimed.
+
+Parallelism audit: only this local writer is authorized. Read-only discovery,
+selection/coverage contracts and VM adapter development are runnable; VM boot and
+the real Checkbox asset-source correction still await Patrick's two requested
+approvals. No workflow/subagent/new lane, foreign worktree change or push.
+
 ## Status vocabulary
 
 | Status | Meaning |

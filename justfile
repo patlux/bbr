@@ -349,6 +349,7 @@ visual_timeout := env_var_or_default("BBR_VISUAL_TIMEOUT", "60m")
 visual-test:
     timeout --kill-after=10s {{test_timeout}} python3 -m unittest discover -s scripts/visual -p 'test_*.py' -v
     timeout --kill-after=10s {{test_timeout}} mbx test --locked --manifest-path vendor/cargo-gpui-visual/Cargo.toml
+    timeout --kill-after=10s {{test_timeout}} mbx test --locked --offline --manifest-path scripts/visual/Cargo.toml
     timeout --kill-after=10s {{visual_timeout}} python3 scripts/visual/test_update_integration.py -v
 
 # All current snapshots: contracts, offscreen Gallery and native browser chrome.

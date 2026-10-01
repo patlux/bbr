@@ -1,0 +1,55 @@
+{
+  "schema": 1,
+  "snapshots": [
+    {
+      "base": "ordinary-full",
+      "label": "ordinary full",
+      "group": "Browser chrome",
+      "sequence": "ordinary",
+      "moment": "full",
+      "page": null,
+      "state": "required",
+      "reason": null
+    },
+    {
+      "base": "ordinary-rail",
+      "label": "ordinary rail",
+      "group": "Browser chrome",
+      "sequence": "ordinary",
+      "moment": "rail",
+      "page": null,
+      "state": "required",
+      "reason": null
+    },
+    {
+      "base": "representative-full",
+      "label": "representative full",
+      "group": "Browser chrome",
+      "sequence": "representative",
+      "moment": "full",
+      "page": null,
+      "state": "required",
+      "reason": null
+    },
+    {
+      "base": "representative-rail",
+      "label": "representative rail",
+      "group": "Browser chrome",
+      "sequence": "representative",
+      "moment": "rail",
+      "page": null,
+      "state": "required",
+      "reason": null
+    },
+    {
+      "base": "native-webkit-and-window-chrome",
+      "label": "Native webpage and AppKit pixels",
+      "group": "Scope exclusions",
+      "sequence": null,
+      "moment": null,
+      "page": null,
+      "state": "unsupported",
+      "reason": "Production chrome-only capture excludes WKWebView, AppKit traffic lights and portal child; no fabricated replacements."
+    }
+  ]
+}

@@ -23,6 +23,18 @@ product review remain open. A new tool/source/environment seal does not authoriz
 reference adoption. The current task is owned by the
 [visual tooling packet](roadmap/tasks/visual-snapshot-tooling.md).
 
+The separate Rust consumer foundation is restored under
+`/Users/patwoz/dev/Personal/macos/bbr/scripts/visual`. It calls the immutable
+library for Collection comparison, explicit acceptance, process cleanup and
+leases. Its `produce` and `check` commands deliberately fail before building or
+creating output until the Tart adapter is implemented; there is no host override.
+`doctor` is portable/read-only. The recovered `environment` command describes
+only the host and must not be used as guest rendering evidence. `just visual-test`
+includes its portable acceptance, page validation, cancellation and refusal tests.
+The recovered Gallery plan/catalog is a historical contract fixture, not a fresh
+registry, applicability, asset or nested-framing audit. No capture parity or
+Python cutover is claimed by this checkpoint.
+
 ## Capture contract
 
 `visual.toml` delegates PNG production to `scripts/visual/capture.py`. It builds
