@@ -22,7 +22,7 @@ Before implementation work:
 - Do not run a separate final-audit agent for every ordinary slice. Reserve full audit for phase closeout, high-risk architecture/security/isolation/native-boundary work, disputed evidence, or ambiguous recovery.
 - Exactly one writer may own a branch/worktree. Transfer ownership only after explicit settlement, stop, or user-authorized handoff naming the preserved state and new owner. Never inspect or mutate another writer's isolated worktree.
 - Roadmap phases are acceptance milestones, not a global serial lock. Independent bounded lanes may run in sibling worktrees only from a recorded clean base commit and only when their exclusive paths, shared integration points, and merge order are explicit. Shared contracts remain serial.
-- Use targeted tests while iterating. Run the affected real-app E2E and performance scenarios before an intermediate commit. Run the canonical sequential `just e2e` once after the complete slice is stable; run `just e2e-perf-full` at phase closeout or when canonical repeated evidence is required.
+- Use targeted tests while iterating. Run the affected real-app E2E and performance scenarios (in the Tart VM, see "E2E runs in the Tart VM") before an intermediate commit. Run the canonical sequential `just e2e-vm e2e` once after the complete slice is stable; run `just e2e-vm e2e-perf-full` at phase closeout or when canonical repeated evidence is required.
 - Never weaken tests, budgets, validators, architecture boundaries, or acceptance criteria to shorten the workflow. The optimization removes redundant orchestration and duplicate gates, not evidence.
 - Record a delivery ledger and measured timing where runtime evidence exists; label reconstructed timing as an estimate.
 
@@ -58,8 +58,9 @@ looking for the next:
   recheck lifecycle. Only the orchestrator commits, merges, and performs the
   serial integration kernel.
 - Implementation and non-GUI checks may run concurrently. Real-app GUI, E2E,
-  and performance gates remain host-exclusive through the repository GUI lock;
-  waiting for that lock is not lane inactivity.
+  and performance gates run in throwaway Tart VMs (`just e2e-vm`), one clone
+  per run, so they no longer contend for the host GUI lock; keep at most one
+  or two VM runs at a time. Waiting for a VM slot is not lane inactivity.
 - Use `homelab-llm/deepseek-v4-flash:high` explicitly for every implementation,
   review, remediation, research, and planning subagent. The orchestrator model
   is not delegated to subagents unless Patrick explicitly changes this rule.
@@ -116,6 +117,41 @@ Every new or changed browser feature must include automated real-app E2E coverag
 - Browser-behavior bugs require a real-app E2E regression test in addition to lower-level tests where useful.
 - Do not weaken assertions, validators, deadlines, or acceptance criteria to make a test pass.
 
+### E2E runs in the Tart VM, never on Patrick's desktop
+
+Patrick (2026-10-01): GUI tests on the host open windows and keep taking his
+keyboard focus. Run every real-app E2E, Gallery and performance recipe in a
+throwaway headless Tart macOS VM:
+
+```bash
+just e2e-vm e2e-shell-organize e2e-shell-persistence   # affected suites
+just e2e-vm e2e                                       # the whole `just e2e` sequence
+python3 scripts/e2e_vm.py e2e-shell-persistence --filter favicons
+```
+
+- `scripts/e2e_vm.py` builds the test executables on the host from the
+  current working tree (through mbx), clones `macos-27-golden-gate`, boots it
+  with `--no-graphics` on Tart NAT only (no bridge, no port forwarding,
+  key-only SSH with a per-run key), copies tree and executables in, runs
+  the recipes' executables in `just e2e` order, then deletes the clone and
+  the key. No window appears on the host. Exit status 0 only if every
+  executable passed; logs and `summary.log` are in
+  `/tmp/bbr-e2e-vm/run-<stamp>-<pid>/`.
+- The guest's own WindowServer session runs the suites, including the
+  shown-window and real-input suites; the default 3200×1800 display keeps
+  `e2e_windows` side by side. No host GUI lock is needed; parallel VM runs
+  each take 8 CPUs and 16 GiB, so keep at most one or two at a time.
+- Never run `just e2e-*`, `just e2e-perf*`, `just e2e-gallery` or
+  `cargo test … --ignored` GUI tests directly on the host unless Patrick
+  asks for a host run in the current request. Unit tests, Clippy and
+  `just verify` stay on the host.
+- Performance numbers from the VM are report-only (non-canonical); say so
+  in evidence. Canonical host performance evidence needs Patrick's go.
+- In the gates below, every `just e2e…` line means `just e2e-vm e2e…`.
+- If the VM cannot run (Tart, golden image, SSH or guest session failure),
+  report the blocker with `prepare.log`/`tart-run.log` instead of falling
+  back to the host.
+
 ### Required gates
 
 Use targeted feedback during implementation. Before an intermediate commit inside one exclusively owned slice, run the affected unit/contract tests, Clippy targets, real-app E2E suites, and optimized performance scenarios needed to prove that commit. Intermediate commits must remain coherent and must not claim roadmap completion.
@@ -125,17 +161,17 @@ Before marking a roadmap item complete or handing off a stable implementation sl
 ```bash
 just verify
 cargo clippy -p bbr --features testkit --all-targets -- -D warnings
-just e2e-<affected-suite>
-just e2e-perf          # when user-visible interaction or timing changed
-just e2e               # once after the complete slice is stable
+just e2e-vm e2e-<affected-suite>
+just e2e-vm e2e-perf   # when user-visible interaction or timing changed
+just e2e-vm e2e        # once after the complete slice is stable
 ```
 
 At phase closeout, run one clean full sequence:
 
 ```bash
 just verify
-just e2e
-just e2e-perf-full
+just e2e-vm e2e
+just e2e-vm e2e-perf-full
 just roadmap
 ```
 

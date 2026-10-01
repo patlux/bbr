@@ -60,7 +60,7 @@ ui-deps:
 
 script-tests:
     timeout --kill-after=10s {{test_timeout}} python3 -m unittest scripts/test_with_gui_lock.py scripts/test_check_roadmap.py scripts/test_check_ui_dependencies.py scripts/test_xcode_environment.py -v
-    timeout --kill-after=10s {{check_timeout}} python3 -m py_compile scripts/check_roadmap.py scripts/roadmap_validation_support.py scripts/test_check_roadmap.py scripts/check_ui_dependencies.py scripts/with_gui_lock.py scripts/test_with_gui_lock.py scripts/test_check_ui_dependencies.py scripts/test_xcode_environment.py
+    timeout --kill-after=10s {{check_timeout}} python3 -m py_compile scripts/check_roadmap.py scripts/roadmap_validation_support.py scripts/test_check_roadmap.py scripts/check_ui_dependencies.py scripts/with_gui_lock.py scripts/test_with_gui_lock.py scripts/test_check_ui_dependencies.py scripts/test_xcode_environment.py scripts/e2e_vm.py scripts/tart_vm.py
 
 e2e-smoke:
     DEVELOPER_DIR="{{xcode_developer_dir}}" {{gui_gate}} timeout --kill-after=10s {{e2e_timeout}} cargo test -p bbr --features testkit --test e2e_smoke -- --ignored --nocapture
@@ -329,6 +329,12 @@ e2e-gallery:
 # selector derives from the registry. Builds with mbx; retains the host GPU lock.
 gallery-capture story="all":
     timeout --kill-after=10s {{visual_timeout}} python3 scripts/visual/gallery.py --story {{quote(story)}}
+
+# Run E2E recipes in a throwaway headless Tart macOS VM, so no test window
+# takes the host's focus: `just e2e-vm e2e-shell-organize`, `just e2e-vm e2e`.
+# Builds on the host, runs in the clone, deletes it (scripts/e2e_vm.py).
+e2e-vm +recipes:
+    timeout --kill-after=30s {{run_timeout}} python3 scripts/e2e_vm.py {{recipes}}
 
 # GUI suites must stay sequential: parallel AppKit window resizing can make
 # one suite observe another suite's screen-clamped geometry.

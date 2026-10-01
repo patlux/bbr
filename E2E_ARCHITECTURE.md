@@ -1366,6 +1366,25 @@ from starting a second AppKit suite. `scripts/with_gui_lock.py` closes that gap:
 The gate serializes execution only; it does not alter fixtures, presentation
 milestones, samples, budgets, testkit transport, or product assertions.
 
+## 8b. Headless Tart VM runs (`just e2e-vm`)
+
+Host GUI suites open windows and take the user's keyboard focus, so agents
+run them in a throwaway Tart macOS VM (AGENTS.md, "E2E runs in the Tart
+VM"). `scripts/e2e_vm.py` reads the requested recipes' `cargo test` lines
+from the justfile, builds those executables on the host from the working
+tree (`--no-run --message-format=json`; the guest lacks the Xcode 27 Metal
+toolchain), and `scripts/tart_vm.py` clones `macos-27-golden-gate`, injects a
+per-run SSH key into the clone's offline Data volume and boots it with
+`--no-graphics` on Tart NAT (no bridge, no port forwarding). The tree and the
+executables are copied to the same absolute path in the guest because the
+executables carry `CARGO_BIN_EXE_bbr` and `CARGO_MANIFEST_DIR` as
+compile-time paths; the `/nix/store` libraries they link are realised in the
+guest first. Each executable runs with its recipe's test arguments (plus an
+optional `--filter`) in the guest's own auto-logged-in WindowServer session
+(3200×1800 so `e2e_windows` fits two windows side by side); the clone and
+the key are deleted afterwards. The exit status is nonzero when any
+executable fails. Performance results from the VM are report-only.
+
 ## 9. Commands (implemented)
 
 ```bash
