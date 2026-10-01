@@ -55,6 +55,55 @@ fn a_closed_pinned_tab_owns_no_session_and_reopens_its_pinned_url() {
     assert_eq!(snap.engine_sessions, 2);
 }
 
+/// Task packet `drag-back-out-of-pins`: a pinned row dropped into the
+/// regular region unpins in place — the live session stays, a closed row
+/// becomes an unloaded regular tab that owns no session yet.
+#[test]
+fn unpinning_to_a_position_keeps_the_session_and_lands_at_the_drop() {
+    let (c, h) = wired();
+    let mut c = c.borrow_mut();
+    open(&mut c, "https://mail.example");
+    open(&mut c, "https://chat.example");
+    open(&mut c, "https://news.example");
+    open(&mut c, "https://docs.example");
+    c.pin_tab(0).unwrap();
+    c.pin_tab(1).unwrap();
+    let mail_view = c.snapshot().tabs[0].web_view;
+    h.reset_ops();
+    // [mail, chat | news, docs] → mail between news and docs.
+    assert_eq!(
+        c.unpin_tab_to(0, 1).unwrap(),
+        ControllerEvent::TabUnpinned { index: 2 }
+    );
+    let snap = c.snapshot();
+    let urls: Vec<_> = snap.tabs.iter().map(|tab| tab.url.as_str()).collect();
+    assert_eq!(
+        urls,
+        [
+            "https://chat.example",
+            "https://news.example",
+            "https://mail.example",
+            "https://docs.example"
+        ]
+    );
+    assert!(!snap.tabs[2].pinned);
+    assert_eq!(snap.tabs[2].web_view, mail_view, "the session stays");
+    assert!(h.ops().is_empty(), "no engine operation: {:?}", h.ops());
+
+    // A closed pinned row unpins as an unloaded regular tab.
+    c.select_tab(1).unwrap();
+    c.close_tab(0).unwrap();
+    assert_eq!(c.snapshot().tabs[0].lifecycle, TabLifecycle::Closed);
+    c.unpin_tab_to(0, 0).unwrap();
+    let snap = c.snapshot();
+    assert_eq!(snap.tabs[0].url, "https://chat.example");
+    assert!(!snap.tabs[0].pinned);
+    assert_eq!(snap.tabs[0].lifecycle, TabLifecycle::Suspended);
+    assert_eq!(snap.tabs[0].web_view, None);
+    // A regular tab is not pinned: rejected whole.
+    assert!(c.unpin_tab_to(1, 0).is_err());
+}
+
 #[test]
 fn reopen_closed_tab_recreates_the_session_at_the_page_it_closed_on() {
     let (c, h) = wired();

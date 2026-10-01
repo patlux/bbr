@@ -77,6 +77,12 @@ impl BbrApp {
             crate::app::favorites_band::rect_anchor(self.drag_offer_rects.pin_offer.clone())
                 .into_any(),
         );
+        // Task packet `drag-back-out-of-pins`: the regular region begins
+        // below the New Tab row.
+        let new_tab_anchor = Some(
+            crate::app::favorites_band::rect_anchor(self.drag_offer_rects.new_tab.clone())
+                .into_any(),
+        );
         let drag_proxy_anchor = Some(
             crate::app::favorites_band::rect_anchor(self.drag_offer_rects.proxy.clone()).into_any(),
         );
@@ -121,6 +127,7 @@ impl BbrApp {
                 command_field_anchor: field_anchor,
                 favorites_band_anchor,
                 pin_offer_anchor,
+                new_tab_anchor,
                 drag_proxy_anchor,
                 folder_anchors,
                 row_anchors,

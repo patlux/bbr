@@ -91,6 +91,11 @@ pub enum DragTarget {
     /// A §11.11 folder row: move the dragged tab into that folder (a
     /// regular tab is pinned by the same transition).
     Folder { folder: FolderId },
+    /// The regular region, for a pinned row or a Favorite dragged back out
+    /// of the pinned area (task packet `drag-back-out-of-pins`): unpin the
+    /// dragged tab and insert it before the regular row at `slot` (tab
+    /// index; `slot == len` is the region's end).
+    Unpin { slot: usize },
 }
 
 /// One rendered space chip's visual span inside the strip (DESIGN.md
@@ -167,6 +172,14 @@ pub struct DragGeometry<'a> {
     /// when grouped pinned tabs render inside their folders instead. `None`
     /// means the pinned rows are exactly `0..pinned`.
     pub loose: Option<&'a [usize]>,
+    /// The rendered tab rows' rects keyed by tab index (loose pinned rows
+    /// and the regular window, recorded by their anchors). A drag back out
+    /// of the pinned area resolves its slot against them.
+    pub rows: &'a [(usize, DropRect)],
+    /// The window y where the regular region begins (the New Tab row's
+    /// bottom edge). `None` while unknown: a pinned row then stays inside
+    /// its region (pure list-math tests).
+    pub regular_top: Option<f32>,
 }
 
 /// Resolve the drag target for a source row and a pointer position.
@@ -197,10 +210,14 @@ pub struct DragGeometry<'a> {
 /// - The pointer over a §11.11 folder row's recorded rect targets that
 ///   folder (a drop moves the dragged tab into it).
 /// - A pointer outside the rail's x-span has no target.
+/// - A pinned source over the regular region (below the New Tab row)
+///   targets [`DragTarget::Unpin`] at the regular slot under the pointer:
+///   dragging a pinned row back among the regular tabs unpins it there.
 /// - The pointer over the tab list resolves to an insertion slot inside the
-///   source region. A slot outside the region (the pinned/regular boundary
-///   crossing) is illegal: the target clamps to the region edge so the tick
-///   renders there, but `valid` is false.
+///   source region. A regular row dragged above its region (into the
+///   pinned rows) is illegal: the target clamps to the region edge so the
+///   tick renders there, but `valid` is false — the ghost row is the way
+///   to pin.
 /// - A pointer above the tab list that is not over the favorites band (the
 ///   fixed chrome — command field, brand row, section labels, gaps) is
 ///   **no target**: the drop is rejected whole.
@@ -217,70 +234,22 @@ pub fn resolve_target(
     if geometry.len == 0 {
         return (None, false);
     }
+    if let Some(hit) = region_hit(pointer_x, pointer_y, geometry, true) {
+        return hit;
+    }
     let DragGeometry {
         pinned,
         len,
         pitch,
-        favorites_band,
-        pin_offer,
-        folders,
-        rail,
-        chips,
         loose,
+        ..
     } = *geometry;
-    // Blueprint D02: the rail is the drop surface; the page beside it is
-    // not (a pointer over the web view at a row's height drops nothing).
-    if let Some((left, right)) = rail {
-        if pointer_x < left || pointer_x >= right {
-            return (None, false);
+    // Task packet `drag-back-out-of-pins`: a pinned row dragged below the
+    // New Tab row is dropped among the regular tabs (it is unpinned there).
+    if source < pinned {
+        if let Some(slot) = regular_slot(pointer_y, geometry) {
+            return (Some(DragTarget::Unpin { slot }), true);
         }
-    }
-    // §11.3 drag-to-chip: the strip sits below the tab list in the footer;
-    // a pointer inside a rendered chip's span targets that exact persistent
-    // chip. The chip hit is absolute (window position), independent of the
-    // press anchor, so it is exact for the pointer's real position over the
-    // rendered strip.
-    for chip in chips {
-        if chip.contains(pointer_x, pointer_y) {
-            return (Some(DragTarget::Chip { space: chip.space }), true);
-        }
-    }
-    // The footer band (the strip's y-range) without a chip hit is **no
-    // target**: the fixed `[Downloads]`/`[+]` controls and the gaps between
-    // chips reject the drop whole. The strip band comes from the rendered
-    // chip spans (all chips share the strip row band); with no laid-out
-    // chip yet there is no footer evidence and the legacy list geometry
-    // applies.
-    if let Some(strip) = chips.first() {
-        if pointer_y >= strip.y_top && pointer_y < strip.y_bottom {
-            return (None, false);
-        }
-    }
-    // §11.10 drag-to-favorites: the favorites region's rendered drop band
-    // in absolute window-y coordinates (recorded by the production band
-    // anchor — the exact geometry the pointer enters). A pointer inside
-    // the band targets the grid; a drop toggles the dragged tab in/out of
-    // the window-global favorites. The band is hit by the pointer's
-    // absolute position, independent of the press anchor, so it lines up
-    // exactly with the rendered region (labels/gaps above the list never
-    // mis-target it).
-    if favorites_band.is_some_and(|band| band.contains(pointer_x, pointer_y)) {
-        return (Some(DragTarget::Favorites), true);
-    }
-    // §11.2 drag-to-pin: the ghost row the organized area appends while an
-    // unpinned tab is dragged, hit by its recorded absolute span. It is a
-    // region-level offer: a drop pins the tab at the end of the pinned
-    // block.
-    if pin_offer.is_some_and(|row| row.contains(pointer_x, pointer_y)) {
-        return (Some(DragTarget::PinOffer), true);
-    }
-    // §11.11 drag-to-folder: a pointer over a rendered folder row targets
-    // that folder; a drop moves the dragged tab into it.
-    if let Some((folder, _)) = folders
-        .iter()
-        .find(|(_, row)| row.contains(pointer_x, pointer_y))
-    {
-        return (Some(DragTarget::Folder { folder: *folder }), true);
     }
     // §11.11: a pinned source resolves among the rendered (loose) pinned
     // rows — grouped tabs render inside their folders — and the slot maps
@@ -336,6 +305,150 @@ pub fn resolve_target(
     }
 }
 
+/// The hits every drag shares, in precedence order: outside the rail (no
+/// target), a space chip, the footer strip band (no target), the Favorites
+/// band, the §11.2 ghost row and a §11.11 folder row. `favorites` is false
+/// for a Favorite's own drag: its grid is then no target. `None` when the
+/// pointer is over none of them (the tab list decides).
+fn region_hit(
+    pointer_x: f32,
+    pointer_y: f32,
+    geometry: &DragGeometry,
+    favorites: bool,
+) -> Option<(Option<DragTarget>, bool)> {
+    let DragGeometry {
+        favorites_band,
+        pin_offer,
+        folders,
+        rail,
+        chips,
+        ..
+    } = *geometry;
+    // Blueprint D02: the rail is the drop surface; the page beside it is
+    // not (a pointer over the web view at a row's height drops nothing).
+    if let Some((left, right)) = rail {
+        if pointer_x < left || pointer_x >= right {
+            return Some((None, false));
+        }
+    }
+    // §11.3 drag-to-chip: the strip sits below the tab list in the footer;
+    // a pointer inside a rendered chip's span targets that exact persistent
+    // chip. The chip hit is absolute (window position), independent of the
+    // press anchor, so it is exact for the pointer's real position over the
+    // rendered strip.
+    for chip in chips {
+        if chip.contains(pointer_x, pointer_y) {
+            return Some((Some(DragTarget::Chip { space: chip.space }), true));
+        }
+    }
+    // The footer band (the strip's y-range) without a chip hit is **no
+    // target**: the fixed `[Downloads]`/`[+]` controls and the gaps between
+    // chips reject the drop whole. The strip band comes from the rendered
+    // chip spans (all chips share the strip row band); with no laid-out
+    // chip yet there is no footer evidence and the legacy list geometry
+    // applies.
+    if let Some(strip) = chips.first() {
+        if pointer_y >= strip.y_top && pointer_y < strip.y_bottom {
+            return Some((None, false));
+        }
+    }
+    // §11.10 drag-to-favorites: the favorites region's rendered drop band
+    // in absolute window-y coordinates (recorded by the production band
+    // anchor — the exact geometry the pointer enters). A pointer inside
+    // the band targets the grid; a drop toggles the dragged tab in/out of
+    // the window-global favorites. The band is hit by the pointer's
+    // absolute position, independent of the press anchor, so it lines up
+    // exactly with the rendered region (labels/gaps above the list never
+    // mis-target it).
+    if favorites_band.is_some_and(|band| band.contains(pointer_x, pointer_y)) {
+        // A Favorite dragged over its own grid has nowhere to go there.
+        return Some(if favorites {
+            (Some(DragTarget::Favorites), true)
+        } else {
+            (None, false)
+        });
+    }
+    // §11.2 drag-to-pin: the ghost row the organized area appends while an
+    // unpinned tab is dragged, hit by its recorded absolute span. It is a
+    // region-level offer: a drop pins the tab at the end of the pinned
+    // block.
+    if pin_offer.is_some_and(|row| row.contains(pointer_x, pointer_y)) {
+        return Some((Some(DragTarget::PinOffer), true));
+    }
+    // §11.11 drag-to-folder: a pointer over a rendered folder row targets
+    // that folder; a drop moves the dragged tab into it.
+    if let Some((folder, _)) = folders
+        .iter()
+        .find(|(_, row)| row.contains(pointer_x, pointer_y))
+    {
+        return Some((Some(DragTarget::Folder { folder: *folder }), true));
+    }
+    None
+}
+
+/// Task packet `drag-back-out-of-pins`: the regular-region slot under the
+/// pointer for a pinned row or a Favorite dragged back out of the pinned
+/// area — `None` above the region (the New Tab row and everything over
+/// it). The slot is the first rendered regular row whose center lies below
+/// the pointer, else the end after the last rendered one (`len` for an
+/// empty region).
+fn regular_slot(pointer_y: f32, geometry: &DragGeometry) -> Option<usize> {
+    if pointer_y < geometry.regular_top? {
+        return None;
+    }
+    let mut rows: Vec<_> = geometry
+        .rows
+        .iter()
+        .filter(|(index, _)| *index >= geometry.pinned)
+        .collect();
+    rows.sort_by_key(|(index, _)| *index);
+    for (index, rect) in &rows {
+        if pointer_y < rect.y + rect.height / 2.0 {
+            return Some(*index);
+        }
+    }
+    Some(rows.last().map_or(geometry.len, |(index, _)| index + 1))
+}
+
+/// Task packet `drag-back-out-of-pins`: the target of a Favorite tile's
+/// drag. The tile is not a row, so there is no press anchor in the list:
+/// every target is hit at the pointer's absolute position — the shared
+/// region hits (its own grid excluded), the regular region (unpin), and
+/// the loose pinned rows (stay pinned, leave Favorites). The ghost row is
+/// offered to a Favorite too, so an empty organized area still takes it.
+pub fn resolve_favorite_target(
+    pointer_x: f32,
+    pointer_y: f32,
+    geometry: &DragGeometry,
+) -> (Option<DragTarget>, bool) {
+    if let Some(hit) = region_hit(pointer_x, pointer_y, geometry, false) {
+        return hit;
+    }
+    if let Some(slot) = regular_slot(pointer_y, geometry) {
+        return (Some(DragTarget::Unpin { slot }), true);
+    }
+    let mut rows: Vec<_> = geometry
+        .rows
+        .iter()
+        .filter(|(index, _)| *index < geometry.pinned)
+        .collect();
+    rows.sort_by_key(|(index, _)| *index);
+    let (Some((_, first)), Some((_, last))) = (rows.first(), rows.last()) else {
+        return (None, false);
+    };
+    // Half a pitch above the first and below the last loose row still
+    // addresses the block's edges.
+    let reach = geometry.pitch / 2.0;
+    if pointer_y < first.y - reach || pointer_y >= last.y + last.height + reach {
+        return (None, false);
+    }
+    let slot = rows
+        .iter()
+        .find(|(_, rect)| pointer_y < rect.y + rect.height / 2.0)
+        .map_or(geometry.pinned, |(index, _)| *index);
+    (Some(DragTarget::Tab { slot }), true)
+}
+
 /// Splice-index mapping for a committed tab-slot drop (domain reorder uses
 /// remove-then-insert semantics): inserting "before original row `slot`"
 /// maps to the splice index after removal.
@@ -350,3 +463,7 @@ pub fn splice_index(source: usize, slot: usize) -> usize {
 #[cfg(test)]
 #[path = "drag_target_tests.rs"]
 mod tests;
+
+#[cfg(test)]
+#[path = "drag_target_back_tests.rs"]
+mod back_tests;

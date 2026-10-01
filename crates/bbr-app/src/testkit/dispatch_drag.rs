@@ -52,6 +52,26 @@ pub(crate) fn dispatch_drag(
         })
         .unwrap_or_else(err_response),
 
+        Request::BeginFavoriteDrag { index, x, y } => {
+            with_app(window, app, cx, |view, window, cx| {
+                use gpui::{point, px, Modifiers, MouseButton, MouseDownEvent};
+                view.press_favorite_tile(
+                    *index,
+                    &MouseDownEvent {
+                        button: MouseButton::Left,
+                        position: point(px(*x), px(*y)),
+                        modifiers: Modifiers::default(),
+                        click_count: 1,
+                        first_mouse: true,
+                    },
+                    window,
+                    cx,
+                );
+                Response::Ok
+            })
+            .unwrap_or_else(err_response)
+        }
+
         Request::MoveTabDrag { dx, dy } => with_app(window, app, cx, |view, window, cx| {
             use gpui::{point, px, Modifiers, MouseButton, MouseMoveEvent};
             // The app only ever uses the displacement from the press

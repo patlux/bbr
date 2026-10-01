@@ -19,6 +19,9 @@ pub struct U2IdsInput<'a> {
     /// §10.9: a tab drag is active — a populated Favorites grid offers its
     /// drop cell and the drag proxy renders (the ids mirror the render).
     pub drag_active: bool,
+    /// The active drag grabbed a Favorite tile: its own grid offers no drop
+    /// cell (task packet `drag-back-out-of-pins`).
+    pub favorite_drag: bool,
     /// §11.2: the organized area renders the "Pin tab here" ghost row.
     pub pin_offer: bool,
     pub folders: &'a [bbr_browser::FolderSnapshot],
@@ -71,6 +74,7 @@ impl<'a> Default for U2IdsInput<'a> {
         U2IdsInput {
             favorites: &[],
             drag_active: false,
+            favorite_drag: false,
             pin_offer: false,
             folders: &[],
             expanded: bbr_ui::components::folders::FolderPresentation::default(),
@@ -121,12 +125,16 @@ pub(crate) fn extend_visible_ids(
     ids.extend(u2_visible_ids(
         browser,
         u2.favorites,
-        u2.drag_active,
+        u2.drag_active && !u2.favorite_drag,
         u2.pin_offer,
         u2.folders,
         &u2.expanded,
         &u2.plus_menu,
     ));
+    if u2.drag_active && u2.favorite_drag {
+        // A tile's drag shows the proxy but no drop cell.
+        ids.push(bbr_ui::components::drag_offer::TAB_DRAG_PROXY_ID.into());
+    }
     if u2.downloads_open {
         ids.extend(downloads_visible_ids(
             u2.downloads_layout.active_count + u2.downloads_layout.history_count,

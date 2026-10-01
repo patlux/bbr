@@ -334,6 +334,8 @@ impl BbrApp {
             command_profile_hint: self.command_profile_hint.clone(),
             drag_source,
             drag_slot,
+            drag_unpin_slot: self.tab_drag.unpin_slot(),
+            drag_from_favorite: self.tab_drag.grabbed_favorite(),
             drag_chip: drag_chip.map(|space| bbr_testkit::protocol::TestSpaceId(space.0)),
             drag_destination: self.drag_destination().map(|destination| destination.text),
             drag_favorites: self.tab_drag.target()
@@ -363,14 +365,15 @@ impl BbrApp {
                     command_result_state,
                     &self.command_ranking.results,
                     &in_rail_surface_ids,
-                    drag_slot,
+                    drag_slot.or(self.tab_drag.unpin_slot()),
                     self.tab_drag.chip_target(),
                     self.dense_window.get(),
                     pane_layout,
                     &crate::shell::snapshot::U2IdsInput {
                         favorites: &organization.favorites,
                         drag_active: self.tab_drag.is_active(),
-                        pin_offer: self.tab_drag.is_active() && self.drag_source_unpinned(),
+                        favorite_drag: self.tab_drag.grabbed_favorite(),
+                        pin_offer: self.tab_drag.is_active() && self.drag_offers_pin_row(),
                         folders: &organization.folders,
                         expanded: self.u2.folder_presentation.clone(),
                         plus_menu: self.u2.plus_menu,
@@ -522,7 +525,7 @@ impl BbrApp {
             favorites_region_height: bbr_ui::components::favorites::favorites_region_height(
                 &theme,
                 organization.favorites.len(),
-                self.tab_drag.is_active(),
+                self.drag_offers_favorites(),
             ),
             drag_offers: bbr_testkit::protocol::DragOffersSnapshot {
                 pin_offer_targeted: self.tab_drag.target()

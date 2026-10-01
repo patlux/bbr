@@ -19,6 +19,8 @@ fn geometry<'a>(pinned: usize, len: usize, chips: &'a [ChipSpan]) -> DragGeometr
         rail: None,
         chips,
         loose: None,
+        rows: &[],
+        regular_top: None,
     }
 }
 
@@ -52,6 +54,8 @@ fn geometry_with_favorites<'a>(
         rail: None,
         chips,
         loose: None,
+        rows: &[],
+        regular_top: None,
     }
 }
 
@@ -303,6 +307,8 @@ fn the_ghost_row_is_a_region_offer_hit_by_its_rendered_span() {
         rail: None,
         chips: &chips,
         loose: None,
+        rows: &[],
+        regular_top: None,
     };
     let (target, valid) = resolve_target(2, 10.0, 238.0, -60.0, center_press(), &g);
     assert_eq!(target, Some(DragTarget::PinOffer));

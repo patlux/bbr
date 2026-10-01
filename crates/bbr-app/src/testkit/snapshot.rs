@@ -213,6 +213,8 @@ impl SnapshotExt for crate::shell::TestSnapshot {
             command_profile_hint: self.command_profile_hint.clone(),
             drag_source: self.drag_source,
             drag_slot: self.drag_slot,
+            drag_unpin_slot: self.drag_unpin_slot,
+            drag_from_favorite: self.drag_from_favorite,
             drag_chip: self.drag_chip,
             drag_destination: self.drag_destination.clone(),
             drag_favorites: self.drag_favorites,

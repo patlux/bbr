@@ -48,6 +48,7 @@ a Favorite leaves the tab list (the tile is the tab) and greys out when
 closed; the unplanned row pin control is removed.
 
 - [ ] Deliver [closed pinned tabs and Favorites that leave the list](../tasks/closed-pins-and-favorites.md).
+- [ ] Drag pinned rows and Favorite tiles [back out of the pinned area](../tasks/drag-back-out-of-pins.md) (Patrick, 2026-10-01).
 
 ## v2 visual refresh and motion (2026-09-28)
 

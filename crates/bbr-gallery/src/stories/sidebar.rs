@@ -89,6 +89,7 @@ pub fn render_sidebar(ctx: &StoryContext) -> AnyElement {
             favorites_band_anchor,
             // The ghost-row and proxy rect recorders are app-owned.
             pin_offer_anchor: None,
+            new_tab_anchor: None,
             folder_anchors: Vec::new(),
             drag_proxy_anchor: None,
             command_results,

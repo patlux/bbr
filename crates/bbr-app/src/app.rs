@@ -68,6 +68,7 @@ pub(crate) mod downloads_behavior;
 mod downloads_benchmarks;
 pub(crate) mod downloads_history;
 mod drag;
+mod drag_back;
 #[cfg(feature = "testkit")]
 mod drag_benchmarks;
 mod drag_chip;

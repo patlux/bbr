@@ -242,6 +242,8 @@ pub fn build_sidebar_fixture_with_theme(
         scroll_bottom,
         tick: case.drag_tick,
         tick_valid: case.tick_valid,
+        // The fixture's drag is a regular row's reorder.
+        tick_regular: case.drag_tick.is_some_and(|slot| slot >= case.pinned_count),
         list_focused: case.list_focused,
         // §11.2: an in-flight drag of an unpinned row offers the ghost row.
         pin_offer: case.drag_tick.is_some() || case.favorites_band,

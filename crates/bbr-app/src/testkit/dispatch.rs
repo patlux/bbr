@@ -854,6 +854,7 @@ pub(crate) fn dispatch(
         // Routed by `dispatch_drag` before this match; reaching one here is
         // a routing bug.
         Request::BeginTabDrag { .. }
+        | Request::BeginFavoriteDrag { .. }
         | Request::MoveTabDrag { .. }
         | Request::EndTabDrag
         | Request::CancelTabDrag => unreachable!("tab-drag requests route through dispatch_drag"),

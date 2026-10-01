@@ -30,7 +30,7 @@ impl BbrApp {
         Some(FavoritesModel {
             tiles: tiles.to_vec(),
             targeted,
-            offer: self.tab_drag.is_active(),
+            offer: self.drag_offers_favorites(),
             pop: self.favorite_pop(),
         })
     }
@@ -108,11 +108,24 @@ impl BbrApp {
         // Blueprint D19: a tab dragged in from another window shows its
         // landing slot here.
         let incoming = self.incoming_rail_slot();
-        let tick = self.tab_drag.tab_slot().or(incoming);
+        let unpin = self.tab_drag.unpin_slot();
+        let tick = self.tab_drag.tab_slot().or(unpin).or(incoming);
         let tick_valid = self.tab_drag.valid() || incoming.is_some();
+        // §10.9: the region the tick renders in — a regular row's reorder
+        // and a drag back out of the pinned area land among the regular
+        // rows; an incoming tab at the boundary slot shows after the
+        // pinned rows while there are any.
+        let tick_regular = if unpin.is_some() {
+            true
+        } else if let (Some(source), Some(_)) = (drag_source, self.tab_drag.tab_slot()) {
+            source >= pinned
+        } else {
+            incoming.is_some_and(|slot| slot > pinned || loose.is_empty())
+        };
         // §11.2: the ghost row is offered to an active drag of an unpinned
-        // tab; it is the live target while the pointer is over it.
-        let pin_offer = self.tab_drag.is_active() && self.drag_source_unpinned();
+        // tab or a Favorite; it is the live target while the pointer is
+        // over it.
+        let pin_offer = self.tab_drag.is_active() && self.drag_offers_pin_row();
         let pin_offer_targeted =
             self.tab_drag.target() == Some(crate::app::drag_target::DragTarget::PinOffer);
         let list_focused = self.tab_list_handle.is_focused(window);
@@ -132,6 +145,7 @@ impl BbrApp {
             scroll_bottom: (regular.len().saturating_sub(row_window.end)) as f32 * f32::from(pitch),
             tick,
             tick_valid,
+            tick_regular,
             list_focused,
             pin_offer,
             pin_offer_targeted,

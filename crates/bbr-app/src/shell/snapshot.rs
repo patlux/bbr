@@ -60,6 +60,12 @@ pub struct TestSnapshot {
     /// region). `None` when the drag targets the favorites grid, a chip, or
     /// nothing (an invalid no-target zone).
     pub drag_slot: Option<usize>,
+    /// The regular-region slot a pinned row or a Favorite tile is dragged
+    /// back into (task packet `drag-back-out-of-pins`): the drop unpins the
+    /// tab and inserts it before the regular row at this tab index.
+    pub drag_unpin_slot: Option<usize>,
+    /// The in-flight drag grabbed a Favorite tile (not a tab row).
+    pub drag_from_favorite: bool,
     /// §10.9/§11.10: whether the in-flight drag currently targets the
     /// favorites grid (a drop toggles the dragged tab in/out of the
     /// window-global favorites). Typed alongside `drag_slot`/`drag_chip`

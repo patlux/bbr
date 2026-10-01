@@ -206,10 +206,13 @@ impl BbrApp {
             entity.update(cx, |view, cx| view.on_tab_list_key_down(event, window, cx));
         });
 
-        // §11.10: a favorites tile activation.
+        // §11.10: a favorites tile press activates the tile and arms a drag
+        // of its tab (task packet `drag-back-out-of-pins`).
         let entity = cx.entity();
-        let on_activate_favorite: RowCallback = Rc::new(move |index, _e, window, cx| {
-            entity.update(cx, |view, cx| view.activate_favorite(index, window, cx));
+        let on_activate_favorite: RowCallback = Rc::new(move |index, event, window, cx| {
+            entity.update(cx, |view, cx| {
+                view.press_favorite_tile(index, event, window, cx)
+            });
         });
 
         // §11.13: a secondary-click on a tab row opens the Tab/Favorite

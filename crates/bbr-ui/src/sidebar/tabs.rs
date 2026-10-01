@@ -44,11 +44,16 @@ pub const ORGANIZED_HAIRLINE_ID: &str = "bbr-organized-hairline";
 /// a 500-tab list never lays out 500 rows per frame. The pinned region
 /// renders all of its rows: it is a small, stable block and must never
 /// shift on selection (§11.2).
+///
+/// `new_tab_anchor` records the New Tab row's rect: the regular region
+/// starts below it, so a pinned row or a Favorite dragged past it is
+/// dropped among the regular tabs (task packet `drag-back-out-of-pins`).
 pub fn tab_surface(
     theme: &Theme,
     model: &SidebarModel,
     callbacks: &Callbacks,
     pin_offer_anchor: Option<gpui::AnyElement>,
+    new_tab_anchor: Option<gpui::AnyElement>,
     folder_anchors: Vec<(bbr_domain::FolderId, gpui::AnyElement)>,
     row_anchors: Vec<(usize, gpui::AnyElement)>,
 ) -> Stateful<Div> {
@@ -63,10 +68,14 @@ pub fn tab_surface(
     let list_focused = tabs.list_focused;
     let p = theme.palette;
 
+    // §10.9: the tick renders in the region its target belongs to (the
+    // boundary slot is the same index for both).
+    let pinned_tick = tabs.tick.filter(|_| !tabs.tick_regular);
+    let regular_tick = tabs.tick.filter(|_| tabs.tick_regular);
     let mut children: Vec<gpui::AnyElement> = Vec::new();
     if !tabs.pinned.is_empty() {
         for (position, row) in tabs.pinned.iter().enumerate() {
-            if tabs.tick == Some(row.index) {
+            if pinned_tick == Some(row.index) {
                 // `first`: the slot-0 tick is the block's first child —
                 // its rule anchors inside the block's top edge (§10.9
                 // containment; see [`components::drag_tick`]).
@@ -77,7 +86,7 @@ pub fn tab_surface(
             }
             children.push(render_row(theme, row, callbacks, anchor_of(row.index)).into_any());
         }
-        if tabs.tick == Some(tabs.pinned_end) {
+        if pinned_tick == Some(tabs.pinned_end) {
             children.push(
                 components::drag_tick(theme, tabs.pinned_end, !tabs.tick_valid, false).into_any(),
             );
@@ -138,6 +147,8 @@ pub fn tab_surface(
             .child(crate::icons::Icon::Plus.canvas(theme, theme.density.icon()))
             .child("New Tab")
             .on_mouse_down(MouseButton::Left, callbacks::mouse(&callbacks.on_new_tab))
+            .relative()
+            .children(new_tab_anchor)
             .into_any(),
     );
 
@@ -155,7 +166,7 @@ pub fn tab_surface(
         scroll_children.push(div().h(px(top)).into_any());
     }
     for (position, row) in tabs.window.iter().enumerate() {
-        if tabs.tick == Some(row.index) {
+        if regular_tick == Some(row.index) {
             // `first`: the tick before the first window row is the scroll
             // block's first child when the window starts at the top (no
             // top spacer) — its rule anchors inside the block's top edge
@@ -166,6 +177,20 @@ pub fn tab_surface(
                 .push(components::drag_tick(theme, row.index, !tabs.tick_valid, first).into_any());
         }
         scroll_children.push(render_row(theme, row, callbacks, anchor_of(row.index)).into_any());
+    }
+    // §10.9: the slot after the last regular row (the region's end), or
+    // the only slot of an empty regular region.
+    if let Some(slot) = regular_tick {
+        let end = tabs
+            .window
+            .last()
+            .map_or(tabs.pinned_end, |row| row.index + 1);
+        if slot == end && bottom <= 0.0 {
+            scroll_children.push(
+                components::drag_tick(theme, slot, !tabs.tick_valid, tabs.window.is_empty())
+                    .into_any(),
+            );
+        }
     }
     if bottom > 0.0 {
         scroll_children.push(div().h(px(bottom)).into_any());

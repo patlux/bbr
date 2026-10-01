@@ -53,7 +53,8 @@ closed state, the pinned page, Favorites and folders survive a relaunch.
 ## Non-goals
 
 - A separate "Reset to pinned URL" command, per-tile insert positions,
-  dragging a tile back into the list, and the `asleep` visual (§10 names it,
+  dragging a tile back into the list (delivered later by
+  [dragging back out](drag-back-out-of-pins.md)), and the `asleep` visual (§10 names it,
   no producer paints it yet).
 - Persisting the folder disclosure (expanded/collapsed) state; it stays
   session-local presentation.

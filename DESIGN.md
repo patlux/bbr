@@ -678,8 +678,10 @@ reuse the accent outline language with the strip fills of §11.7.
 
 **Drag offers.** At activation the rail offers the destinations a tab can
 be dropped into without a precise position: the Favorites band or drop cell
-(§11.10) and, for an unpinned tab, the Pinned ghost row (§11.2). They appear
-together and disappear together on drop, cancel or Escape. The growth they
+(§11.10) and, for an unpinned tab or a Favorite tile, the Pinned ghost row
+(§11.2). They appear together and disappear together on drop, cancel or
+Escape. A Favorite tile's drag offers no drop cell (its own grid is no
+target). The growth they
 need is committed **once, at activation** (`activation_growth`): the ghost
 row adds one `density:pitch` above the regular rows, a full last Favorites
 row adds one tile row; the drag resolver subtracts that growth from the
@@ -698,6 +700,17 @@ both axes (blueprint D02): the Favorites band, the ghost row, the space
 chips and every folder row are rects, and a pointer outside the rail's
 horizontal span (over the page beside a row) is no target, so the docked
 and the floating rail resolve drops the same way.
+
+**Dragging back out** (task packet `drag-back-out-of-pins`). Below the New
+Tab row the regular region begins: a pinned row dragged there targets the
+regular slot under the pointer — the tick renders before that row (or after
+the last one) — and the drop unpins it there in one transition. A Favorite
+tile is draggable too: its press activates the tile as before and arms a
+drag of its tab. Its targets are hit at the pointer itself (the tile is not
+a row): a loose pinned row or the ghost row keeps it pinned as a loose row
+and ends the favorite, the regular region unpins it at the slot (ending the
+favorite), a folder row groups it, a chip moves it. A regular row dragged
+over the pinned rows stays an invalid drop; the ghost row is the pin path.
 
 **Assert:** `dragging`, `drag-target`, `bbr-tab-drag-proxy` (present only
 during an active drag), `bbr-drag-tick-<n>` (present only when a concrete
@@ -777,8 +790,9 @@ using the IDs of §15. All rows use `density` geometry from §8.
 - **Behavior:** pinned rows never shift order on selection; close is
   hover-reveal only and closes the tab **in place** (§10.12: the row stays,
   greyed, at its pinned page; selecting it reopens that page); drag within
-  the pinned region reorders; dragging to the regular region unpins
-  (contract; a closed row becomes an unloaded regular tab); a drag from the
+  the pinned region reorders; dragging below the New Tab row unpins it at
+  the regular slot under the pointer (§10.9; a closed row becomes an
+  unloaded regular tab); a drag from the
   regular region into pinned pins it through the ghost row below. Rows carry
   no pin control: `Cmd-Shift-P`, the Tab menu's Pin/Unpin row and the ghost
   row are the pin paths. A pinned tab that is a Favorite renders as its tile
@@ -791,10 +805,12 @@ using the IDs of §15. All rows use `density` geometry from §8.
   plus glyph and `type:meta` “Pin tab here” in `accent.ink`. As the live
   target the outline turns solid over `tint.accent`. A drop pins the tab
   at the end of the pinned block through the one pin authority (same
-  `TabId`, same session). It is an offer, not a precision target, and it
+  `TabId`, same session); a Favorite tile's drag is offered the row too,
+  and dropped there it becomes a loose pinned row at the end of the block.
+  It is an offer, not a precision target, and it
   appears in an empty organized area too — the only way a user without
   pinned tabs learns the region exists; at rest an empty organized area
-  still consumes no space. A pinned tab is never offered the row.
+  still consumes no space. A pinned row is never offered the row.
 - **States:** same vocabulary; pinned rows additionally read a "locked
   position" identity: the favicon tile is never replaced by scroll chrome,
   and at S density the tile gets a subtle 1 pt `hairline` outline so
@@ -1500,6 +1516,13 @@ scheme; a title consisting only of whitespace is treated as empty.
   and takes a folder member out of its folder; grouping a Favorite or
   unpinning it ends the favorite; **Remove from Favorites** leaves a loose
   pinned row at the end of the pinned block.
+- **Dragging a tile back (task packet `drag-back-out-of-pins`):** pressing
+  a tile activates it and arms a drag of its tab (4 pt activation, the
+  §10.9 proxy, Escape). Dropped on a loose pinned row it becomes a loose
+  pinned row before it, on the ghost row one at the end of the pinned
+  block; dropped among the regular tabs it is unpinned at that slot; both
+  end the favorite. A folder row groups it, a chip moves it (it stays a
+  Favorite). Its own grid is no target and shows no drop cell.
 - **States:** `default`, `hover`, `active`, `focused` (§10), plus
   `selected` — the tile's tab is the window's selected tab: a 1.5 pt
   `accent` edge over the veil (the tile carries the selection because the

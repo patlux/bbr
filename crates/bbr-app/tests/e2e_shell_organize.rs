@@ -415,8 +415,9 @@ fn keyboard_pins_unpins_reorders_and_moves_tabs() {
 /// Pointer tab organization: pinning through the Tab menu's pointer path
 /// (rows carry no pin control, DESIGN §11.1), drag reorder within a region through the
 /// production press/move/release listeners with the §10.9 insertion tick and
-/// its legality, an illegal boundary drop that is rejected whole, and Escape
-/// cancellation. Every committed move keeps the live session.
+/// its legality, a pinned row dragged back among the regular tabs (it is
+/// unpinned there), a regular row dragged into the pinned rows that is
+/// rejected whole, and Escape cancellation. Every committed move keeps the live session.
 #[test]
 #[ignore]
 fn pointer_pin_and_drag_reorder_respect_regions() {
@@ -482,8 +483,12 @@ fn pointer_pin_and_drag_reorder_respect_regions() {
         // resolves to slot 2, the end of the pinned region — legal. The
         // snapshot reports the typed source/target/validity and the §15 tick
         // id renders at the slot.
+        // Pinned rows are pressed where they are drawn: a drag back out of
+        // the pinned area is hit at the pointer's real position.
+        let row_zero = tab_row_rect(&mut client, 0);
+        let row_zero_center = row_zero[1] + row_zero[3] / 2.0;
         client
-            .send_ok(&dsl::begin_tab_drag(0, 130.0, 400.0, ROW_H / 2.0))
+            .send_ok(&dsl::begin_tab_drag(0, 130.0, row_zero_center, ROW_H / 2.0))
             .expect("begin drag");
         // §10.9: the activation move presents the drag (and commits the
         // offers' growth); targets resolve from the next move.
@@ -518,31 +523,75 @@ fn pointer_pin_and_drag_reorder_respect_regions() {
         );
         assert_eq!(reordered.engine_sessions, 4);
 
-        // Illegal boundary drop: drag the second pinned row (index 1) two
-        // rows down into the regular region. The target clamps to the
-        // boundary edge (slot 2) and reports invalid; release commits
-        // nothing.
+        // Drag back out of the pinned area (task packet
+        // `drag-back-out-of-pins`): the second pinned row (index 1) dropped
+        // on the upper quarter of the first regular row unpins there — one
+        // `TabUnpinned`, the same live session, the tick before that row.
+        let unpinned_view = reordered.tabs[1].web_view;
+        let row_one = tab_row_rect(&mut client, 1);
+        let row_one_center = row_one[1] + row_one[3] / 2.0;
+        let first_regular = tab_row_rect(&mut client, 2);
         client
-            .send_ok(&dsl::begin_tab_drag(1, 130.0, 400.0, ROW_H / 2.0))
-            .expect("begin boundary drag");
-        // §10.9: the activation move presents the drag (and commits the
-        // offers' growth); targets resolve from the next move.
+            .send_ok(&dsl::begin_tab_drag(1, 130.0, row_one_center, ROW_H / 2.0))
+            .expect("begin unpin drag");
         client
             .send_ok(&dsl::move_tab_drag(0.0, 6.0))
             .expect("activation move");
         client
-            .send_ok(&dsl::move_tab_drag(0.0, 2.0 * PITCH))
+            .send_ok(&dsl::move_tab_drag(
+                0.0,
+                first_regular[1] + first_regular[3] / 4.0 - row_one_center,
+            ))
             .expect("move into the regular region");
-        let illegal = client.snapshot().expect("illegal drag snapshot");
-        assert_eq!(illegal.drag_source, Some(1));
-        assert_eq!(illegal.drag_slot, Some(2), "tick clamps to the region edge");
-        assert!(!illegal.drag_valid, "pinned → regular crossing is rejected");
-        assert_ids(&illegal, &["bbr-drag-tick-2"]);
+        client
+            .send_ok(&bbr_testkit::Request::FlushFrame)
+            .expect("flush frame");
+        let unpinning = client.snapshot().expect("unpin drag snapshot");
+        assert_eq!(unpinning.drag_source, Some(1));
+        assert_eq!(unpinning.drag_slot, None, "no slot in the pinned region");
+        assert_eq!(
+            unpinning.drag_unpin_slot,
+            Some(2),
+            "dropped before the first regular row"
+        );
+        assert!(unpinning.drag_valid, "a pinned row may go back");
+        assert_ids(&unpinning, &["bbr-drag-tick-2"]);
+        client.send_ok(&dsl::end_tab_drag()).expect("release unpin");
+        since = wait_browser_change(&mut client, BrowserChange::TabUnpinned { index: 1 }, since);
+        let unpinned = client.snapshot().expect("unpinned snapshot");
+        assert_tab_order(&unpinned, &[&page_one, &page_two, &page_two, &page_one], 1);
+        assert!(!unpinned.tabs[1].pinned);
+        assert_eq!(
+            unpinned.tabs[1].web_view, unpinned_view,
+            "unpinning by drag keeps the live session"
+        );
+        assert_eq!(unpinned.engine_sessions, 4);
+
+        // A regular row dragged up into the pinned rows is still no drop:
+        // the ghost row is the way to pin.
+        let regular_row = tab_row_rect(&mut client, 2);
+        let regular_center = regular_row[1] + regular_row[3] / 2.0;
+        let pinned_row = tab_row_rect(&mut client, 0);
+        client
+            .send_ok(&dsl::begin_tab_drag(2, 130.0, regular_center, ROW_H / 2.0))
+            .expect("begin upward drag");
+        client
+            .send_ok(&dsl::move_tab_drag(0.0, 6.0))
+            .expect("activation move");
+        client
+            .send_ok(&dsl::move_tab_drag(
+                0.0,
+                pinned_row[1] + pinned_row[3] / 2.0 - regular_center,
+            ))
+            .expect("move over the pinned row");
+        let upward = client.snapshot().expect("upward drag snapshot");
+        assert!(!upward.drag_valid, "regular → pinned is not a drop");
+        assert_eq!(upward.drag_unpin_slot, None);
         client
             .send_ok(&dsl::end_tab_drag())
-            .expect("release illegal");
+            .expect("release upward drag");
         let unchanged = client.snapshot().expect("unchanged snapshot");
-        assert_tab_order(&unchanged, &[&page_one, &page_two, &page_two, &page_one], 2);
+        assert_tab_order(&unchanged, &[&page_one, &page_two, &page_two, &page_one], 1);
         let boundary_events = client
             .attach(Some(since))
             .expect("boundary replay")
@@ -556,7 +605,14 @@ fn pointer_pin_and_drag_reorder_respect_regions() {
                 )
             })
             .count();
-        assert_eq!(boundary_events, 0, "illegal drop emits no reorder");
+        assert_eq!(boundary_events, 0, "the rejected drop emitted no reorder");
+
+        // Pin it again through the Tab menu: the remaining steps run on two
+        // pinned rows.
+        toggle_pin_via_tab_menu(&mut client, 1);
+        since = wait_browser_change(&mut client, BrowserChange::TabPinned { index: 1 }, since);
+        let repinned = client.snapshot().expect("repinned snapshot");
+        assert_tab_order(&repinned, &[&page_one, &page_two, &page_two, &page_one], 2);
 
         // Legal regular-region reorder: drag the first regular row (index 2)
         // two rows down — slot 4, the regular region's own end. The ghost
@@ -650,8 +706,14 @@ fn pointer_pin_and_drag_reorder_respect_regions() {
         // multiple even during the drag). Moving a whole pitch upward from
         // the row center would be above the list and is intentionally no
         // target. Dropping back on the source slot is a no-op reorder.
+        let row_zero = tab_row_rect(&mut client, 0);
         client
-            .send_ok(&dsl::begin_tab_drag(0, 130.0, 400.0, ROW_H / 2.0))
+            .send_ok(&dsl::begin_tab_drag(
+                0,
+                130.0,
+                row_zero[1] + row_zero[3] / 2.0,
+                ROW_H / 2.0,
+            ))
             .expect("begin slot-0 drag");
         // §10.9: the activation move presents the drag (and commits the
         // offers' growth); targets resolve from the next move.

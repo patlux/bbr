@@ -208,6 +208,15 @@ pub enum Request {
         y: f32,
         press_in_row: f32,
     },
+    /// Pointer press on Favorite tile `index` through the production tile
+    /// listener path (task packet `drag-back-out-of-pins`): it activates
+    /// the tile and arms a drag of its tab at window `x`/`y`; the
+    /// `MoveTabDrag`/`EndTabDrag`/`CancelTabDrag` requests drive it on.
+    BeginFavoriteDrag {
+        index: usize,
+        x: f32,
+        y: f32,
+    },
     /// Pointer drag move: `dx`/`dy` displacements from the press position,
     /// sent through the production mouse-move listener path. The app
     /// resolves the typed target (tab slot, favorites grid, or the §11.3

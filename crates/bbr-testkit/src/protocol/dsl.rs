@@ -306,6 +306,10 @@ pub fn begin_tab_drag(index: usize, x: f32, y: f32, press_in_row: f32) -> Reques
     }
 }
 
+pub fn begin_favorite_drag(index: usize, x: f32, y: f32) -> Request {
+    Request::BeginFavoriteDrag { index, x, y }
+}
+
 pub fn move_tab_drag(dx: f32, dy: f32) -> Request {
     Request::MoveTabDrag { dx, dy }
 }

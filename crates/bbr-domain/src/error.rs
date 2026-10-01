@@ -56,6 +56,9 @@ pub enum DomainError {
     /// recently-closed record names a tab that is not a (closed) pinned
     /// member, or a second record for the same row.
     InvalidKeptPlace(TabId),
+    /// Unpinning to a position needs a pinned tab (a drag back out of the
+    /// pinned region or Favorites).
+    NotPinned(TabId),
 }
 
 impl std::fmt::Display for DomainError {
@@ -101,6 +104,7 @@ impl std::fmt::Display for DomainError {
             Self::InvalidKeptPlace(id) => {
                 write!(f, "tab {id:?} is not a closed pinned place to restore")
             }
+            Self::NotPinned(id) => write!(f, "tab {id:?} is not pinned"),
         }
     }
 }

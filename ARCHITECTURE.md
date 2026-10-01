@@ -932,7 +932,10 @@ path that opens, unpins or moves a closed row drops its in-place record
 space deletion closes the row onto the fallback's stack as an ordinary record.
 Neighbor selection skips closed tabs and the session budget never counts them;
 `unpin_tab` forgets the pinned page and turns a closed tab into a suspended
-regular one. A public `check_invariants()` verifies profile/space/tab
+regular one; `unpin_tab_to` (`unpin_to.rs`) does the same and places the tab
+at a regular-region position in one transition — the drop of a pinned row or
+a Favorite tile dragged back among the regular tabs (task packet
+`drag-back-out-of-pins`). A public `check_invariants()` verifies profile/space/tab
 cross-references, pinned ordering, active-tab and lifecycle visibility
 agreement, `closed => pinned`, `pinned page <=> pinned`, split membership and
 distinctness, recently-closed exclusion (an in-place record instead names a
@@ -973,7 +976,10 @@ positive — proven by `just e2e-shell-sidebar` and the `sidebar_resize` /
 keyboard commands (`Cmd-Shift-P` pin toggle, `Cmd-Shift-↑/↓` region-bounded
 reorder, staged `Cmd-Shift-M` move), the Tab menu's Pin/Unpin row and §10.9
 drag tick, real pointer drag through the production press/move/release listeners,
-illegal boundary drops rejected whole, same-profile moves that keep the
+regular → pinned drops rejected whole (the ghost row pins), pinned rows and
+Favorite tiles dragged back out of the pinned area (`DragTarget::Unpin`,
+`DragOrigin::Favorite`, resolved against the recorded row and New Tab rects;
+`app::drag_back`), same-profile moves that keep the
 WebViewId and warm session, cross-profile moves that recreate exactly once in
 the destination store with cookie isolation, and pin/reorder/move
 presentation benchmarks — proven by `just e2e-shell-organize` and the

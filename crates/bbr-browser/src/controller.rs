@@ -215,6 +215,26 @@ impl BrowserController {
         Ok(ControllerEvent::TabUnpinned { index })
     }
 
+    /// Unpin the tab at `index` and place it at `position` inside the
+    /// regular region (`0` = before the first regular tab) in one
+    /// transition: the drop of a pinned row or a Favorite dragged back into
+    /// the regular tabs (task packet `drag-back-out-of-pins`). The live
+    /// session and the selection are preserved; a closed tab becomes an
+    /// unloaded regular tab.
+    pub fn unpin_tab_to(
+        &mut self,
+        index: usize,
+        position: usize,
+    ) -> Result<ControllerEvent, ControllerError> {
+        let tab = self.tab_at(index)?;
+        self.browser
+            .unpin_tab_to(self.active_space, tab, position)?;
+        self.sync_views();
+        self.check_invariants();
+        let index = self.index_of(tab).expect("tab stays in the space");
+        Ok(ControllerEvent::TabUnpinned { index })
+    }
+
     /// Reorder the tab at `from` to `to` within the active space. The domain
     /// rejects a move across the pinned/regular boundary and out-of-range
     /// indices; the selected tab stays selected and the session is preserved.

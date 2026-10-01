@@ -483,6 +483,21 @@ pub fn assert_ids(snapshot: &bbr_testkit::protocol::Snapshot, required: &[&str])
     }
 }
 
+/// The drawn rect `[x, y, width, height]` of the active space's tab row
+/// `index` in the latest frame (the rects the drag resolver hit-tests).
+pub fn tab_row_rect(client: &mut Client, index: usize) -> [f32; 4] {
+    client
+        .send_ok(&bbr_testkit::Request::FlushFrame)
+        .expect("flush frame");
+    let snapshot = client.snapshot().expect("row rect snapshot");
+    snapshot
+        .tab_row_rects
+        .iter()
+        .find(|(row, _)| *row == index)
+        .map(|(_, rect)| *rect)
+        .unwrap_or_else(|| panic!("row {index} is not drawn: {:?}", snapshot.tab_row_rects))
+}
+
 /// Pin or unpin the active space's row at `index` through the production
 /// pointer path: a secondary click opens the Tab menu bound to that row's
 /// `TabId`, and a press on its `bbr-tab-menu-pin` row toggles the pin

@@ -11,7 +11,18 @@
 //! target math lives in `super::drag_target`; the production listeners in
 //! `super::drag`.
 
-use super::drag_target::{resolve_target, DragGeometry, DragTarget};
+use super::drag_target::{resolve_favorite_target, resolve_target, DragGeometry, DragTarget};
+
+/// What the press grabbed: a tab row, or a Favorite tile (task packet
+/// `drag-back-out-of-pins`). A tile is not a row of the list, so its drag
+/// resolves every target at the pointer's absolute position and offers
+/// neither its own grid nor a split or another window.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub enum DragOrigin {
+    #[default]
+    Row,
+    Favorite,
+}
 
 /// The in-flight drag state of the root view. Owned by `BbrApp`; the
 /// production listeners drive it, and the render derives the §10.9
@@ -45,6 +56,8 @@ pub struct TabDrag {
     /// crossing keeps the target (for the tick position) but reports
     /// invalid, so the render can signal the rejection (§10.9).
     valid: bool,
+    /// A row or a Favorite tile.
+    origin: DragOrigin,
 }
 
 /// The pointer distance (points, per axis) a pressed row must travel
@@ -79,6 +92,24 @@ impl TabDrag {
         };
     }
 
+    /// Arm a press on a Favorite tile whose tab is the active space's row
+    /// `source` (the press activated it, so it is in the active space).
+    pub fn arm_favorite(
+        &mut self,
+        source: usize,
+        position_x: f32,
+        position_y: f32,
+        press_in_row: f32,
+    ) {
+        self.arm(source, position_x, position_y, press_in_row);
+        self.origin = DragOrigin::Favorite;
+    }
+
+    /// Whether the press (armed or active) grabbed a Favorite tile.
+    pub fn grabbed_favorite(&self) -> bool {
+        (self.armed || self.active) && self.origin == DragOrigin::Favorite
+    }
+
     /// The pressed row while armed or active (the growth computation needs
     /// it before activation).
     pub fn pressed_row(&self) -> Option<usize> {
@@ -105,8 +136,15 @@ impl TabDrag {
         self.growth = growth;
         self.pointer_x = x;
         self.pointer_y = y;
-        self.target = Some(DragTarget::Tab { slot: self.source });
-        self.valid = true;
+        // A tile has no slot in the list: until the next move it targets
+        // nothing (a drop then is a no-op too).
+        if self.origin == DragOrigin::Favorite {
+            self.target = None;
+            self.valid = false;
+        } else {
+            self.target = Some(DragTarget::Tab { slot: self.source });
+            self.valid = true;
+        }
     }
 
     /// The dragged row's active-space index.
@@ -164,6 +202,15 @@ impl TabDrag {
         }
     }
 
+    /// The regular-region slot a pinned row or a Favorite is dragged back
+    /// into (task packet `drag-back-out-of-pins`).
+    pub fn unpin_slot(&self) -> Option<usize> {
+        match self.target {
+            Some(DragTarget::Unpin { slot }) => Some(slot),
+            _ => None,
+        }
+    }
+
     /// The §11.3 chip target: the exact persistent space the pointer
     /// hovers, when the drag currently targets a strip chip.
     pub fn chip_target(&self) -> Option<bbr_browser::SpaceId> {
@@ -204,14 +251,17 @@ impl TabDrag {
         self.pointer_x = position_x;
         self.pointer_y = position_y;
         let dy = position_y - self.start_y - self.growth;
-        let (target, valid) = resolve_target(
-            self.source,
-            position_x,
-            position_y,
-            dy,
-            self.press_in_row,
-            geometry,
-        );
+        let (target, valid) = match self.origin {
+            DragOrigin::Row => resolve_target(
+                self.source,
+                position_x,
+                position_y,
+                dy,
+                self.press_in_row,
+                geometry,
+            ),
+            DragOrigin::Favorite => resolve_favorite_target(position_x, position_y, geometry),
+        };
         self.target = target;
         self.valid = valid;
     }
@@ -266,6 +316,8 @@ mod tests {
             rail: None,
             chips,
             loose: None,
+            rows: &[],
+            regular_top: None,
         }
     }
 
@@ -325,6 +377,30 @@ mod tests {
         );
         drag.move_to(10.0, 280.0, &geometry(None, None, &chips));
         assert_eq!(drag.tab_slot(), Some(2));
+    }
+
+    #[test]
+    fn a_favorite_drag_targets_nothing_until_it_moves_and_then_hits_absolutely() {
+        // Task packet `drag-back-out-of-pins`: the tile is not a row, so
+        // the activation frame has no slot to keep, and every later target
+        // is hit at the pointer itself.
+        let chips = [];
+        let mut drag = TabDrag::default();
+        drag.arm_favorite(0, 40.0, 70.0, 18.0);
+        assert!(drag.grabbed_favorite());
+        drag.activate(40.0, 40.0, 76.0);
+        assert_eq!(drag.target(), None);
+        assert!(!drag.valid());
+        let mut g = geometry(Some((50.0, 90.0)), Some((160.0, 196.0)), &chips);
+        g.pinned = 1;
+        // Over its own grid: still nothing.
+        drag.move_to(40.0, 80.0, &g);
+        assert_eq!(drag.target(), None);
+        drag.move_to(40.0, 170.0, &g);
+        assert_eq!(drag.target(), Some(DragTarget::PinOffer));
+        assert!(drag.valid());
+        drag.clear();
+        assert!(!drag.grabbed_favorite());
     }
 
     #[test]

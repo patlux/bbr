@@ -200,7 +200,9 @@ Additional rules:
 - Pinning moves a tab into the pinned region.
 - Unpinning moves it into the regular region.
 - Reordering cannot silently cross the pinned/regular boundary; pin or unpin is
-  the explicit operation for crossing it.
+  the explicit operation for crossing it. Dragging a pinned row (or a
+  Favorite tile) into the regular region is such an unpin: it lands at the
+  slot it is dropped on, in one transition.
 - Pinned status does not guarantee a permanently live native session.
 - Pinning captures the tab's current URL and title as its pinned page;
   unpinning forgets it. Unpinning a closed pinned tab leaves an unloaded
@@ -244,6 +246,16 @@ Additional rules:
   tick clamps to the region edge and renders the invalid variant, and the
   release commits nothing (the drop is rejected whole). Dropping back on the
   source slot is a no-op that never emits a reorder event.
+- Dragging back out (task packet `drag-back-out-of-pins`): a pinned row
+  dragged below the New Tab row targets the regular slot under the pointer;
+  the release unpins it there (same `TabId`, same session; a closed row
+  becomes an unloaded regular tab). A regular row dragged over the pinned
+  rows is still rejected; the Pinned ghost row pins it.
+- A Favorite tile can be dragged: the press activates it and arms a drag of
+  its tab. Released on a loose pinned row or the ghost row it leaves
+  Favorites and stays pinned there; released among the regular tabs it is
+  unpinned at that slot (which ends the favorite); a folder row groups it;
+  a space chip moves it. Its own grid is no target.
 - Dragging onto a space presentation targets the space identity chip in the
   footer strip (DESIGN §11.3/§11.4) that the pointer hovers; the chip renders
   the §10.9 drag-target state with its destination profile companion.
@@ -252,7 +264,9 @@ Additional rules:
   recreates it once in the destination store). Dropping on the tab's own space
   is a no-op.
 - Every pointer operation above has a keyboard equivalent: the Tab menu's
-  Pin/Unpin row and the Pinned ghost row ↔ `Cmd-Shift-P`, drag reorder ↔
+  Pin/Unpin row, the Pinned ghost row and a drag back into the regular
+  tabs ↔ `Cmd-Shift-P` (plus `Cmd-Shift-↑/↓` for the position), a tile
+  dragged out of Favorites ↔ the menu's Remove from Favorites, drag reorder ↔
   `Cmd-Shift-↑/↓`, drag-into-space ↔ staged `Cmd-Shift-M` + Enter.
 
 ## Web-content navigation gestures — Planned contract

@@ -58,6 +58,9 @@ pub struct SidebarChildren {
     pub command_field_anchor: AnyElement,
     pub favorites_band_anchor: AnyElement,
     pub pin_offer_anchor: Option<AnyElement>,
+    /// The New Tab row's rect recorder: the regular region starts below
+    /// it (task packet `drag-back-out-of-pins`).
+    pub new_tab_anchor: Option<AnyElement>,
     pub drag_proxy_anchor: Option<AnyElement>,
     /// Blueprint D02: one app-owned rect recorder per rendered folder row,
     /// keyed by the folder's domain id (the rows' drop rects).
@@ -81,6 +84,7 @@ pub fn sidebar_surface(
         command_field_anchor,
         favorites_band_anchor,
         pin_offer_anchor,
+        new_tab_anchor,
         drag_proxy_anchor,
         folder_anchors,
         row_anchors,
@@ -105,6 +109,7 @@ pub fn sidebar_surface(
         model,
         callbacks,
         pin_offer_anchor,
+        new_tab_anchor,
         folder_anchors,
         row_anchors,
     );

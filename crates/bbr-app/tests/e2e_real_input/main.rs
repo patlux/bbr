@@ -10,6 +10,7 @@
 //!
 //! - [`chrome`]: tab row select and close, Back in the titlebar, the footer
 //!   Downloads and `+` controls, a space chip;
+//! - [`favorites`]: a Favorite tile dragged back into the tab list;
 //! - [`keys`]: ⌘L, ⌘T, ⌘W and ⇧⌘T while the web page has focus;
 //! - [`web`]: a click on a link inside the page.
 //!
@@ -22,6 +23,7 @@
 mod e2e_common;
 
 mod chrome;
+mod favorites;
 mod keys;
 mod web;
 

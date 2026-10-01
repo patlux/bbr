@@ -13,8 +13,10 @@
 //! is never mutated by grabbing a row.
 //!
 //! The state machine lives in `super::drag_state`, the pure target math in
-//! `super::drag_target`, and the production chip geometry in
-//! `super::drag_chip`.
+//! `super::drag_target`, the production chip geometry in
+//! `super::drag_chip`, and the drag back out of the pinned area (a pinned
+//! row unpinned at the drop, a Favorite tile's press and drops) in
+//! `super::drag_back`.
 
 pub use super::drag_state::TabDrag;
 use super::drag_target::{splice_index, tab_pitch, DragGeometry, DragTarget, DropRect};
@@ -38,6 +40,9 @@ pub(crate) struct DragOfferRects {
     /// Blueprint D19: every rendered tab row's rect, keyed by tab index
     /// (refilled each frame the rows render).
     pub rows: Rc<RefCell<Vec<(usize, WebRect)>>>,
+    /// The New Tab row's rect: the regular region begins below it (task
+    /// packet `drag-back-out-of-pins`).
+    pub new_tab: Rc<RefCell<Option<WebRect>>>,
 }
 
 impl BbrApp {
@@ -131,6 +136,11 @@ impl BbrApp {
             return;
         }
         self.resolve_tab_drag(x, y, window);
+        // A Favorite tile's drag stays in the rail: no split, no window.
+        if self.tab_drag.grabbed_favorite() {
+            cx.notify();
+            return;
+        }
         // Blueprint D23: over the card the drag previews a split drop.
         let had = self.split_view.drop.is_some();
         if let Some(source) = self.tab_drag.source() {
@@ -169,8 +179,14 @@ impl BbrApp {
             .organization_snapshot(&self.controller.read())
             .favorites
             .len();
+        let theme = self.theme();
+        if self.tab_drag.grabbed_favorite() {
+            // A tile offers no drop cell in its own grid; the ghost row is
+            // the only growth (task packet `drag-back-out-of-pins`).
+            return bbr_ui::components::drag_offer::pinned_drop_row_height(&theme);
+        }
         bbr_ui::components::drag_offer::activation_growth(
-            &self.theme(),
+            &theme,
             favorites,
             self.drag_source_unpinned(),
         )
@@ -202,7 +218,7 @@ impl BbrApp {
         let chips = self.chip_spans();
         // §11.2: the ghost row's recorded span, only while it offers pinning
         // to this drag's (unpinned) source.
-        let pin_offer = if self.drag_source_unpinned() {
+        let pin_offer = if self.drag_offers_pin_row() {
             self.drag_offer_rects.pin_offer.borrow().map(DropRect::from)
         } else {
             None
@@ -229,7 +245,23 @@ impl BbrApp {
             .map(|(folder, rect)| (*folder, DropRect::from(*rect)))
             .collect();
         let rail = Some(self.rail_span(window));
+        // Task packet `drag-back-out-of-pins`: the rendered rows and the
+        // regular region's top, for a drag back out of the pinned area.
+        let rows: Vec<_> = self
+            .drag_offer_rects
+            .rows
+            .borrow()
+            .iter()
+            .map(|(index, rect)| (*index, DropRect::from(*rect)))
+            .collect();
+        let regular_top = self
+            .drag_offer_rects
+            .new_tab
+            .borrow()
+            .map(|rect| rect.y + rect.height);
         let geometry = DragGeometry {
+            rows: &rows,
+            regular_top,
             loose: Some(&loose),
             pinned,
             len: browser.tabs.len(),
@@ -287,6 +319,7 @@ impl BbrApp {
         let target = self.tab_drag.target();
         let valid = self.tab_drag.valid();
         let source = self.tab_drag.source().expect("active drag has a source");
+        let from_favorite = self.tab_drag.grabbed_favorite();
         self.tab_drag.clear();
         // Blueprint D19: released over another window — the drop is there.
         if let Some(committed) = self.finish_window_drag(cx) {
@@ -302,7 +335,7 @@ impl BbrApp {
         }
         if valid {
             if let Some(target) = target {
-                return self.commit_tab_drop(source, target, window, cx);
+                return self.commit_tab_drop(source, target, from_favorite, window, cx);
             }
         }
         false
@@ -339,10 +372,15 @@ impl BbrApp {
         &mut self,
         source: usize,
         target: DragTarget,
+        from_favorite: bool,
         window: &mut Window,
         cx: &mut Context<Self>,
     ) -> bool {
         match target {
+            DragTarget::Tab { slot } if from_favorite => {
+                self.commit_favorite_to_pinned(source, slot, window, cx)
+            }
+            DragTarget::Unpin { slot } => self.commit_unpin_drop(source, slot, window, cx),
             DragTarget::Tab { slot } => {
                 if slot == source {
                     return false;
@@ -358,6 +396,12 @@ impl BbrApp {
             DragTarget::Favorites => {
                 self.favorite_toggle_tab(source, window, cx);
                 true
+            }
+            DragTarget::PinOffer if from_favorite => {
+                // A Favorite dropped on the ghost row becomes a loose pinned
+                // tab at the end of the pinned block.
+                let end = crate::shell::pinned_count(&self.controller.read().snapshot().tabs);
+                self.commit_favorite_to_pinned(source, end, window, cx)
             }
             DragTarget::PinOffer => {
                 // §11.2: the ghost row pins the dragged tab through the one

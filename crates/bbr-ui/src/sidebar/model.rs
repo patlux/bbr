@@ -131,6 +131,12 @@ pub struct TabsModel {
     pub tick: Option<usize>,
     /// §10.9: whether the tick is legal (muted at a clamped region edge).
     pub tick_valid: bool,
+    /// §10.9: the tick belongs to the regular region (a regular row's
+    /// reorder, or a pinned row or Favorite dragged back out of the pinned
+    /// area); otherwise it renders in the pinned block. The slot at the
+    /// pinned/regular boundary is the same tab index for both regions, so
+    /// the region decides where the tick renders.
+    pub tick_regular: bool,
     /// §9: whether the tab list owns chrome focus (the ring + brightened
     /// section labels).
     pub list_focused: bool,
