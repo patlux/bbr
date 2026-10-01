@@ -14,7 +14,7 @@ use super::support::{inventory, saved_page_record, TempDb};
 fn current_schema_fixture_loads_through_the_row_methods_without_writes() {
     // The checked-in current-schema fixture loads through the focused row
     // methods too — read-only, no writes, every field preserved.
-    let db = TempDb::from_fixture("schema_v4");
+    let db = TempDb::from_fixture("schema_v5");
     let repository = db.repository();
     let before = inventory(&db.0);
     let pages = repository.load_saved_pages().unwrap();
@@ -213,10 +213,10 @@ fn single_row_reads_reject_an_over_long_title_like_restore() {
 #[test]
 fn single_row_reads_reject_a_duplicate_canonical_key_store_like_restore() {
     // Regression (review F3): a store whose rows share a canonical URL key
-    // (as in the checked-in `schema_v4_duplicate_url` fixture) is refused
+    // (as in the checked-in `schema_v5_duplicate_url` fixture) is refused
     // read-only by the full load; the single-row reads must refuse it the
     // same way instead of serving one of the duplicate rows.
-    let db = TempDb::from_fixture("schema_v4_duplicate_url");
+    let db = TempDb::from_fixture("schema_v5_duplicate_url");
     let repository = db.repository();
     assert_eq!(
         repository
@@ -254,12 +254,16 @@ fn support_browser_state() -> bbr_persistence::BrowserState {
                     title: "Pinned".into(),
                     url: "https://example.test/pinned".into(),
                     pinned: true,
+                    closed: false,
+                    pinned_page: None,
                 }],
                 active_tab: Some(100),
                 recently_closed: Vec::new(),
                 split: None,
+                folders: Vec::new(),
             }],
         }],
         windows: Vec::new(),
+        favorites: Vec::new(),
     }
 }

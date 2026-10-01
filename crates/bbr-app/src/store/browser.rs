@@ -92,6 +92,13 @@ pub fn persisted_to_intent(profiles: &[Profile]) -> RestoreIntent {
                                 title: tab.title.clone(),
                                 url: tab.url.clone(),
                                 pinned: tab.pinned,
+                                pinned_page: tab.pinned_page.as_ref().map(|page| {
+                                    bbr_domain::PinnedPage {
+                                        url: page.url.clone(),
+                                        title: page.title.clone(),
+                                    }
+                                }),
+                                closed: tab.closed,
                             })
                             .collect(),
                         active_tab: space.active_tab,
@@ -104,6 +111,7 @@ pub fn persisted_to_intent(profiles: &[Profile]) -> RestoreIntent {
                                 url: closed.url.clone(),
                                 pinned: closed.pinned,
                                 former_position: closed.former_position,
+                                in_place: closed.in_place,
                             })
                             .collect(),
                         split: space.split.map(|split| IntentSplit {
@@ -120,11 +128,13 @@ pub fn persisted_to_intent(profiles: &[Profile]) -> RestoreIntent {
 /// Maps the portable intent (the controller's live model export) onto the
 /// persistence browser-state DTO. Space appearance comes from `appearance`
 /// (the controller's effective appearance); a space it does not know keeps
-/// the canonical derived defaults. The window row is supplied by the caller
-/// with its derived identity.
+/// the canonical derived defaults. Each space takes its `folders` (the
+/// organization's reconciled export, schema v5). The window row and the
+/// favorites grid are supplied by the caller.
 pub fn intent_to_persisted(
     intent: &RestoreIntent,
     appearance: impl Fn(bbr_browser::SpaceId) -> Option<bbr_domain::SpaceAppearance>,
+    folders: &[bbr_domain::Folder],
 ) -> Vec<Profile> {
     intent
         .profiles
@@ -158,6 +168,13 @@ pub fn intent_to_persisted(
                                 title: tab.title.clone(),
                                 url: tab.url.clone(),
                                 pinned: tab.pinned,
+                                pinned_page: tab.pinned_page.as_ref().map(|page| {
+                                    bbr_persistence::PinnedPage {
+                                        url: page.url.clone(),
+                                        title: page.title.clone(),
+                                    }
+                                }),
+                                closed: tab.closed,
                             })
                             .collect(),
                         active_tab: space.active_tab,
@@ -170,17 +187,49 @@ pub fn intent_to_persisted(
                                 url: closed.url.clone(),
                                 pinned: closed.pinned,
                                 former_position: closed.former_position,
+                                in_place: closed.in_place,
                             })
                             .collect(),
                         split: space.split.map(|split| bbr_persistence::Split {
                             primary_tab: split.primary_tab,
                             secondary_tab: split.secondary_tab,
                         }),
+                        folders: folders
+                            .iter()
+                            .filter(|folder| folder.space.0 == space.id)
+                            .map(|folder| bbr_persistence::Folder {
+                                id: folder.id.0,
+                                title: folder.title.clone(),
+                                tabs: folder.tabs.iter().map(|tab| tab.0).collect(),
+                            })
+                            .collect(),
                     }
                 })
                 .collect(),
         })
         .collect()
+}
+
+/// The persisted organization (schema v5) as the domain restores it: every
+/// space's folders (ids, titles, members in order) and the favorites grid.
+pub fn persisted_organization(
+    profiles: &[Profile],
+    favorites: &[u64],
+) -> (Vec<bbr_domain::Folder>, Vec<bbr_domain::TabId>) {
+    let folders = profiles
+        .iter()
+        .flat_map(|profile| &profile.spaces)
+        .flat_map(|space| {
+            space.folders.iter().map(|folder| bbr_domain::Folder {
+                id: bbr_domain::FolderId(folder.id),
+                space: bbr_domain::SpaceId(space.id),
+                title: folder.title.clone(),
+                tabs: folder.tabs.iter().copied().map(bbr_domain::TabId).collect(),
+            })
+        })
+        .collect();
+    let favorites = favorites.iter().copied().map(bbr_domain::TabId).collect();
+    (folders, favorites)
 }
 
 /// The derived default space tint for a profile (the space-appearance
@@ -250,12 +299,16 @@ mod tests {
                         title: "Pinned".into(),
                         url: "https://a.example".into(),
                         pinned: true,
+                        closed: false,
+                        pinned_page: None,
                     },
                     Tab {
                         id: 101,
                         title: "One".into(),
                         url: "https://b.example".into(),
                         pinned: false,
+                        closed: false,
+                        pinned_page: None,
                     },
                 ],
                 active_tab: Some(101),
@@ -265,11 +318,13 @@ mod tests {
                     url: "https://closed.example".into(),
                     pinned: false,
                     former_position: 2,
+                    in_place: false,
                 }],
                 split: Some(bbr_persistence::Split {
                     primary_tab: 101,
                     secondary_tab: 100,
                 }),
+                folders: Vec::new(),
             }],
         }]
     }
@@ -303,7 +358,7 @@ mod tests {
     #[test]
     fn intent_to_persisted_writes_derived_defaults_and_round_trips() {
         let intent = persisted_to_intent(&sample_profiles());
-        let profiles = intent_to_persisted(&intent, |_| None);
+        let profiles = intent_to_persisted(&intent, |_| None, &[]);
         // Identities and structure round-trip exactly.
         assert_eq!(
             profiles,
@@ -340,5 +395,56 @@ mod tests {
             default_active_space(&intent),
             Some(bbr_browser::SpaceId(10))
         );
+    }
+
+    #[test]
+    fn kept_places_and_folders_map_both_ways() {
+        let mut profiles = sample_profiles();
+        let space = &mut profiles[0].spaces[0];
+        space.tabs[0].pinned_page = Some(bbr_persistence::PinnedPage {
+            url: "https://a.example/home".into(),
+            title: "Home".into(),
+        });
+        space.tabs[0].closed = true;
+        space.active_tab = Some(101);
+        space
+            .recently_closed
+            .push(bbr_persistence::RecentlyClosedTab {
+                tab_id: 100,
+                title: "Deep".into(),
+                url: "https://a.example/deep".into(),
+                pinned: true,
+                former_position: 0,
+                in_place: true,
+            });
+        space.folders = vec![bbr_persistence::Folder {
+            id: 4,
+            title: "Work".into(),
+            tabs: vec![100],
+        }];
+        let intent = persisted_to_intent(&profiles);
+        let tab = &intent.profiles[0].spaces[0].tabs[0];
+        assert!(tab.closed);
+        assert_eq!(
+            tab.pinned_page.as_ref().unwrap().url,
+            "https://a.example/home"
+        );
+        assert!(intent.profiles[0].spaces[0].recently_closed[1].in_place);
+        let (folders, favorites) = persisted_organization(&profiles, &[100]);
+        assert_eq!(
+            folders,
+            vec![bbr_domain::Folder {
+                id: bbr_domain::FolderId(4),
+                space: bbr_domain::SpaceId(10),
+                title: "Work".into(),
+                tabs: vec![bbr_domain::TabId(100)],
+            }]
+        );
+        assert_eq!(favorites, vec![bbr_domain::TabId(100)]);
+        let written = intent_to_persisted(&intent, |_| None, &folders);
+        let space = &written[0].spaces[0];
+        assert_eq!(space.tabs, profiles[0].spaces[0].tabs);
+        assert_eq!(space.recently_closed, profiles[0].spaces[0].recently_closed);
+        assert_eq!(space.folders, profiles[0].spaces[0].folders);
     }
 }

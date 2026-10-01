@@ -51,8 +51,11 @@
 //! # Shared integration points (not owned by this lane)
 //!
 //! Wiring the commands into the command bar / plus menu (U2d), rendering the
-//! Fav-Grid and Folders regions (U2b/U2c), icon glyphs, and persistence of
-//! folders/favorites (Phase 7) land in their own lanes against this API.
+//! Fav-Grid and Folders regions (U2b/U2c) and icon glyphs land in their own
+//! lanes against this API. The app persists the organization with the
+//! browser structure ([`OrganizationController::persisted`]) and restores it
+//! after the controller ([`OrganizationController::restored`]; task packet
+//! `closed-pins-and-favorites`).
 
 use bbr_domain::{Favorite, Folder, FolderError, FolderInvariantViolation, FolderStore};
 use bbr_domain::{SpaceId, TabId};
@@ -201,6 +204,39 @@ impl OrganizationController {
         Self {
             store: FolderStore::new(),
         }
+    }
+
+    /// Restore a persisted organization against the restored controller:
+    /// folders keep their ids, members and order, the favorites grid its
+    /// order. Rejected whole when it breaks an organization invariant (the
+    /// caller logs it and starts with an empty organization).
+    pub fn restored(
+        controller: &BrowserController,
+        folders: Vec<Folder>,
+        favorites: Vec<TabId>,
+    ) -> Result<Self, FolderInvariantViolation> {
+        let snapshot = controller.snapshot();
+        let store = FolderStore::restored(
+            folders,
+            favorites,
+            |space| snapshot.spaces.iter().any(|s| s.id == space),
+            |tab| tab_facts(&snapshot, tab),
+        )?;
+        Ok(Self { store })
+    }
+
+    /// The organization as the store persists it: folders in order and the
+    /// favorites grid in order, reconciled against the controller first so
+    /// a stale membership (a tab closed or unpinned since the last command)
+    /// never reaches the write. Read-only: the live store reconciles on its
+    /// next command.
+    pub fn persisted(&self, controller: &BrowserController) -> (Vec<Folder>, Vec<TabId>) {
+        let snapshot = controller.snapshot();
+        let mut store = self.store.clone();
+        store.reconcile_with(|tab| tab_facts(&snapshot, tab));
+        let folders = store.folders().cloned().collect();
+        let favorites = store.favorites().map(|favorite| favorite.tab).collect();
+        (folders, favorites)
     }
 
     // ---- Commands ---------------------------------------------------------

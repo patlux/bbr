@@ -25,8 +25,11 @@
 //!   model — the app presents precisely what the repository holds — for the
 //!   open **and** the tab-reorder mutation classes;
 //! - grouping pins durably: a graceful restart and a force quit restore the
-//!   grouped tabs pinned and never a folder membership
+//!   grouped tabs pinned with their folders
 //!   ([`folder_pins`](e2e_shell_persistence/folder_pins.rs));
+//! - kept places (schema v5): a closed pinned row, a pinned page, the
+//!   Favorites grid, a folder and the ⇧⌘T record of a closed pinned row
+//!   survive a restart ([`kept_places`](e2e_shell_persistence/kept_places.rs));
 //! - the curated space paper (v2 S10) edits as a draft, commits, and
 //!   restores with the theme across a restart
 //!   ([`space_paper`](e2e_shell_persistence/space_paper.rs));
@@ -52,6 +55,9 @@ mod support;
 
 #[path = "e2e_shell_persistence/folder_pins.rs"]
 mod folder_pins;
+
+#[path = "e2e_shell_persistence/kept_places.rs"]
+mod kept_places;
 
 #[path = "e2e_shell_persistence/space_paper.rs"]
 mod space_paper;

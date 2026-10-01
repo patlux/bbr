@@ -9,7 +9,10 @@
 //! logged, non-fatal startup path ([`StoreLoad`] records the disposition);
 //! it is never a panic and never a partial load. Schema v3 adds the global
 //! Saved Pages tables (`saved_pages`, `collections`) on top of v2's
-//! appearance/settings/downloads/command-history shape.
+//! appearance/settings/downloads/command-history shape; v4 the space paper;
+//! v5 the kept places of pinned tabs (pinned page, closed in place, in-place
+//! recently-closed records) and the tab organization (`folders`,
+//! `folder_members`, `favorites`).
 //!
 //! The public API owns its DTOs and typed errors; it exposes no SQLite
 //! connection, row, value, or error type. URL validation is deliberately
@@ -26,16 +29,20 @@ mod model;
 mod recovery;
 mod repository;
 mod repository_browser;
+mod repository_browser_rows;
 mod repository_load;
+mod repository_organization;
 mod repository_rows;
 mod repository_saved_pages;
 mod repository_saved_pages_collections;
 mod repository_saved_pages_rows;
 mod schema;
 mod schema_tables;
+mod schema_tables_organization;
 mod schema_tables_saved_pages;
 mod setup;
 mod validation;
+mod validation_organization;
 mod validation_saved_pages;
 
 pub use error::{CorruptionIssue, InvalidSnapshotIssue, PersistenceError, SchemaIssue};
@@ -46,7 +53,7 @@ pub use fields::{
 };
 pub use fields_paper::{SpacePaper, TintIntensity};
 pub use model::{
-    BrowserState, Profile, ProfileHue, RecentlyClosedTab, RecoveryWarning, Repository,
-    RestoreOutcome, SidebarState, Snapshot, Space, Split, Tab, WindowGeometry, WindowState,
-    WriteStats,
+    BrowserState, Folder, PinnedPage, Profile, ProfileHue, RecentlyClosedTab, RecoveryWarning,
+    Repository, RestoreOutcome, SidebarState, Snapshot, Space, Split, Tab, WindowGeometry,
+    WindowState, WriteStats,
 };

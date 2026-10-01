@@ -7,7 +7,8 @@
 //! fresh WKWebView. A tab moved into Favorites leaves the tab list (the tile
 //! *is* the tab); the tile carries the selection, greys out when the tab is
 //! closed and reopens it on a real click; Remove from Favorites returns a
-//! loose pinned row.
+//! loose pinned row. A real ⇧⌘T after closing a pinned row brings back the
+//! page it closed on in the same row.
 //!
 //! The window is shown and key, and the user-facing steps are real AppKit
 //! events aimed at the rects the controls drew at. Every step synchronizes
@@ -240,6 +241,62 @@ fn a_favorite_leaves_the_list_greys_when_closed_and_reopens_from_its_tile() {
         assert_eq!(removed.pinned_count, 1, "it stays pinned");
         assert_eq!(id_at(&removed, 0), second);
         assert_eq!(id_at(&removed, 1), first);
+
+        quit(&mut client, &mut harness);
+    }));
+    finish(result, &mut harness, &socket, &token);
+}
+
+#[test]
+#[ignore]
+fn cmd_shift_t_reopens_a_closed_pinned_row_at_the_page_it_closed_on() {
+    let _serial = serial_gui();
+    if !allow_gui() {
+        return;
+    }
+    let (_fixtures, page_one, page_two) = fixtures();
+    let (mut harness, socket, token) = spawn_harness_shown("closed-pin-reopen", &page_one);
+
+    let result = catch_unwind(AssertUnwindSafe(|| {
+        let mut client = connect(&socket);
+        let (first_view, mut since) = start(&mut client, &token);
+        open_tab(&mut client, &mut since, &page_two, Some(PAGE_TWO_TITLE));
+
+        // Pin the first tab at page one; it navigates on to page two.
+        real_click(&mut client, "bbr-tab-row-0");
+        since = wait_browser_change(&mut client, BrowserChange::TabSelected { index: 0 }, since);
+        real_key(&mut client, "cmd-shift-p");
+        since = wait_browser_change(&mut client, BrowserChange::TabPinned { index: 0 }, since);
+        client
+            .send_ok(&dsl::navigate(page_two.clone()))
+            .expect("navigate the pinned tab");
+        since = wait_title(&mut client, first_view, PAGE_TWO_TITLE, since);
+
+        // A real ⌘W closes it in place at its pinned page.
+        real_key(&mut client, "cmd-w");
+        since = wait_browser_change(&mut client, BrowserChange::TabClosed { index: 0 }, since);
+        let closed = wait_for(&mut client, "the closed row drawn", |s| {
+            s.tabs.first().is_some_and(|tab| tab.lifecycle == "closed")
+        });
+        assert_eq!(closed.tabs[0].url, page_one);
+        assert_eq!(closed.active_tab_index, Some(1));
+
+        // A real ⇧⌘T brings back the page it closed on, in the same row.
+        real_key(&mut client, "cmd-shift-t");
+        since = wait_browser_change(&mut client, BrowserChange::TabReopened { index: 0 }, since);
+        let reopened = wait_for(&mut client, "the row reopened", |s| {
+            s.active_tab_index == Some(0)
+                && s.tabs[0].lifecycle == "active"
+                && s.tabs[0].web_view.is_some()
+        });
+        assert_eq!(reopened.tabs.len(), 2, "no row was added");
+        assert_eq!(reopened.pinned_count, 1);
+        assert_eq!(reopened.tabs[0].url, page_two, "the page it closed on");
+        assert_eq!(reopened.lifecycle_counts.closed, 0);
+        let fresh = reopened.tabs[0].web_view.expect("a fresh session");
+        assert_ne!(fresh, first_view, "the session was recreated");
+        wait_title(&mut client, fresh, PAGE_TWO_TITLE, since);
+        assert!(has_id(&drawn(&mut client), "bbr-tab-close-0"));
 
         quit(&mut client, &mut harness);
     }));

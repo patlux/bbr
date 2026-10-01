@@ -1,9 +1,9 @@
-//! Folder-membership invariant across restore (task packet
-//! `folder-pinned-invariant`): grouping pins a tab through the production
-//! path, the pin is a structural mutation the browser-state writer commits,
-//! and both a graceful restart and a force quit restore the grouped tab as
-//! pinned. Folders are session-local, so a restore never recreates a
-//! membership — no restored state can hold an unpinned folder member — and
+//! Folder-membership invariant across restore (task packets
+//! `folder-pinned-invariant`, `closed-pins-and-favorites`): grouping pins a
+//! tab through the production path, the pin and the membership are
+//! structural mutations the browser-state writer commits, and both a
+//! graceful restart and a force quit restore the grouped tab as pinned in
+//! its folder (schema v5) — a restored member is always pinned — and
 //! grouping a deferred identity never hydrates its session.
 
 use std::path::Path;
@@ -99,9 +99,9 @@ fn grouping_pins_durably_across_graceful_and_force_quit_restore() {
     keep_root(result, &mut harness, &socket, &token);
     drop(harness);
 
-    // Graceful restore: the grouped tab returns pinned; the session-local
-    // folder is gone, so no membership (and no unpinned member) restores.
-    // Leg 2: group the live regular tab, flush, force quit.
+    // Graceful restore: the grouped tab returns pinned in its folder.
+    // Leg 2: group the live regular tab into a second folder, flush, force
+    // quit.
     let (mut harness2, socket2, token2) = spawn_harness("persist-folder", &page_one);
     let result2 = catch_unwind(AssertUnwindSafe(|| {
         let mut client = connect(&socket2);
@@ -123,9 +123,15 @@ fn grouping_pins_durably_across_graceful_and_force_quit_restore() {
             "the grouping pin survived the restart"
         );
         assert_eq!(restored.pinned_count, 2);
-        assert!(restored.folders.is_empty(), "folders are session-local");
+        assert_eq!(restored.folders.len(), 1, "the folder survived the restart");
+        assert_eq!(restored.folders[0].members, vec![102]);
+        let first_folder = restored.folders[0].id;
 
         let folder = new_folder(&mut client);
+        assert!(
+            folder > first_folder,
+            "a fresh folder id above the restored"
+        );
         client
             .send_ok(&dsl::move_tab_into_folder(2, folder))
             .expect("group the live tab");
@@ -133,7 +139,7 @@ fn grouping_pins_durably_across_graceful_and_force_quit_restore() {
             .send_ok(&bbr_testkit::Request::FlushFrame)
             .expect("flush after grouping");
         let grouped = client.snapshot().expect("second grouping snapshot");
-        assert_eq!(grouped.folders[0].members, vec![101]);
+        assert_eq!(grouped.folders[1].members, vec![101]);
         assert_eq!(grouped.pinned_count, 3);
         client
             .send_ok(&bbr_testkit::Request::FlushBrowserState)
@@ -154,7 +160,16 @@ fn grouping_pins_durably_across_graceful_and_force_quit_restore() {
         assert_restored_chrome_first(&restored, 1, 2);
         assert_eq!(restored.pinned_count, 3, "both grouping pins committed");
         assert!(pinned(&restored, 101) && pinned(&restored, 102));
-        assert!(restored.folders.is_empty(), "folders are session-local");
+        let members: Vec<Vec<u64>> = restored
+            .folders
+            .iter()
+            .map(|folder| folder.members.clone())
+            .collect();
+        assert_eq!(
+            members,
+            vec![vec![102], vec![101]],
+            "both folders committed"
+        );
     }));
     finish(result3, &mut harness3, &socket3, &token3);
 }

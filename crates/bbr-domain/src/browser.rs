@@ -31,7 +31,7 @@ pub struct Browser {
     pub(crate) elsewhere: std::collections::BTreeSet<TabId>,
     /// Blueprint D19: how many tabs were closed so far (monotonic): ⇧⌘T
     /// reopens a closed window only when no tab was closed after it.
-    closed_tabs: u64,
+    pub(crate) closed_tabs: u64,
 }
 
 impl Default for Browser {
@@ -173,7 +173,7 @@ impl Browser {
 
     /// The index of `tab` inside `space`, validating both the space and that
     /// the tab belongs to it.
-    fn tab_index_in(&self, space: SpaceId, tab: TabId) -> Result<usize, DomainError> {
+    pub(crate) fn tab_index_in(&self, space: SpaceId, tab: TabId) -> Result<usize, DomainError> {
         let sp = self.space(space).ok_or(DomainError::UnknownSpace(space))?;
         sp.tabs
             .iter()
@@ -243,6 +243,9 @@ impl Browser {
                 }
             }
         }
+        // A closed pinned row that became visible is open again: its
+        // in-place record has nothing left to reopen.
+        self.forget_reopened_in_place(space);
     }
 
     /// Blueprint D19: the tabs other windows select. Every space's
@@ -369,7 +372,8 @@ impl Browser {
     /// Close `tab`. A regular tab is removed and remembered for
     /// [`Browser::reopen_tab`]; a pinned tab closes in place (DESIGN.md
     /// §10.12): it keeps its index as [`TabLifecycle::Closed`] at its pinned
-    /// page and leaves no recently-closed record. The active tab moves to
+    /// page, and an in-place record remembers the page it showed so ⇧⌘T
+    /// brings that page back in the same row. The active tab moves to
     /// the next open sibling (else the previous one, else `None`); closing
     /// the last open tab leaves the space without a selection. Blueprint
     /// D23: a tab in a split group leaves its pane (the group keeps the
@@ -405,45 +409,13 @@ impl Browser {
         sp.recently_closed.push(ClosedTab {
             tab: closed_tab,
             index,
+            in_place: false,
         });
         crate::split_groups::leave_group(sp, tab);
         if was_active {
             sp.active_tab = focus_after;
         }
         self.closed_tabs += 1;
-        self.sync_lifecycles(space);
-        Ok(())
-    }
-
-    /// DESIGN.md §10.12: a pinned tab is a kept place, so closing it keeps
-    /// the identity at its index. It resets to its pinned page, owns no
-    /// session ([`TabLifecycle::Closed`]) and leaves no recently-closed
-    /// record (the row itself reopens it). Closing a closed tab is a no-op.
-    fn close_pinned_in_place(
-        &mut self,
-        space: SpaceId,
-        tab: TabId,
-        focus_after: Option<TabId>,
-        was_active: bool,
-    ) -> Result<(), DomainError> {
-        let state = self
-            .tabs
-            .iter_mut()
-            .find(|state| state.id == tab)
-            .expect("ordered tab must exist in the global table");
-        if state.lifecycle == TabLifecycle::Closed {
-            return Ok(());
-        }
-        if let Some(page) = state.pinned_page.clone() {
-            state.url = page.url;
-            state.title = page.title;
-        }
-        state.lifecycle = TabLifecycle::Closed;
-        let sp = self.space_mut(space).expect("checked above");
-        crate::split_groups::leave_group(sp, tab);
-        if was_active {
-            sp.active_tab = focus_after;
-        }
         self.sync_lifecycles(space);
         Ok(())
     }
@@ -476,7 +448,11 @@ impl Browser {
             Some(id) => closed.iter().position(|entry| entry.tab.id == id),
         }
         .ok_or(DomainError::NothingToReopen(space))?;
-        let ClosedTab { mut tab, index } = closed.remove(position);
+        let record = closed.remove(position);
+        if record.in_place {
+            return Ok(self.reopen_in_place(space, record));
+        }
+        let ClosedTab { mut tab, index, .. } = record;
         // A pinned record restored from the store (or left by a space
         // deletion) carries no pinned page yet: its URL is the page it was
         // pinned at from now on.
@@ -599,9 +575,9 @@ impl Browser {
     /// validation guarantees a pinned prefix). Imported tabs are
     /// **session-less** (`Suspended`) by design: the chrome-first restore
     /// hydrates only the visible set, and every other restored tab must
-    /// stay without a session until a later activation recreates it. The
-    /// pinned page is not persisted (task packet `closed-pins-and-favorites`):
-    /// a restored pinned tab takes its restored URL as its pinned page.
+    /// stay without a session until a later activation recreates it. A
+    /// restored pinned tab takes its restored URL as its pinned page until
+    /// [`Browser::restore_kept_place`] restores the persisted one.
     pub fn restore_tab(
         &mut self,
         id: TabId,
@@ -677,6 +653,7 @@ impl Browser {
             .push(ClosedTab {
                 tab: closed,
                 index: former_position,
+                in_place: false,
             });
         Ok(())
     }
@@ -742,14 +719,16 @@ impl Browser {
     /// destroyed) rather than be forced back to `Active`. Reactivation is a
     /// normal selection. The orchestration layer destroys the session.
     pub fn discard_tab(&mut self, tab: TabId) -> Result<(), DomainError> {
-        if !self.tabs.iter().any(|t| t.id == tab) {
-            return Err(DomainError::UnknownTab(tab));
-        }
-        self.tabs
+        let state = self
+            .tabs
             .iter_mut()
             .find(|state| state.id == tab)
-            .expect("tab validated above")
-            .lifecycle = TabLifecycle::Discarded;
+            .ok_or(DomainError::UnknownTab(tab))?;
+        // A closed pinned row owns no session, so nothing can crash; it
+        // stays closed (and keeps its reopen record).
+        if state.lifecycle != TabLifecycle::Closed {
+            state.lifecycle = TabLifecycle::Discarded;
+        }
         Ok(())
     }
 
@@ -858,6 +837,7 @@ impl Browser {
                 t.lifecycle = TabLifecycle::Suspended;
             }
         }
+        self.forget_reopened_in_place(space);
         Ok(())
     }
 

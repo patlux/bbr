@@ -130,7 +130,7 @@ fn an_unreadable_store_is_kept_aside_and_the_empty_space_says_so() {
             profile,
             "CREATE TABLE unrelated (id INTEGER PRIMARY KEY);
              INSERT INTO unrelated DEFAULT VALUES;
-             PRAGMA user_version = 4;",
+             PRAGMA user_version = 5;",
         );
     });
     let result = catch_unwind(AssertUnwindSafe(|| {

@@ -33,7 +33,7 @@ fn prior_schema_downloads_shape_is_discarded_and_immediately_rewritable() {
         db.repository().restore_read_only().unwrap_err(),
         PersistenceError::SchemaMismatch {
             found: 2,
-            supported: 4
+            supported: 5
         }
     );
     assert_eq!(inventory(&db.0), before, "read-only never writes");

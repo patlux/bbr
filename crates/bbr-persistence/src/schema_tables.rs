@@ -1,8 +1,12 @@
-//! Expected table/column/foreign-key shape of the v2 schema, and the
-//! structural validator that enforces it.
+//! Expected table/column/foreign-key shape of the schema (v2 tables plus
+//! the v5 kept-place columns), and the structural validator that enforces
+//! it.
 
 use rusqlite::{Connection, Transaction};
 
+use crate::schema_tables_organization::{
+    organization_foreign_keys, ORGANIZATION_DELETE_TABLES, ORGANIZATION_TABLES,
+};
 use crate::schema_tables_saved_pages::{
     saved_pages_foreign_keys, SAVED_PAGES_DELETE_TABLES, SAVED_PAGES_TABLES,
 };
@@ -128,6 +132,21 @@ const TABLES: &[(&str, &[ExpectedColumn])] = &[
                 not_null: true,
                 primary_key: false,
             },
+            ExpectedColumn {
+                name: "pinned_url",
+                not_null: false,
+                primary_key: false,
+            },
+            ExpectedColumn {
+                name: "pinned_title",
+                not_null: false,
+                primary_key: false,
+            },
+            ExpectedColumn {
+                name: "closed",
+                not_null: true,
+                primary_key: false,
+            },
         ],
     ),
     (
@@ -165,6 +184,11 @@ const TABLES: &[(&str, &[ExpectedColumn])] = &[
             },
             ExpectedColumn {
                 name: "position",
+                not_null: true,
+                primary_key: false,
+            },
+            ExpectedColumn {
+                name: "in_place",
                 not_null: true,
                 primary_key: false,
             },
@@ -356,7 +380,11 @@ pub(crate) fn validate_schema(connection: &Connection) -> Result<(), Persistence
     // The schema-v3 Saved Pages tables are chained after the v2 tables so
     // the whole expected shape is validated in one pass (B1-owned shape in
     // `schema_tables_saved_pages`).
-    for (table, expected_columns) in TABLES.iter().chain(SAVED_PAGES_TABLES) {
+    for (table, expected_columns) in TABLES
+        .iter()
+        .chain(SAVED_PAGES_TABLES)
+        .chain(ORGANIZATION_TABLES)
+    {
         validate_columns(connection, table, expected_columns)?;
         validate_foreign_keys(connection, table)?;
     }
@@ -413,7 +441,7 @@ fn validate_foreign_keys(connection: &Connection, table: &str) -> Result<(), Per
         "tabs" => vec![("spaces", "space_id", "id")],
         "recently_closed" => vec![("spaces", "space_id", "id")],
         "saved_pages" => saved_pages_foreign_keys(),
-        _ => Vec::new(),
+        table => organization_foreign_keys(table),
     };
     let mut statement = connection
         .prepare(&format!("PRAGMA foreign_key_list({table})"))
@@ -468,21 +496,23 @@ pub(crate) fn user_version(connection: &Connection) -> Result<u32, PersistenceEr
 
 pub(crate) fn deleted_rows(transaction: &Transaction<'_>) -> Result<u64, PersistenceError> {
     let mut total = 0;
-    // The schema-v3 Saved Pages DELETE order is appended after the v2 tables
-    // (child `saved_pages` before parent `collections`).
-    for table in [
-        "recently_closed",
-        "splits",
-        "tabs",
-        "spaces",
-        "profiles",
-        "windows",
-        "settings",
-        "downloads",
-        "command_history",
-    ]
-    .iter()
-    .chain(SAVED_PAGES_DELETE_TABLES)
+    // The schema-v5 organization tables reference tabs/spaces and empty
+    // first; the schema-v3 Saved Pages DELETE order is appended after the
+    // v2 tables (child `saved_pages` before parent `collections`).
+    for table in ORGANIZATION_DELETE_TABLES
+        .iter()
+        .chain(&[
+            "recently_closed",
+            "splits",
+            "tabs",
+            "spaces",
+            "profiles",
+            "windows",
+            "settings",
+            "downloads",
+            "command_history",
+        ])
+        .chain(SAVED_PAGES_DELETE_TABLES)
     {
         total += transaction
             .execute(&format!("DELETE FROM {table}"), [])

@@ -52,6 +52,10 @@ pub enum DomainError {
     SpaceMoveOutOfRange(SpaceId),
     /// Blueprint D06: the last profile cannot be deleted.
     LastProfile(ProfileId),
+    /// DESIGN.md §10.12: a restored pinned page, closed state or in-place
+    /// recently-closed record names a tab that is not a (closed) pinned
+    /// member, or a second record for the same row.
+    InvalidKeptPlace(TabId),
 }
 
 impl std::fmt::Display for DomainError {
@@ -94,6 +98,9 @@ impl std::fmt::Display for DomainError {
                 write!(f, "space {id:?} has no neighbor in that direction")
             }
             Self::LastProfile(id) => write!(f, "the last profile {id:?} cannot be deleted"),
+            Self::InvalidKeptPlace(id) => {
+                write!(f, "tab {id:?} is not a closed pinned place to restore")
+            }
         }
     }
 }

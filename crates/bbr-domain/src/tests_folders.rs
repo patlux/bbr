@@ -562,3 +562,58 @@ fn rename_folder_trims_and_rejects_empty_titles_whole() {
         Err(FolderError::UnknownFolder(FolderId(99)))
     );
 }
+
+// ---- Restore ---------------------------------------------------------------
+
+#[test]
+fn restored_keeps_folder_ids_and_order_and_rejects_a_broken_organization_whole() {
+    let (mut b, s, tabs) = populated();
+    for tab in &tabs {
+        b.pin_tab(s, *tab).unwrap();
+    }
+    let folder = |id: u64, members: Vec<TabId>| crate::Folder {
+        id: FolderId(id),
+        space: s,
+        title: format!("F{id}"),
+        tabs: members,
+    };
+    let facts = |b: &Browser, tab: TabId| TabFacts::of(b, tab);
+    let mut store = FolderStore::restored(
+        vec![folder(7, vec![tabs[1], tabs[0]]), folder(3, Vec::new())],
+        vec![tabs[2]],
+        |space| b.space(space).is_some(),
+        |tab| facts(&b, tab),
+    )
+    .unwrap();
+    let ids: Vec<FolderId> = store.folders().map(|f| f.id).collect();
+    assert_eq!(ids, vec![FolderId(7), FolderId(3)]);
+    assert_eq!(
+        store.folder(FolderId(7)).unwrap().tabs,
+        vec![tabs[1], tabs[0]]
+    );
+    assert_eq!(
+        store.favorites().map(|f| f.tab).collect::<Vec<_>>(),
+        vec![tabs[2]]
+    );
+    // A fresh folder never reuses a restored id.
+    assert_eq!(store.create_folder_in(s, "New"), FolderId(8));
+    store.check_invariants(&b).unwrap();
+
+    // A favorite that is also a folder member breaks invariant 8.
+    assert!(FolderStore::restored(
+        vec![folder(1, vec![tabs[0]])],
+        vec![tabs[0]],
+        |space| b.space(space).is_some(),
+        |tab| facts(&b, tab),
+    )
+    .is_err());
+    // An unpinned member breaks invariant 6.
+    b.unpin_tab(s, tabs[0]).unwrap();
+    assert!(FolderStore::restored(
+        vec![folder(1, vec![tabs[0]])],
+        Vec::new(),
+        |space| b.space(space).is_some(),
+        |tab| facts(&b, tab),
+    )
+    .is_err());
+}

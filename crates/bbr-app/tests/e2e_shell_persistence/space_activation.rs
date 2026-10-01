@@ -20,10 +20,13 @@ fn two_space_state(page_one: &str, page_two: &str) -> BrowserState {
             title: "Deferred".into(),
             url: page_two.into(),
             pinned: false,
+            closed: false,
+            pinned_page: None,
         }],
         active_tab: Some(200),
         recently_closed: Vec::new(),
         split: None,
+        folders: Vec::new(),
     });
     state
 }

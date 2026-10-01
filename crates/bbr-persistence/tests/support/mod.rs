@@ -160,6 +160,8 @@ pub fn sample_snapshot(tab_count: usize) -> Snapshot {
             title: format!("Tab {index}"),
             url: format!("https://example.test/{index}"),
             pinned: index < 2,
+            closed: false,
+            pinned_page: None,
         })
         .collect::<Vec<_>>();
     Snapshot {
@@ -185,7 +187,9 @@ pub fn sample_snapshot(tab_count: usize) -> Snapshot {
                     url: "https://closed.test/".into(),
                     pinned: false,
                     former_position: 3,
+                    in_place: false,
                 }],
+                folders: Vec::new(),
             }],
         }],
         windows: vec![WindowState {
@@ -226,6 +230,7 @@ pub fn sample_snapshot(tab_count: usize) -> Snapshot {
         // dedicated saved-pages tests build their own records.
         saved_pages: Vec::new(),
         collections: Vec::new(),
+        favorites: Vec::new(),
     }
 }
 

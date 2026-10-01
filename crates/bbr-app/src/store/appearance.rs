@@ -149,6 +149,7 @@ mod tests {
                 active_tab: None,
                 recently_closed: Vec::new(),
                 split: None,
+                folders: Vec::new(),
             };
             assert_eq!(from_persisted(&space), appearance);
         }

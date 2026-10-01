@@ -53,7 +53,11 @@ pub(crate) fn validate_snapshot(snapshot: &Snapshot) -> Result<(), InvalidSnapsh
             for tab in &space.tabs {
                 validate_id("tab", tab.id)?;
                 insert_identity(&mut identities, tab.id)?;
-                members.insert(tab.id);
+                // A closed row is never shown: it counts as no member for
+                // the active tab and the split below.
+                if !tab.closed {
+                    members.insert(tab.id);
+                }
                 live_tabs.insert(tab.id);
                 validate_url(tab.id, &tab.url)?;
                 if !tab.pinned {
@@ -61,6 +65,7 @@ pub(crate) fn validate_snapshot(snapshot: &Snapshot) -> Result<(), InvalidSnapsh
                 } else if saw_regular {
                     return Err(InvalidSnapshotIssue::InvalidPinnedRegion { space_id: space.id });
                 }
+                crate::validation_organization::validate_kept_place(tab)?;
             }
 
             if let Some(tab_id) = space.active_tab {
@@ -87,6 +92,13 @@ pub(crate) fn validate_snapshot(snapshot: &Snapshot) -> Result<(), InvalidSnapsh
         for space in &profile.spaces {
             for closed in &space.recently_closed {
                 validate_id("recently closed tab", closed.tab_id)?;
+                // Schema v5: an in-place record names a closed row of its
+                // space (that live identity), at most once.
+                if closed.in_place {
+                    crate::validation_organization::validate_in_place(space, closed)?;
+                    validate_url(closed.tab_id, &closed.url)?;
+                    continue;
+                }
                 // The same global identity set restore uses: a recently closed
                 // tab id must not collide with a live tab, another recently
                 // closed id, or any profile/space/window identity.
@@ -128,6 +140,7 @@ pub(crate) fn validate_snapshot(snapshot: &Snapshot) -> Result<(), InvalidSnapsh
     validate_command_history(&snapshot.command_history)?;
     validate_collections(&snapshot.collections)?;
     validate_saved_pages(&snapshot.saved_pages, &snapshot.collections)?;
+    crate::validation_organization::validate_organization(&snapshot.profiles, &snapshot.favorites)?;
 
     Ok(())
 }

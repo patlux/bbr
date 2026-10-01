@@ -223,12 +223,23 @@ impl Browser {
 
     /// Restore a space's groups verbatim (persisted layouts): every pane a
     /// member of the space, no tab in two groups. No selection change;
-    /// visibility follows the active tab.
+    /// visibility follows the active tab. A group naming a closed pinned
+    /// row is stale (closing leaves the group, DESIGN.md §10.12) and is
+    /// dropped: restoring it would reopen the row.
     pub fn restore_splits(
         &mut self,
         space: SpaceId,
         groups: Vec<SplitGroup>,
     ) -> Result<(), DomainError> {
+        let groups: Vec<SplitGroup> = groups
+            .into_iter()
+            .filter(|group| {
+                group.members().iter().all(|tab| {
+                    self.tab(*tab)
+                        .is_none_or(|state| state.lifecycle != crate::TabLifecycle::Closed)
+                })
+            })
+            .collect();
         let mut seen = Vec::new();
         for group in &groups {
             for tab in group.members() {

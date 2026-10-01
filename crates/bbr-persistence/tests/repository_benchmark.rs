@@ -404,6 +404,8 @@ fn dense_snapshot() -> Snapshot {
             title: format!("Dense tab {index}"),
             url: format!("https://dense.test/{index}"),
             pinned: index < 2,
+            closed: false,
+            pinned_page: None,
         })
         .collect::<Vec<_>>();
     Snapshot {
@@ -429,7 +431,9 @@ fn dense_snapshot() -> Snapshot {
                     url: "https://closed.test/".into(),
                     pinned: false,
                     former_position: 499,
+                    in_place: false,
                 }],
+                folders: Vec::new(),
             }],
         }],
         windows: vec![WindowState {
@@ -468,5 +472,6 @@ fn dense_snapshot() -> Snapshot {
         // Saved Pages corpus is a separate snapshot below.
         saved_pages: Vec::new(),
         collections: Vec::new(),
+        favorites: Vec::new(),
     }
 }

@@ -52,12 +52,16 @@ pub fn dense_browser_state(page_url: &str) -> BrowserState {
                                 title: "Pinned".into(),
                                 url: page_url.into(),
                                 pinned: true,
+                                closed: false,
+                                pinned_page: None,
                             },
                             Tab {
                                 id: 101,
                                 title: "One".into(),
                                 url: page_url.into(),
                                 pinned: false,
+                                closed: false,
+                                pinned_page: None,
                             },
                         ],
                         active_tab: Some(101),
@@ -67,8 +71,10 @@ pub fn dense_browser_state(page_url: &str) -> BrowserState {
                             url: "https://closed.example/".into(),
                             pinned: false,
                             former_position: 0,
+                            in_place: false,
                         }],
                         split: None,
+                        folders: Vec::new(),
                     },
                     Space {
                         id: 11,
@@ -81,10 +87,13 @@ pub fn dense_browser_state(page_url: &str) -> BrowserState {
                             title: "Solo".into(),
                             url: "https://d.example/".into(),
                             pinned: false,
+                            closed: false,
+                            pinned_page: None,
                         }],
                         active_tab: Some(110),
                         recently_closed: Vec::new(),
                         split: None,
+                        folders: Vec::new(),
                     },
                 ],
             },
@@ -104,11 +113,14 @@ pub fn dense_browser_state(page_url: &str) -> BrowserState {
                             title: format!("Tab {index}"),
                             url: format!("https://dense{index}.example/"),
                             pinned: index < 3,
+                            closed: false,
+                            pinned_page: None,
                         })
                         .collect(),
                     active_tab: Some(1000),
                     recently_closed: Vec::new(),
                     split: None,
+                    folders: Vec::new(),
                 }],
             },
         ],
@@ -126,6 +138,7 @@ pub fn dense_browser_state(page_url: &str) -> BrowserState {
                 last_expanded_width: 300.0,
             },
         }],
+        favorites: Vec::new(),
     }
 }
 
@@ -139,6 +152,8 @@ pub fn split_active_browser_state(page_url: &str) -> BrowserState {
         title: "Two".into(),
         url: page_url.into(),
         pinned: false,
+        closed: false,
+        pinned_page: None,
     });
     space.split = Some(Split {
         primary_tab: 101,
@@ -168,12 +183,16 @@ pub fn small_browser_state(page_url: &str) -> BrowserState {
                         title: "Pinned".into(),
                         url: "https://pinned.example/".into(),
                         pinned: true,
+                        closed: false,
+                        pinned_page: None,
                     },
                     Tab {
                         id: 101,
                         title: "One".into(),
                         url: page_url.into(),
                         pinned: false,
+                        closed: false,
+                        pinned_page: None,
                     },
                 ],
                 active_tab: Some(101),
@@ -183,8 +202,10 @@ pub fn small_browser_state(page_url: &str) -> BrowserState {
                     url: "https://closed.example/".into(),
                     pinned: false,
                     former_position: 0,
+                    in_place: false,
                 }],
                 split: None,
+                folders: Vec::new(),
             }],
         }],
         windows: vec![WindowState {
@@ -201,6 +222,7 @@ pub fn small_browser_state(page_url: &str) -> BrowserState {
                 last_expanded_width: 300.0,
             },
         }],
+        favorites: Vec::new(),
     }
 }
 
@@ -225,23 +247,30 @@ pub fn reorder_browser_state(page_one: &str, page_two: &str) -> BrowserState {
                         title: "Pinned".into(),
                         url: "https://pinned.example/".into(),
                         pinned: true,
+                        closed: false,
+                        pinned_page: None,
                     },
                     Tab {
                         id: 101,
                         title: "One".into(),
                         url: page_one.into(),
                         pinned: false,
+                        closed: false,
+                        pinned_page: None,
                     },
                     Tab {
                         id: 102,
                         title: "Two".into(),
                         url: page_two.into(),
                         pinned: false,
+                        closed: false,
+                        pinned_page: None,
                     },
                 ],
                 active_tab: Some(101),
                 recently_closed: Vec::new(),
                 split: None,
+                folders: Vec::new(),
             }],
         }],
         windows: vec![WindowState {
@@ -258,6 +287,7 @@ pub fn reorder_browser_state(page_one: &str, page_two: &str) -> BrowserState {
                 last_expanded_width: 300.0,
             },
         }],
+        favorites: Vec::new(),
     }
 }
 
@@ -273,6 +303,7 @@ pub fn committed_browser_state(profile_dir: &std::path::Path) -> BrowserState {
     BrowserState {
         profiles: outcome.snapshot.profiles,
         windows: outcome.snapshot.windows,
+        favorites: outcome.snapshot.favorites,
     }
 }
 

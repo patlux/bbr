@@ -735,13 +735,20 @@ impl BbrApp {
     /// appearance (schema v4 persists theme, identity and paper).
     fn current_browser_state(&self) -> bbr_persistence::BrowserState {
         let intent = self.controller.read().intent();
-        let profiles = crate::store::browser::intent_to_persisted(&intent, |space| {
-            self.controller.read().space_appearance(space)
-        });
+        // Schema v5: the organization persists with the structure,
+        // reconciled against the live model so a stale membership never
+        // reaches the write validation.
+        let (folders, favorites) = self.organization.read().persisted(&self.controller.read());
+        let profiles = crate::store::browser::intent_to_persisted(
+            &intent,
+            |space| self.controller.read().space_appearance(space),
+            &folders,
+        );
         let window_id = crate::store::browser::derived_window_id(&profiles);
         bbr_persistence::BrowserState {
             profiles,
             windows: self.persisted_windows(window_id),
+            favorites: favorites.into_iter().map(|tab| tab.0).collect(),
         }
     }
 

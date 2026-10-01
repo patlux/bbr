@@ -189,6 +189,22 @@ pub enum InvalidSnapshotIssue {
         id: u64,
         detail: String,
     },
+    /// A pinned page or closed state on a regular tab, or an in-place
+    /// recently-closed record that names no closed pinned tab of its space
+    /// (schema v5).
+    InvalidKeptPlace {
+        tab_id: u64,
+    },
+    /// A folder violates an organization rule (schema v5).
+    InvalidFolder {
+        id: u64,
+        detail: String,
+    },
+    /// A favorite names no pinned tab, a folder member, or a tab twice
+    /// (schema v5).
+    InvalidFavorite {
+        tab_id: u64,
+    },
 }
 
 impl fmt::Display for InvalidSnapshotIssue {
@@ -249,6 +265,15 @@ impl fmt::Display for InvalidSnapshotIssue {
             }
             Self::InvalidCollection { id, detail } => {
                 write!(formatter, "invalid collection record {id}: {detail}")
+            }
+            Self::InvalidKeptPlace { tab_id } => {
+                write!(formatter, "tab {tab_id} is not a closed pinned place")
+            }
+            Self::InvalidFolder { id, detail } => {
+                write!(formatter, "invalid folder {id}: {detail}")
+            }
+            Self::InvalidFavorite { tab_id } => {
+                write!(formatter, "invalid favorite tab {tab_id}")
             }
         }
     }

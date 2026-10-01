@@ -142,10 +142,16 @@ Additional rules:
   (selecting it would reopen it).
 - Closing a pinned tab — a loose pinned row, a folder member or a Favorite —
   closes it **in place** (DESIGN.md §10.12): it keeps its identity and index,
-  its native session is destroyed, its URL and title reset to its pinned page
-  (the page it had when it became pinned), and no recently-closed record is
-  written. Selecting it opens the pinned page in a fresh session. Closing a
-  closed tab is a no-op; its Tab-menu Close row is disabled.
+  its native session is destroyed, and its URL and title reset to its pinned
+  page (the page it had when it became pinned). Selecting it opens the pinned
+  page in a fresh session. Reopen Closed Tab (`⇧⌘T`, History › Recently
+  closed) brings back the page it showed when it closed, in the same row and
+  in close order with regular closed tabs (it counts as a tab close, so a
+  closed window reopens first only when no tab closed after it); opening the
+  row any other way
+  (selection, unpin, move) drops that reopen record. Closing a closed tab is
+  a no-op; its Tab-menu Close row is disabled. The closed state, the pinned
+  page and the reopen record survive a restart (schema v5).
 - Closing either member of a split dissolves the split.
 - The surviving split member remains open; no unrelated tab or native session
   is orphaned.
@@ -389,9 +395,9 @@ Canonical packet:
   snapshot.
 - Pin, Favorite, and Saved Page have different lifetimes: a pin and Favorite
   keep their concrete tab (closing it closes it in place) and end when the tab
-  is unpinned or its space or profile is deleted; a Favorite also ends with a
-  restart for now (Favorites are session-local). A Saved Page survives
-  closing tabs, spaces, windows, and restarting the browser.
+  is unpinned or its space or profile is deleted. Pins, Favorites and
+  folders survive a restart (schema v5). A Saved Page survives closing tabs,
+  spaces, windows, and restarting the browser.
 - Saving a tab, Favorite, or focused page captures only its current canonical
   navigable URL and title as an independent record. No `TabId`/session link is
   required afterward. Canonical-URL save is idempotent.

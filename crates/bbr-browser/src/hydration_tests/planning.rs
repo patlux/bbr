@@ -203,6 +203,7 @@ fn pinned_flags_hues_and_recently_closed_survive_into_the_plan() {
             url: "https://closed.example".into(),
             pinned: false,
             former_position: 1,
+            in_place: false,
         }]
     );
     // Closed entries are identities — never sessions.

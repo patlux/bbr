@@ -46,5 +46,6 @@ pub(crate) fn saved_pages_snapshot(record_count: usize, collection_count: usize)
         command_history: Vec::new(),
         saved_pages,
         collections,
+        favorites: Vec::new(),
     }
 }

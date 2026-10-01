@@ -464,6 +464,9 @@ fn main() {
                 {
                     native_engine = Some(built.native);
                 }
+                // Schema v5: the folders and favorites restore against the
+                // restored controller (a rejected organization starts empty).
+                let mut restored_organization = None;
                 let controller = match (&restore_intent, restore_active_space) {
                     // Persisted browser model: restore chrome-first through
                     // the restored facade. Only the active space's visible
@@ -495,6 +498,23 @@ fn main() {
                                     &mut controller,
                                     &split_layouts::path_in(&cli.profile_dir),
                                 );
+                                let (folders, favorites) =
+                                    store::browser::persisted_organization(
+                                        &restored_browser.profiles,
+                                        &restored_browser.favorites,
+                                    );
+                                match bbr_browser::OrganizationController::restored(
+                                    &controller,
+                                    folders,
+                                    favorites,
+                                ) {
+                                    Ok(organization) => {
+                                        restored_organization = Some(organization);
+                                    }
+                                    Err(error) => log::error!(
+                                        "organization restore rejected ({error}); starting without folders and favorites"
+                                    ),
+                                }
                                 controller
                             }
                             Err(error) => {
@@ -513,7 +533,7 @@ fn main() {
                         BrowserController::new(engine.clone(), build_allocate_view())
                     }
                 };
-                let organization = bbr_browser::OrganizationController::new();
+                let organization = restored_organization.unwrap_or_default();
                 let app = cx.new(|cx| {
                     let mut app = BbrApp::new(
                         engine,

@@ -1,10 +1,12 @@
-//! Session-local tab organization: [`Folder`] entities, the favorites grid,
-//! and the [`FolderStore`] companion that enforces their invariants.
+//! Tab organization: [`Folder`] entities, the favorites grid, and the
+//! [`FolderStore`] companion that enforces their invariants.
 //!
 //! This is the portable foundation for the U2 sidebar's Fav-Grid and Folders
 //! regions (docs/delivery/2026-08-07-browser-mvp-parallel-plan.md, lane L5).
-//! It is **session-local**: folders and favorites live in memory for the
-//! browser session and are not persisted — durability is Phase 7.
+//! The app persists folders and favorites with the browser structure and
+//! restores them through [`FolderStore::restored`] (task packet
+//! `closed-pins-and-favorites`); only the disclosure state of a folder is
+//! session-local presentation.
 //!
 //! # Why a companion store?
 //!
@@ -211,6 +213,35 @@ impl FolderStore {
             folders: Vec::new(),
             favorites: Vec::new(),
         }
+    }
+
+    /// Restore a persisted organization with its folder ids: folders in
+    /// order with their members, and the favorites grid in order. The
+    /// result is checked whole against the restored browser facts; any
+    /// invariant violation rejects it (the caller starts with an empty
+    /// organization instead of a partial one). Fresh folders get ids above
+    /// every restored one.
+    pub fn restored(
+        folders: Vec<Folder>,
+        favorites: Vec<TabId>,
+        space_exists: impl Fn(SpaceId) -> bool,
+        tab_facts: impl Fn(TabId) -> Option<TabFacts>,
+    ) -> Result<Self, FolderInvariantViolation> {
+        if folders.iter().any(|folder| folder.id.0 == 0) {
+            return Err(FolderInvariantViolation("folder id 0".into()));
+        }
+        let next_id = folders
+            .iter()
+            .map(|folder| folder.id.0.saturating_add(1))
+            .max()
+            .unwrap_or(1);
+        let store = Self {
+            next_id,
+            folders,
+            favorites: favorites.into_iter().map(|tab| Favorite { tab }).collect(),
+        };
+        store.check_invariants_with(space_exists, tab_facts)?;
+        Ok(store)
     }
 
     // ---- Folders ----------------------------------------------------------

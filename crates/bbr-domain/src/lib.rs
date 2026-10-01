@@ -27,7 +27,8 @@
 //! 4. The active tab of a space is a member of that space (or absent when
 //!    the space is empty).
 //! 5. A split's two tabs belong to the space and differ from each other.
-//! 6. Recently closed entries are not members of their space.
+//! 6. Recently closed entries are not members of their space, except an
+//!    in-place record, which names a closed pinned row of its space.
 //!
 //! Mutating operations preserve all invariants by construction; the
 //! invariant checker is public and unit-tested so tampering is detectable.
@@ -36,6 +37,7 @@
 #![deny(missing_debug_implementations)]
 
 mod browser;
+mod closed_pins;
 mod error;
 mod folders;
 mod invariants;

@@ -41,7 +41,7 @@ pub(crate) fn load_recently_closed(
     identities: &mut HashSet<u64>,
 ) -> Result<(), PersistenceError> {
     let mut statement = connection.prepare(
-        "SELECT tab_id, space_id, title, url, pinned, former_position, position FROM recently_closed ORDER BY space_id, position",
+        "SELECT tab_id, space_id, title, url, pinned, former_position, position, in_place FROM recently_closed ORDER BY space_id, position",
     ).map_err(schema::storage)?;
     let rows = statement
         .query_map([], |row| {
@@ -53,13 +53,14 @@ pub(crate) fn load_recently_closed(
                 row.get::<_, i64>(4)?,
                 row.get::<_, i64>(5)?,
                 row.get::<_, i64>(6)?,
+                row.get::<_, i64>(7)?,
             ))
         })
         .map_err(schema::storage)?;
     let mut closed_ids = HashSet::new();
     let mut owner_positions = HashMap::new();
     for row in rows {
-        let (tab_id, space_id, title, url, pinned, former_position, position) =
+        let (tab_id, space_id, title, url, pinned, former_position, position, in_place) =
             row.map_err(schema::storage)?;
         let tab_id = persisted_id("recently_closed", tab_id)?;
         let space_id = persisted_id("recently_closed", space_id)?;
@@ -67,14 +68,30 @@ pub(crate) fn load_recently_closed(
         let &(profile_index, space_index) = space_locations
             .get(&space_id)
             .ok_or_else(|| invalid_closed(tab_id, "missing owner"))?;
-        if identities.contains(&tab_id) || live_tabs.contains(&tab_id) || !closed_ids.insert(tab_id)
+        let in_place = require_bool("recently_closed", in_place)
+            .map_err(|_| invalid_closed(tab_id, "invalid in-place value"))?;
+        if in_place {
+            // Schema v5: the record of a pinned row closed in place names
+            // that closed live tab of the same space (the key keeps one
+            // record per tab) and reserves no identity of its own.
+            let waiting = profiles[profile_index].spaces[space_index]
+                .tabs
+                .iter()
+                .any(|tab| tab.id == tab_id && tab.pinned && tab.closed);
+            if !waiting || !closed_ids.insert(tab_id) {
+                return Err(invalid_closed(tab_id, "names no closed pinned row"));
+            }
+        } else if identities.contains(&tab_id)
+            || live_tabs.contains(&tab_id)
+            || !closed_ids.insert(tab_id)
         {
             return Err(invalid_closed(
                 tab_id,
                 "identity collides with live or closed state",
             ));
+        } else {
+            identities.insert(tab_id);
         }
-        identities.insert(tab_id);
         if !validation::valid_url(&url) {
             return Err(invalid_closed(tab_id, "invalid URL"));
         }
@@ -91,6 +108,7 @@ pub(crate) fn load_recently_closed(
                 url,
                 pinned,
                 former_position: former_position as u64,
+                in_place,
             });
     }
     Ok(())
@@ -104,7 +122,14 @@ pub(crate) fn project_soft_references(
 ) -> Result<(), PersistenceError> {
     for &(profile_index, space_index) in space_locations.values() {
         let space = &mut profiles[profile_index].spaces[space_index];
-        let members = space.tabs.iter().map(|tab| tab.id).collect::<HashSet<_>>();
+        // A closed pinned row is never shown: a selection or split pane
+        // naming it recovers like one naming a missing tab.
+        let members = space
+            .tabs
+            .iter()
+            .filter(|tab| !tab.closed)
+            .map(|tab| tab.id)
+            .collect::<HashSet<_>>();
         if let Some(tab_id) = space.active_tab {
             if !members.contains(&tab_id) {
                 space.active_tab = None;

@@ -4,14 +4,18 @@ use crate::PersistenceError;
 
 /// The current persistence schema version stamp.
 ///
-/// The store carries this stamp in SQLite's `PRAGMA user_version`. Schema v4
-/// adds the space paper (`spaces.tint_intensity`, `spaces.grain`; v2 D6/D7)
-/// on top of v3's global Saved Pages tables (`saved_pages`, `collections`)
-/// and v2's space appearance identity, global settings record, terminal
-/// download history, and visited command-history entries. There are **no
-/// migrations**: a store whose stamp does not match this constant is
-/// discarded and recreated empty (see [`crate::setup`]).
-pub(crate) const SCHEMA_VERSION: u32 = 4;
+/// The store carries this stamp in SQLite's `PRAGMA user_version`. Schema v5
+/// adds the kept places of pinned tabs (`tabs.pinned_url`,
+/// `tabs.pinned_title`, `tabs.closed`, `recently_closed.in_place`) and the
+/// tab organization (`folders`, `folder_members`, `favorites`; task packet
+/// `closed-pins-and-favorites`) on top of v4's space paper
+/// (`spaces.tint_intensity`, `spaces.grain`; v2 D6/D7), v3's global Saved
+/// Pages tables (`saved_pages`, `collections`) and v2's space appearance
+/// identity, global settings record, terminal download history, and visited
+/// command-history entries. There are **no migrations**: a store whose
+/// stamp does not match this constant is discarded and recreated empty (see
+/// [`crate::setup`]).
+pub(crate) const SCHEMA_VERSION: u32 = 5;
 
 pub(crate) const CREATE_SCHEMA: &str = r#"
 CREATE TABLE profiles (
@@ -38,7 +42,10 @@ CREATE TABLE tabs (
     title TEXT NOT NULL,
     url TEXT NOT NULL,
     position INTEGER NOT NULL,
-    pinned INTEGER NOT NULL
+    pinned INTEGER NOT NULL,
+    pinned_url TEXT,
+    pinned_title TEXT,
+    closed INTEGER NOT NULL
 );
 CREATE TABLE recently_closed (
     tab_id INTEGER PRIMARY KEY NOT NULL,
@@ -47,7 +54,8 @@ CREATE TABLE recently_closed (
     url TEXT NOT NULL,
     pinned INTEGER NOT NULL,
     former_position INTEGER NOT NULL,
-    position INTEGER NOT NULL
+    position INTEGER NOT NULL,
+    in_place INTEGER NOT NULL
 );
 CREATE TABLE splits (
     space_id INTEGER PRIMARY KEY NOT NULL,
@@ -109,8 +117,21 @@ CREATE TABLE saved_pages (
     collection_id INTEGER REFERENCES collections(id),
     position INTEGER NOT NULL
 );
-
-
+CREATE TABLE folders (
+    id INTEGER PRIMARY KEY NOT NULL,
+    space_id INTEGER NOT NULL REFERENCES spaces(id),
+    title TEXT NOT NULL,
+    position INTEGER NOT NULL
+);
+CREATE TABLE folder_members (
+    tab_id INTEGER PRIMARY KEY NOT NULL REFERENCES tabs(id),
+    folder_id INTEGER NOT NULL REFERENCES folders(id),
+    position INTEGER NOT NULL
+);
+CREATE TABLE favorites (
+    tab_id INTEGER PRIMARY KEY NOT NULL REFERENCES tabs(id),
+    position INTEGER NOT NULL
+);
 "#;
 
 // The schema-shape validators and version/order helpers live in

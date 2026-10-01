@@ -181,4 +181,9 @@ pub struct ClosedTab {
     pub tab: Tab,
     /// Former index in [`Space::tabs`], used to restore position on reopen.
     pub index: usize,
+    /// A pinned tab that closed in place (DESIGN.md §10.12): its row still
+    /// waits in the space as [`TabLifecycle::Closed`], and `tab` keeps the
+    /// page it showed when it closed. Reopening brings that page back in
+    /// the same row instead of inserting the tab again.
+    pub in_place: bool,
 }

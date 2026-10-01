@@ -210,7 +210,10 @@ impl BbrApp {
                 .get()
                 .rename_folder(rename.folder, &rename.draft);
             match renamed {
-                Ok(event) => log::debug!("folder renamed: {event:?}"),
+                Ok(event) => {
+                    log::debug!("folder renamed: {event:?}");
+                    self.persist_structure();
+                }
                 Err(error) => log::error!("could not rename folder: {error}"),
             }
         }

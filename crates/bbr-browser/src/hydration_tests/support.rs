@@ -47,6 +47,8 @@ pub(super) fn tab(id: u64, url: &str) -> IntentTab {
         title: format!("tab-{id}"),
         url: url.to_string(),
         pinned: false,
+        pinned_page: None,
+        closed: false,
     }
 }
 
@@ -64,6 +66,7 @@ pub(super) fn closed(id: u64, url: &str, former_position: u64) -> IntentClosedTa
         url: url.to_string(),
         pinned: false,
         former_position,
+        in_place: false,
     }
 }
 
@@ -127,6 +130,11 @@ pub(super) enum IdentityOp {
         title: String,
         url: String,
         pinned: bool,
+    },
+    KeptPlace {
+        tab: TabId,
+        page: bbr_domain::PinnedPage,
+        closed: bool,
     },
     ActiveTab {
         space: SpaceId,
@@ -234,6 +242,20 @@ impl RestoreTarget for RecordingTarget {
             title: title.to_string(),
             url: url.to_string(),
             pinned,
+        }));
+        Ok(())
+    }
+
+    fn restore_kept_place(
+        &mut self,
+        tab: TabId,
+        page: bbr_domain::PinnedPage,
+        closed: bool,
+    ) -> Result<(), HydrationError> {
+        self.ops.push(TargetOp::Identity(IdentityOp::KeptPlace {
+            tab,
+            page,
+            closed,
         }));
         Ok(())
     }

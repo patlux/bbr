@@ -196,6 +196,7 @@ impl AppStore {
         let restored_browser = BrowserState {
             profiles: outcome.snapshot.profiles,
             windows: outcome.snapshot.windows,
+            favorites: outcome.snapshot.favorites,
         };
         let next_bookmark_id = outcome
             .snapshot

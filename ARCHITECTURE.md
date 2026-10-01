@@ -923,13 +923,20 @@ tab or showing it in either split pane reactivates it; hidden active tabs become
 warm. Pinned tabs are kept places (DESIGN §10.12): `pin_tab` captures the
 tab's `PinnedPage` (URL and title), and `close_tab` on a pinned tab closes it
 in place as `TabLifecycle::Closed` — same index, no session, URL/title reset to
-the pinned page, no recently-closed record — which only a selection leaves;
-neighbor selection skips closed tabs and the session budget never counts them;
+the pinned page — and pushes an *in-place* `ClosedTab` record carrying the page
+it closed on (`closed_pins.rs`). `reopen_tab` pops records in close order: a
+regular record re-inserts the tab, an in-place record restores that page in the
+same row and selects it. A selection reopens the row at its pinned page; every
+path that opens, unpins or moves a closed row drops its in-place record
+(`forget_reopened_in_place`, run by `sync_lifecycles` and `unpin_tab`), and a
+space deletion closes the row onto the fallback's stack as an ordinary record.
+Neighbor selection skips closed tabs and the session budget never counts them;
 `unpin_tab` forgets the pinned page and turns a closed tab into a suspended
 regular one. A public `check_invariants()` verifies profile/space/tab
 cross-references, pinned ordering, active-tab and lifecycle visibility
 agreement, `closed => pinned`, `pinned page <=> pinned`, split membership and
-distinctness, recently-closed exclusion, and unique ids. The companion
+distinctness, recently-closed exclusion (an in-place record instead names a
+closed pinned member, once), and unique ids. The companion
 `FolderStore` keeps folders and the Favorites grid beside the `Browser` with
 `folder member => pinned`, `favorite => pinned` and `favorite => no folder`:
 favoriting pins a regular tab and ungroups a member in one transition, so the
@@ -1260,6 +1267,35 @@ differs from the derived default ("defaults never create records"). The
 presentation resolves the intensity in `bbr-ui::theme::space_tint(token,
 intensity, theme)` and paints the static grain from `components::grain` on
 the rail and chassis.
+
+## 9e2. Kept places and organization persistence — schema v5
+
+`SCHEMA_VERSION` is `5` (task packet `closed-pins-and-favorites`): `tabs`
+gains `pinned_url`/`pinned_title` (the pinned page; both or neither, only on a
+pinned tab) and `closed`; `recently_closed` gains `in_place` (the record names
+a closed pinned live tab of the same space and reserves no identity of its
+own); and three organization tables follow — `folders` (id, space, title,
+per-space order), `folder_members` (tab key, folder, per-folder order) and
+`favorites` (tab key, global order), each with strict foreign keys. Write
+validation (`validation_organization`) and restore
+(`repository_organization`) enforce the same rules: a member is a pinned tab
+of its folder's space in one folder, a favorite a loose pinned tab listed
+once, a closed tab is never a selection or split pane (restore projects such
+a soft reference away with a typed warning). Both browser writes share
+`repository_browser_rows`. Older stamps are discarded (no migration).
+
+The `RestoreIntent` carries the tab facts (`pinned_page`, `closed`,
+`in_place`): `HydrationPolicy::apply` calls
+`RestoreTarget::restore_kept_place` after each pinned tab, a closed tab never
+hydrates a session, and in-place records restore through
+`Browser::restore_in_place_closed`. The organization stays beside the
+controller: the app maps the persisted folders/favorites through
+`store::browser::persisted_organization`, restores them after the controller
+with `OrganizationController::restored` (`FolderStore::restored` keeps folder
+ids and checks every invariant whole; a rejected organization starts empty),
+and writes the reconciled export `OrganizationController::persisted` with
+every structural persist. Folder, membership and favorite commands persist
+like any structural mutation; the folder disclosure state stays session-local.
 
 ## 9f. Motion core and transient moments (v2 S6–S8)
 

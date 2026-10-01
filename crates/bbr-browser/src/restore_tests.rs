@@ -36,18 +36,24 @@ pub(crate) fn dense_intent() -> RestoreIntent {
                                 title: "Pinned".into(),
                                 url: "https://a.example".into(),
                                 pinned: true,
+                                pinned_page: None,
+                                closed: false,
                             },
                             IntentTab {
                                 id: 101,
                                 title: "One".into(),
                                 url: "https://b.example".into(),
                                 pinned: false,
+                                pinned_page: None,
+                                closed: false,
                             },
                             IntentTab {
                                 id: 102,
                                 title: "Two".into(),
                                 url: "https://c.example".into(),
                                 pinned: false,
+                                pinned_page: None,
+                                closed: false,
                             },
                         ],
                         active_tab: Some(101),
@@ -57,6 +63,7 @@ pub(crate) fn dense_intent() -> RestoreIntent {
                             url: "https://closed.example".into(),
                             pinned: false,
                             former_position: 2,
+                            in_place: false,
                         }],
                         split: Some(IntentSplit {
                             primary_tab: 101,
@@ -71,6 +78,8 @@ pub(crate) fn dense_intent() -> RestoreIntent {
                             title: "Solo".into(),
                             url: "https://d.example".into(),
                             pinned: false,
+                            pinned_page: None,
+                            closed: false,
                         }],
                         active_tab: Some(110),
                         recently_closed: vec![IntentClosedTab {
@@ -79,6 +88,7 @@ pub(crate) fn dense_intent() -> RestoreIntent {
                             url: "https://e.example".into(),
                             pinned: false,
                             former_position: 0,
+                            in_place: false,
                         }],
                         split: None,
                     },
@@ -97,6 +107,8 @@ pub(crate) fn dense_intent() -> RestoreIntent {
                             title: format!("Tab {index}"),
                             url: format!("https://dense{index}.example/"),
                             pinned: index < 3,
+                            pinned_page: None,
+                            closed: false,
                         })
                         .collect(),
                     active_tab: Some(1000),
@@ -332,10 +344,18 @@ fn intent_export_round_trips_the_live_model() {
     // Blueprint D23: split groups persist beside the store (the two-pane
     // table cannot hold a tree), so the exported intent carries none; the
     // restored legacy split lives on as a group.
+    // A restored pinned tab exports the page it is pinned at (its URL when
+    // the intent named none).
     let mut expected = dense_intent();
     for profile in &mut expected.profiles {
         for space in &mut profile.spaces {
             space.split = None;
+            for tab in space.tabs.iter_mut().filter(|tab| tab.pinned) {
+                tab.pinned_page = Some(bbr_domain::PinnedPage {
+                    url: tab.url.clone(),
+                    title: tab.title.clone(),
+                });
+            }
         }
     }
     assert_eq!(exported, expected);
@@ -343,4 +363,115 @@ fn intent_export_round_trips_the_live_model() {
     let plan = HydrationPolicy::plan(&dense_intent(), bbr_domain::SpaceId(10)).unwrap();
     assert_eq!(plan.sessions.len(), 2);
     assert_eq!(plan.deferred.len(), 502);
+}
+
+/// One space: a closed pinned row 100 (pinned at mail.example, closed on
+/// inbox/42 — its in-place record), an open pinned row 101 navigated away
+/// from its pinned page, and the selected regular tab 102.
+fn kept_places_intent() -> RestoreIntent {
+    let page = |url: &str, title: &str| {
+        Some(bbr_domain::PinnedPage {
+            url: url.into(),
+            title: title.into(),
+        })
+    };
+    RestoreIntent {
+        profiles: vec![IntentProfile {
+            id: 1,
+            title: "Work".into(),
+            hue: crate::ProfileHue::Cobalt,
+            spaces: vec![IntentSpace {
+                id: 10,
+                title: "Main".into(),
+                tabs: vec![
+                    IntentTab {
+                        id: 100,
+                        title: "Mail".into(),
+                        url: "https://mail.example".into(),
+                        pinned: true,
+                        pinned_page: page("https://mail.example", "Mail"),
+                        closed: true,
+                    },
+                    IntentTab {
+                        id: 101,
+                        title: "Thread".into(),
+                        url: "https://chat.example/thread".into(),
+                        pinned: true,
+                        pinned_page: page("https://chat.example", "Chat"),
+                        closed: false,
+                    },
+                    IntentTab {
+                        id: 102,
+                        title: "News".into(),
+                        url: "https://news.example".into(),
+                        pinned: false,
+                        pinned_page: None,
+                        closed: false,
+                    },
+                ],
+                active_tab: Some(102),
+                recently_closed: vec![IntentClosedTab {
+                    tab_id: 100,
+                    title: "Re: lunch".into(),
+                    url: "https://mail.example/inbox/42".into(),
+                    pinned: true,
+                    former_position: 0,
+                    in_place: true,
+                }],
+                split: None,
+            }],
+        }],
+    }
+}
+
+#[test]
+fn restore_keeps_closed_pinned_rows_their_pages_and_in_place_records() {
+    let harness = crate::fake::FakeEngine::new().into_harness();
+    let (mut controller, plan) = BrowserController::restored(
+        harness.engine.clone(),
+        seq_ids(),
+        &kept_places_intent(),
+        bbr_domain::SpaceId(10),
+    )
+    .unwrap();
+    // Only the selected regular tab hydrates; the closed row owns nothing.
+    assert_eq!(plan.sessions.len(), 1);
+    assert_eq!(harness.engine.borrow().live_session_count(), 1);
+    assert_eq!(controller.intent(), kept_places_intent());
+    let row = controller.browser.tab(bbr_domain::TabId(100)).unwrap();
+    assert_eq!(row.lifecycle, bbr_domain::TabLifecycle::Closed);
+    // ⇧⌘T after the relaunch brings back the page the row closed on.
+    controller.reopen_tab().unwrap();
+    let row = controller.browser.tab(bbr_domain::TabId(100)).unwrap();
+    assert_eq!(row.lifecycle, bbr_domain::TabLifecycle::Active);
+    assert_eq!(row.url, "https://mail.example/inbox/42");
+    assert_eq!(harness.engine.borrow().live_session_count(), 2);
+}
+
+#[test]
+fn restore_rejects_a_shown_closed_row_or_a_stray_in_place_record() {
+    // A closed row cannot be the selection.
+    let mut shown = kept_places_intent();
+    shown.profiles[0].spaces[0].active_tab = Some(100);
+    assert_eq!(
+        HydrationPolicy::plan(&shown, bbr_domain::SpaceId(10)),
+        Err(crate::HydrationError::InvalidActiveTab {
+            space_id: 10,
+            tab_id: 100
+        })
+    );
+    // An in-place record must name a closed row.
+    let mut stray = kept_places_intent();
+    stray.profiles[0].spaces[0].recently_closed[0].tab_id = 101;
+    assert_eq!(
+        HydrationPolicy::plan(&stray, bbr_domain::SpaceId(10)),
+        Err(crate::HydrationError::InvalidKeptPlace { tab_id: 101 })
+    );
+    // Only a pinned tab keeps a place.
+    let mut regular = kept_places_intent();
+    regular.profiles[0].spaces[0].tabs[2].closed = true;
+    assert_eq!(
+        HydrationPolicy::plan(&regular, bbr_domain::SpaceId(10)),
+        Err(crate::HydrationError::InvalidKeptPlace { tab_id: 102 })
+    );
 }

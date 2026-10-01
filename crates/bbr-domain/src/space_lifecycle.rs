@@ -104,9 +104,12 @@ impl Browser {
         let fallback = self.spaces[fallback_position].id;
         let position = group[at];
         let removed = self.spaces.remove(position);
+        // An in-place record names a row of the deleted space; that row
+        // closes onto the fallback's stack below as a whole tab instead.
         let mut moved: Vec<ClosedTab> = removed
             .recently_closed
             .into_iter()
+            .filter(|closed| !closed.in_place)
             .map(|mut closed| {
                 closed.tab.space = fallback;
                 closed
@@ -130,6 +133,7 @@ impl Browser {
             moved.push(ClosedTab {
                 tab,
                 index: base + offset,
+                in_place: false,
             });
         }
         self.space_mut(fallback)

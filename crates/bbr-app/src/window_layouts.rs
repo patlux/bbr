@@ -124,7 +124,13 @@ pub fn apply_first(
             .find(|(saved, _)| saved.0 == space.id)
         {
             match tab {
-                Some(tab) if space.tabs.iter().any(|candidate| candidate.id == tab.0) => {
+                // A closed pinned row is never the selection.
+                Some(tab)
+                    if space
+                        .tabs
+                        .iter()
+                        .any(|candidate| candidate.id == tab.0 && !candidate.closed) =>
+                {
                     space.active_tab = Some(tab.0);
                 }
                 Some(_) => {}
@@ -186,6 +192,8 @@ mod tests {
             title: String::new(),
             url: "https://example.com/".into(),
             pinned: false,
+            closed: false,
+            pinned_page: None,
         };
         let space = |id, tabs: Vec<IntentTab>, active| IntentSpace {
             id,

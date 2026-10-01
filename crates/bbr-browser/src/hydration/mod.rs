@@ -69,7 +69,7 @@ mod validate;
 
 pub use policy::{HydrationPolicy, RestoreTarget};
 
-use bbr_domain::{ProfileHue, SpaceId, TabId};
+use bbr_domain::{PinnedPage, ProfileHue, SpaceId, TabId};
 use bbr_web::ProfileId;
 
 /// A persisted structural browser state, shaped like the `bbr-persistence`
@@ -111,6 +111,12 @@ pub struct IntentTab {
     pub title: String,
     pub url: String,
     pub pinned: bool,
+    /// The page a pinned tab was pinned at (DESIGN.md §11.2); `None` for a
+    /// regular tab, or a pinned tab whose URL is its pinned page.
+    pub pinned_page: Option<PinnedPage>,
+    /// A pinned tab closed in place (DESIGN.md §10.12): it is never the
+    /// selection or a split pane and restores without a session.
+    pub closed: bool,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -123,6 +129,9 @@ pub struct IntentClosedTab {
     /// reopen. Kept as the persisted `u64`; the domain integration converts
     /// it to the space-local `usize` it needs.
     pub former_position: u64,
+    /// The record of a pinned row closed in place: `tab_id` names that
+    /// closed row of the same space, and `url`/`title` the page it showed.
+    pub in_place: bool,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -182,6 +191,8 @@ pub struct RestoredTab {
     pub title: String,
     pub url: String,
     pub pinned: bool,
+    pub pinned_page: Option<PinnedPage>,
+    pub closed: bool,
 }
 
 /// A restored recently-closed entry (identity only — it owns no session).
@@ -192,6 +203,7 @@ pub struct RestoredClosedTab {
     pub url: String,
     pub pinned: bool,
     pub former_position: u64,
+    pub in_place: bool,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -227,6 +239,10 @@ pub enum HydrationError {
     /// A recently-closed tab id collides with a live identity or another
     /// recently-closed id.
     RecentlyClosedCollision { tab_id: u64 },
+    /// A pinned page or closed state on a regular tab, or an in-place
+    /// record that names no closed pinned row of its space (DESIGN.md
+    /// §10.12).
+    InvalidKeptPlace { tab_id: u64 },
     /// A tab URL violates the bounded URL contract.
     InvalidUrl { tab_id: u64 },
     /// The restore target rejected an operation.
@@ -254,6 +270,9 @@ impl std::fmt::Display for HydrationError {
                     f,
                     "recently closed identity {tab_id} collides with live state"
                 )
+            }
+            Self::InvalidKeptPlace { tab_id } => {
+                write!(f, "tab {tab_id} is not a closed pinned place")
             }
             Self::InvalidUrl { tab_id } => write!(f, "invalid URL for tab {tab_id}"),
             Self::Target(message) => write!(f, "restore target rejected operation: {message}"),

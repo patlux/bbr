@@ -21,9 +21,9 @@ use bbr_persistence::{
 use support::{download_record, inventory, sample_snapshot, TempDb};
 
 #[test]
-fn first_run_creates_v4_store_then_round_trips() {
+fn first_run_creates_v5_store_then_round_trips() {
     // A fresh file and an empty stamp-0 database are indistinguishable
-    // first runs: both create the v4 schema, load as `Loaded`, and are
+    // first runs: both create the v5 schema, load as `Loaded`, and are
     // immediately writable.
     for db in [TempDb::new("first-run"), TempDb::from_fixture("schema_v0")] {
         let initial = db.repository().initialize_and_restore().unwrap();
@@ -33,9 +33,10 @@ fn first_run_creates_v4_store_then_round_trips() {
         let snapshot = sample_snapshot(3);
         let stats = db.repository().replace_snapshot(&snapshot).unwrap();
         assert_eq!(stats.committed_transactions, 1);
-        // Schema v4: eleven DELETE statements (the nine v2 tables plus
-        // saved_pages and collections) + 11 inserted rows.
-        assert_eq!(stats.sql_statements, 22);
+        // Schema v5: fourteen DELETE statements (the nine v2 tables,
+        // saved_pages and collections, and the three organization tables)
+        // + 11 inserted rows.
+        assert_eq!(stats.sql_statements, 25);
         assert_eq!(stats.inserted_rows, 11);
         assert_eq!(
             db.repository().restore_read_only().unwrap().snapshot,
@@ -54,7 +55,7 @@ fn mismatched_stamp_discards_and_is_immediately_rewritable() {
         db.repository().restore_read_only().unwrap_err(),
         PersistenceError::SchemaMismatch {
             found: 1,
-            supported: 4
+            supported: 5
         }
     );
     assert_eq!(inventory(&db.0), before);
@@ -93,8 +94,8 @@ fn newer_stamp_is_refused_on_both_paths_and_left_unchanged() {
     let db = TempDb::from_fixture("newer_schema");
     let before = inventory(&db.0);
     let refused = PersistenceError::SchemaMismatch {
-        found: 5,
-        supported: 4,
+        found: 6,
+        supported: 5,
     };
     assert_eq!(db.repository().restore_read_only().unwrap_err(), refused);
     assert_eq!(inventory(&db.0), before);
@@ -209,6 +210,7 @@ fn v3_round_trip_preserves_every_new_field() {
                     active_tab: None,
                     recently_closed: Vec::new(),
                     split: None,
+                    folders: Vec::new(),
                 }],
             },
             Profile {
@@ -225,6 +227,7 @@ fn v3_round_trip_preserves_every_new_field() {
                     active_tab: None,
                     recently_closed: Vec::new(),
                     split: None,
+                    folders: Vec::new(),
                 }],
             },
         ],
@@ -273,11 +276,12 @@ fn v3_round_trip_preserves_every_new_field() {
         // `contract_saved_pages` with the other B1-owned contract tests.
         collections: Vec::new(),
         saved_pages: Vec::new(),
+        favorites: Vec::new(),
     };
     repository.replace_snapshot(&snapshot).unwrap();
     assert_eq!(repository.restore_read_only().unwrap().snapshot, snapshot);
     // And again after a discard: a store that was discarded and recreated
-    // empty is immediately writable with the full v4 shape.
+    // empty is immediately writable with the full v5 shape.
     let outcome = repository.initialize_and_restore().unwrap();
     assert_eq!(outcome.store, StoreLoad::Loaded);
     repository.replace_snapshot(&snapshot).unwrap();
@@ -377,6 +381,7 @@ fn recently_closed_identity_collisions_reject_whole_write_across_every_kind() {
             url: "https://collision.test/".into(),
             pinned: false,
             former_position: 0,
+            in_place: false,
         });
         assert_eq!(
             repository.replace_snapshot(&invalid).unwrap_err(),
@@ -425,6 +430,7 @@ fn all_six_profile_hues_round_trip_without_domain_dependency() {
             command_history: Vec::new(),
             saved_pages: Vec::new(),
             collections: Vec::new(),
+            favorites: Vec::new(),
         };
         repository.replace_snapshot(&snapshot).unwrap();
         let connection = rusqlite::Connection::open(&db.0).unwrap();
@@ -468,10 +474,10 @@ fn deterministic_write_counts_include_deletes_and_inserts() {
             first.deleted_rows,
             first.inserted_rows
         ),
-        // Schema v4: eleven DELETE statements + the sample's 11 inserts on
-        // the first write (the settings row seeded by schema creation is
+        // Schema v5: fourteen DELETE statements + the sample's 11 inserts
+        // on the first write (the settings row seeded by schema creation is
         // also deleted), then the same 11 again on the second write.
-        (1, 22, 1, 11)
+        (1, 25, 1, 11)
     );
     let second = repository.replace_snapshot(&snapshot).unwrap();
     assert_eq!(
@@ -481,7 +487,7 @@ fn deterministic_write_counts_include_deletes_and_inserts() {
             second.deleted_rows,
             second.inserted_rows
         ),
-        (1, 22, 11, 11)
+        (1, 25, 11, 11)
     );
 }
 

@@ -136,6 +136,14 @@ fn rejected_target_errors_propagate() {
         ) -> Result<(), HydrationError> {
             Ok(())
         }
+        fn restore_kept_place(
+            &mut self,
+            _tab: TabId,
+            _page: bbr_domain::PinnedPage,
+            _closed: bool,
+        ) -> Result<(), HydrationError> {
+            Ok(())
+        }
         fn set_active_tab(
             &mut self,
             _space: SpaceId,
@@ -234,6 +242,15 @@ fn apply_stops_at_the_first_target_error_leaving_earlier_ops_applied() {
             _title: &str,
             _url: &str,
             _pinned: bool,
+        ) -> Result<(), HydrationError> {
+            self.identity_calls += 1;
+            Ok(())
+        }
+        fn restore_kept_place(
+            &mut self,
+            _tab: TabId,
+            _page: bbr_domain::PinnedPage,
+            _closed: bool,
         ) -> Result<(), HydrationError> {
             self.identity_calls += 1;
             Ok(())

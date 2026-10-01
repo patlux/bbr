@@ -6,7 +6,7 @@
 //! The target-application concern lives here; the public contract types live
 //! in the module root and the validation/planning internals in `validate`.
 
-use bbr_domain::{ProfileHue, SpaceId, TabId};
+use bbr_domain::{PinnedPage, ProfileHue, SpaceId, TabId};
 use bbr_web::ProfileId;
 
 use super::validate::ValidatedGraph;
@@ -65,6 +65,13 @@ impl HydrationPolicy {
                 target.restore_space(space.id, space.profile, &space.title)?;
                 for tab in &space.tabs {
                     target.restore_tab(tab.id, space.id, &tab.title, &tab.url, tab.pinned)?;
+                    if tab.pinned_page.is_some() || tab.closed {
+                        let page = tab.pinned_page.clone().unwrap_or_else(|| PinnedPage {
+                            url: tab.url.clone(),
+                            title: tab.title.clone(),
+                        });
+                        target.restore_kept_place(tab.id, page, tab.closed)?;
+                    }
                 }
                 target.set_active_tab(space.id, space.active_tab)?;
                 target.set_split(space.id, space.split)?;
@@ -110,6 +117,15 @@ pub trait RestoreTarget {
         title: &str,
         url: &str,
         pinned: bool,
+    ) -> Result<(), HydrationError>;
+    /// Restore a pinned tab's kept place right after its identity: the page
+    /// it was pinned at, and whether it waits closed in place (DESIGN.md
+    /// §10.12; never the selection, a split pane or a hydrated session).
+    fn restore_kept_place(
+        &mut self,
+        tab: TabId,
+        page: PinnedPage,
+        closed: bool,
     ) -> Result<(), HydrationError>;
     /// Set the space's own selected tab (restored on activation).
     fn set_active_tab(&mut self, space: SpaceId, tab: Option<TabId>) -> Result<(), HydrationError>;

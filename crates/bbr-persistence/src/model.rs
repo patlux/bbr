@@ -14,6 +14,9 @@ use crate::fields::{
 pub struct BrowserState {
     pub profiles: Vec<Profile>,
     pub windows: Vec<WindowState>,
+    /// The window-global favorites grid (schema v5): live pinned tab ids in
+    /// grid order.
+    pub favorites: Vec<u64>,
 }
 
 /// The complete ordered structural state owned by the persistence repository.
@@ -38,6 +41,9 @@ pub struct Snapshot {
     pub saved_pages: Vec<SavedPageRecord>,
     /// Flat Saved Page collections (schema v3), in persisted order.
     pub collections: Vec<CollectionRecord>,
+    /// The window-global favorites grid (schema v5; see
+    /// [`BrowserState::favorites`]).
+    pub favorites: Vec<u64>,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -118,6 +124,8 @@ pub struct Space {
     pub active_tab: Option<u64>,
     pub recently_closed: Vec<RecentlyClosedTab>,
     pub split: Option<Split>,
+    /// The space's folders in order (schema v5).
+    pub folders: Vec<Folder>,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -126,6 +134,19 @@ pub struct Tab {
     pub title: String,
     pub url: String,
     pub pinned: bool,
+    /// The page a pinned tab was pinned at (schema v5); `Some` exactly
+    /// while `pinned`.
+    pub pinned_page: Option<PinnedPage>,
+    /// A pinned tab closed in place (schema v5, DESIGN.md §10.12): never
+    /// the space's active tab or a split pane.
+    pub closed: bool,
+}
+
+/// The page a pinned tab was pinned at (schema v5, DESIGN.md §11.2).
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct PinnedPage {
+    pub url: String,
+    pub title: String,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -135,6 +156,21 @@ pub struct RecentlyClosedTab {
     pub url: String,
     pub pinned: bool,
     pub former_position: u64,
+    /// The record of a pinned row closed in place (schema v5): `tab_id`
+    /// names that closed live tab of the same space, `url`/`title` the page
+    /// it showed when it closed.
+    pub in_place: bool,
+}
+
+/// A folder of one space (schema v5): the grouped form of pinned tabs.
+/// Folder ids are their own identity kind (unique among folders).
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Folder {
+    pub id: u64,
+    pub title: String,
+    /// Member tab ids in folder order: pinned tabs of the same space, each
+    /// in at most one folder and never a favorite.
+    pub tabs: Vec<u64>,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]

@@ -121,8 +121,22 @@ impl Browser {
                     panes.push(pane);
                 }
             }
+            let mut in_place = std::collections::HashSet::new();
             for closed in &space.recently_closed {
-                if space.tabs.contains(&closed.tab.id) {
+                // DESIGN.md §10.12: an in-place record names a closed
+                // pinned row of this space, at most once.
+                if closed.in_place {
+                    let waiting = space.tabs.contains(&closed.tab.id)
+                        && self
+                            .tab(closed.tab.id)
+                            .is_some_and(|tab| tab.pinned && tab.lifecycle == TabLifecycle::Closed);
+                    if !waiting || !in_place.insert(closed.tab.id) {
+                        return Err(fail(format!(
+                            "space {:?} in-place record {:?} names no closed pinned row",
+                            space.id, closed.tab.id
+                        )));
+                    }
+                } else if space.tabs.contains(&closed.tab.id) {
                     return Err(fail(format!(
                         "space {:?} recently closed tab {:?} is still a member",
                         space.id, closed.tab.id

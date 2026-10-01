@@ -78,18 +78,24 @@ fn sample_browser_state() -> BrowserState {
                             title: "Pinned".into(),
                             url: "https://a.example/".into(),
                             pinned: true,
+                            closed: false,
+                            pinned_page: None,
                         },
                         Tab {
                             id: 101,
                             title: "One".into(),
                             url: "https://b.example/".into(),
                             pinned: false,
+                            closed: false,
+                            pinned_page: None,
                         },
                         Tab {
                             id: 102,
                             title: "Two".into(),
                             url: "https://c.example/".into(),
                             pinned: false,
+                            closed: false,
+                            pinned_page: None,
                         },
                     ],
                     active_tab: Some(101),
@@ -99,11 +105,13 @@ fn sample_browser_state() -> BrowserState {
                         url: "https://closed.example/".into(),
                         pinned: false,
                         former_position: 2,
+                        in_place: false,
                     }],
                     split: Some(Split {
                         primary_tab: 101,
                         secondary_tab: 102,
                     }),
+                    folders: Vec::new(),
                 },
                 Space {
                     id: 11,
@@ -116,10 +124,13 @@ fn sample_browser_state() -> BrowserState {
                         title: "Solo".into(),
                         url: "https://d.example/".into(),
                         pinned: false,
+                        closed: false,
+                        pinned_page: None,
                     }],
                     active_tab: Some(110),
                     recently_closed: Vec::new(),
                     split: None,
+                    folders: Vec::new(),
                 },
             ],
         }],
@@ -137,6 +148,7 @@ fn sample_browser_state() -> BrowserState {
                 last_expanded_width: 300.0,
             },
         }],
+        favorites: Vec::new(),
     }
 }
 
@@ -222,6 +234,8 @@ fn dense_500_tab_browser_state_round_trips() {
             title: format!("Tab {index}"),
             url: format!("https://dense{index}.example/"),
             pinned: index < 3,
+            closed: false,
+            pinned_page: None,
         })
         .collect::<Vec<_>>();
     let state = BrowserState {
@@ -243,8 +257,10 @@ fn dense_500_tab_browser_state_round_trips() {
                     url: "https://closed.example/".into(),
                     pinned: false,
                     former_position: 0,
+                    in_place: false,
                 }],
                 split: None,
+                folders: Vec::new(),
             }],
         }],
         windows: vec![WindowState {
@@ -252,6 +268,7 @@ fn dense_500_tab_browser_state_round_trips() {
             geometry: None,
             sidebar: SidebarState::default(),
         }],
+        favorites: Vec::new(),
     };
     repository.store_browser_state(&state).unwrap();
     let outcome = repository.restore_read_only().unwrap();

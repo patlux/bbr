@@ -98,6 +98,8 @@ impl BrowserController {
                                         title: tab.title.clone(),
                                         url: tab.url.clone(),
                                         pinned: tab.pinned,
+                                        pinned_page: tab.pinned_page.clone(),
+                                        closed: tab.lifecycle == bbr_domain::TabLifecycle::Closed,
                                     })
                                 })
                                 .collect(),
@@ -111,6 +113,7 @@ impl BrowserController {
                                     url: closed.tab.url.clone(),
                                     pinned: closed.tab.pinned,
                                     former_position: closed.index as u64,
+                                    in_place: closed.in_place,
                                 })
                                 .collect(),
                             // Blueprint D23: split groups persist in the
@@ -186,6 +189,17 @@ impl RestoreTarget for BrowserController {
             .map_err(target_error)
     }
 
+    fn restore_kept_place(
+        &mut self,
+        tab: TabId,
+        page: bbr_domain::PinnedPage,
+        closed: bool,
+    ) -> Result<(), HydrationError> {
+        self.browser
+            .restore_kept_place(tab, page, closed)
+            .map_err(target_error)
+    }
+
     fn set_active_tab(
         &mut self,
         space: bbr_domain::SpaceId,
@@ -218,9 +232,16 @@ impl RestoreTarget for BrowserController {
         for entry in entries {
             let mut tab = Tab::new(entry.tab_id, space, &entry.title, &entry.url);
             tab.pinned = entry.pinned;
-            self.browser
-                .restore_recently_closed(space, tab, entry.former_position as usize)
-                .map_err(target_error)?;
+            let former_position = entry.former_position as usize;
+            if entry.in_place {
+                self.browser
+                    .restore_in_place_closed(space, tab, former_position)
+                    .map_err(target_error)?;
+            } else {
+                self.browser
+                    .restore_recently_closed(space, tab, former_position)
+                    .map_err(target_error)?;
+            }
         }
         Ok(())
     }

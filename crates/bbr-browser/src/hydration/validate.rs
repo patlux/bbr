@@ -76,6 +76,7 @@ impl ValidatedGraph {
                 space_profiles.insert(space.id, profile.id);
 
                 let mut members = HashSet::new();
+                let mut closed_rows = HashSet::new();
                 let mut saw_regular = false;
                 let mut restored_tabs = Vec::with_capacity(space.tabs.len());
                 for tab in &space.tabs {
@@ -92,16 +93,35 @@ impl ValidatedGraph {
                     } else if saw_regular {
                         return Err(HydrationError::InvalidPinnedRegion { space_id: space.id });
                     }
+                    // DESIGN.md §10.12: only a pinned tab keeps a pinned
+                    // page or waits closed in place.
+                    if (tab.pinned_page.is_some() || tab.closed) && !tab.pinned {
+                        return Err(HydrationError::InvalidKeptPlace { tab_id: tab.id });
+                    }
+                    if tab
+                        .pinned_page
+                        .as_ref()
+                        .is_some_and(|page| !valid_url(&page.url))
+                    {
+                        return Err(HydrationError::InvalidUrl { tab_id: tab.id });
+                    }
+                    if tab.closed {
+                        closed_rows.insert(tab.id);
+                    }
                     restored_tabs.push(RestoredTab {
                         id: TabId(tab.id),
                         title: tab.title.clone(),
                         url: tab.url.clone(),
                         pinned: tab.pinned,
+                        pinned_page: tab.pinned_page.clone(),
+                        closed: tab.closed,
                     });
                 }
 
+                // A closed row is never shown: it cannot be the selection
+                // or a split pane.
                 if let Some(active) = space.active_tab {
-                    if !members.contains(&active) {
+                    if !members.contains(&active) || closed_rows.contains(&active) {
                         return Err(HydrationError::InvalidActiveTab {
                             space_id: space.id,
                             tab_id: active,
@@ -112,22 +132,37 @@ impl ValidatedGraph {
                     if split.primary_tab == split.secondary_tab
                         || !members.contains(&split.primary_tab)
                         || !members.contains(&split.secondary_tab)
+                        || closed_rows.contains(&split.primary_tab)
+                        || closed_rows.contains(&split.secondary_tab)
                     {
                         return Err(HydrationError::InvalidSplit { space_id: space.id });
                     }
                 }
 
                 let mut restored_closed = Vec::with_capacity(space.recently_closed.len());
+                let mut in_place_rows = HashSet::new();
                 for closed in &space.recently_closed {
-                    // Closed identities must be globally unique among
-                    // themselves; live-identity collisions are checked after
-                    // the full pass.
-                    if !closed_ids.insert(closed.tab_id) {
+                    if closed.in_place {
+                        // An in-place record names a closed row of this
+                        // space (its live identity), at most once.
+                        if !closed_rows.contains(&closed.tab_id)
+                            || !in_place_rows.insert(closed.tab_id)
+                        {
+                            return Err(HydrationError::InvalidKeptPlace {
+                                tab_id: closed.tab_id,
+                            });
+                        }
+                    } else if !closed_ids.insert(closed.tab_id) {
+                        // Closed identities must be globally unique among
+                        // themselves; live-identity collisions are checked
+                        // after the full pass.
                         return Err(HydrationError::RecentlyClosedCollision {
                             tab_id: closed.tab_id,
                         });
                     }
-                    closed_order.push(closed.tab_id);
+                    if !closed.in_place {
+                        closed_order.push(closed.tab_id);
+                    }
                     if !valid_url(&closed.url) {
                         return Err(HydrationError::InvalidUrl {
                             tab_id: closed.tab_id,
@@ -139,6 +174,7 @@ impl ValidatedGraph {
                         url: closed.url.clone(),
                         pinned: closed.pinned,
                         former_position: closed.former_position,
+                        in_place: closed.in_place,
                     });
                 }
 

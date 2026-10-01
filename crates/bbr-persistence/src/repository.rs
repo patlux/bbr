@@ -6,14 +6,16 @@ use crate::load_helpers::{
     invalid_value, parse_appearance, parse_paper, persisted_id, require_bool, require_id,
     require_order, require_owner_order,
 };
+use crate::repository_browser_rows::insert_browser_rows;
 use crate::repository_load::{
     load_command_history, load_downloads, load_recently_closed, load_settings, load_windows,
     project_soft_references, validate_nested_orders, validate_tab_orders_and_pins,
 };
+use crate::repository_organization::load_organization;
 use crate::repository_saved_pages_rows::{load_collections, load_saved_pages};
 use crate::{
-    schema, setup, validation, CorruptionIssue, DownloadRecord, PersistenceError, Profile,
-    ProfileHue, RecoveryWarning, Repository, RestoreOutcome, Snapshot, Space, SpaceGlyph,
+    schema, setup, validation, CorruptionIssue, DownloadRecord, PersistenceError, PinnedPage,
+    Profile, ProfileHue, RecoveryWarning, Repository, RestoreOutcome, Snapshot, Space,
     StoreDiscardReason, StoreLoad, Tab, WriteStats,
 };
 
@@ -108,66 +110,12 @@ impl Repository {
             .map_err(schema::storage)?;
         let transaction = connection.transaction().map_err(schema::storage)?;
         let deleted_rows = schema::deleted_rows(&transaction)?;
-        let mut inserted_rows = 0_u64;
-
-        for (profile_position, profile) in snapshot.profiles.iter().enumerate() {
-            transaction
-                .execute(
-                    "INSERT INTO profiles(id, title, hue, position) VALUES (?, ?, ?, ?)",
-                    params![
-                        to_i64(profile.id),
-                        profile.title,
-                        profile.hue.as_str(),
-                        profile_position as i64
-                    ],
-                )
-                .map_err(schema::storage)?;
-            inserted_rows += 1;
-            for (space_position, space) in profile.spaces.iter().enumerate() {
-                transaction.execute(
-                    "INSERT INTO spaces(id, profile_id, title, tint, glyph_kind, glyph, position, active_tab_id, tint_intensity, grain) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                    params![to_i64(space.id), to_i64(profile.id), space.title, space.tint.as_str(), glyph_kind(&space.glyph), glyph_value(&space.glyph), space_position as i64, space.active_tab.map(to_i64), space.paper.intensity.as_str(), space.paper.grain],
-                ).map_err(schema::storage)?;
-                inserted_rows += 1;
-                for (tab_position, tab) in space.tabs.iter().enumerate() {
-                    transaction.execute(
-                        "INSERT INTO tabs(id, space_id, title, url, position, pinned) VALUES (?, ?, ?, ?, ?, ?)",
-                        params![to_i64(tab.id), to_i64(space.id), tab.title, tab.url, tab_position as i64, i64::from(tab.pinned)],
-                    ).map_err(schema::storage)?;
-                    inserted_rows += 1;
-                }
-                for (position, closed) in space.recently_closed.iter().enumerate() {
-                    transaction.execute(
-                        "INSERT INTO recently_closed(tab_id, space_id, title, url, pinned, former_position, position) VALUES (?, ?, ?, ?, ?, ?, ?)",
-                        params![to_i64(closed.tab_id), to_i64(space.id), closed.title, closed.url, i64::from(closed.pinned), to_i64(closed.former_position), position as i64],
-                    ).map_err(schema::storage)?;
-                    inserted_rows += 1;
-                }
-                if let Some(split) = space.split {
-                    transaction.execute(
-                        "INSERT INTO splits(space_id, primary_tab_id, secondary_tab_id) VALUES (?, ?, ?)",
-                        params![to_i64(space.id), to_i64(split.primary_tab), to_i64(split.secondary_tab)],
-                    ).map_err(schema::storage)?;
-                    inserted_rows += 1;
-                }
-            }
-        }
-        for (position, window) in snapshot.windows.iter().enumerate() {
-            let (x, y, width, height) = match window.geometry {
-                Some(geometry) => (
-                    Some(geometry.x),
-                    Some(geometry.y),
-                    Some(geometry.width),
-                    Some(geometry.height),
-                ),
-                None => (None, None, None, None),
-            };
-            transaction.execute(
-                "INSERT INTO windows(id, position, x, y, width, height, sidebar_width, sidebar_collapsed, last_expanded_width) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                params![to_i64(window.id), position as i64, x, y, width, height, window.sidebar.width, i64::from(window.sidebar.collapsed), window.sidebar.last_expanded_width],
-            ).map_err(schema::storage)?;
-            inserted_rows += 1;
-        }
+        let mut inserted_rows = insert_browser_rows(
+            &transaction,
+            &snapshot.profiles,
+            &snapshot.windows,
+            &snapshot.favorites,
+        )?;
         transaction
             .execute(
                 "INSERT INTO settings(id, search_engine, custom_search_template) VALUES (1, ?, ?)",
@@ -222,10 +170,11 @@ impl Repository {
         transaction.commit().map_err(schema::storage)?;
         Ok(WriteStats {
             committed_transactions: 1,
-            // Schema v3: eleven deterministic child-first DELETE statements
-            // (the nine v2 tables plus saved_pages and collections) plus one
-            // INSERT execution per row.
-            sql_statements: 11 + inserted_rows,
+            // Schema v5: fourteen deterministic child-first DELETE
+            // statements (the nine v2 tables, saved_pages and collections,
+            // and the three organization tables) plus one INSERT execution
+            // per row.
+            sql_statements: 14 + inserted_rows,
             deleted_rows,
             inserted_rows,
         })
@@ -282,20 +231,6 @@ pub(crate) const fn to_i64(value: u64) -> i64 {
     value as i64
 }
 
-fn glyph_kind(glyph: &SpaceGlyph) -> &'static str {
-    match glyph {
-        crate::SpaceGlyph::Emoji(_) => "emoji",
-        crate::SpaceGlyph::Glyph(_) => "glyph",
-    }
-}
-
-fn glyph_value(glyph: &SpaceGlyph) -> &str {
-    match glyph {
-        crate::SpaceGlyph::Emoji(value) => value,
-        crate::SpaceGlyph::Glyph(name) => name.as_str(),
-    }
-}
-
 fn restore_from_connection(connection: &Connection) -> Result<RestoreOutcome, PersistenceError> {
     let mut warnings = Vec::new();
     let mut identities = HashSet::new();
@@ -341,6 +276,7 @@ fn restore_from_connection(connection: &Connection) -> Result<RestoreOutcome, Pe
         &mut identities,
     )?;
     project_soft_references(connection, &space_locations, &mut profiles, &mut warnings)?;
+    let favorites = load_organization(connection, &space_locations, &mut profiles)?;
     let windows = load_windows(connection, &mut identities, &mut warnings)?;
     let settings = load_settings(connection, &mut warnings)?;
     let downloads = load_downloads(connection, &mut HashSet::new())?;
@@ -358,6 +294,7 @@ fn restore_from_connection(connection: &Connection) -> Result<RestoreOutcome, Pe
             command_history,
             saved_pages,
             collections,
+            favorites,
         },
         warnings,
         store: StoreLoad::Loaded,
@@ -455,6 +392,7 @@ fn load_spaces(
                 active_tab,
                 recently_closed: Vec::new(),
                 split: None,
+                folders: Vec::new(),
             },
             profile_id,
         ));
@@ -467,24 +405,32 @@ fn load_tabs(
     identities: &mut HashSet<u64>,
 ) -> Result<Vec<(Tab, u64)>, PersistenceError> {
     let mut statement = connection.prepare(
-        "SELECT id, space_id, title, url, position, pinned FROM tabs ORDER BY space_id, position",
+        "SELECT id, space_id, title, url, position, pinned, pinned_url, pinned_title, closed FROM tabs ORDER BY space_id, position",
     ).map_err(schema::storage)?;
     let rows = statement
         .query_map([], |row| {
             Ok((
-                row.get::<_, i64>(0)?,
-                row.get::<_, i64>(1)?,
-                row.get::<_, String>(2)?,
-                row.get::<_, String>(3)?,
-                row.get::<_, i64>(4)?,
-                row.get::<_, i64>(5)?,
+                (
+                    row.get::<_, i64>(0)?,
+                    row.get::<_, i64>(1)?,
+                    row.get::<_, String>(2)?,
+                    row.get::<_, String>(3)?,
+                    row.get::<_, i64>(4)?,
+                    row.get::<_, i64>(5)?,
+                ),
+                (
+                    row.get::<_, Option<String>>(6)?,
+                    row.get::<_, Option<String>>(7)?,
+                    row.get::<_, i64>(8)?,
+                ),
             ))
         })
         .map_err(schema::storage)?;
     let mut result = Vec::new();
     let mut owner_positions = HashMap::new();
     for row in rows {
-        let (id, space_id, title, url, position, pinned) = row.map_err(schema::storage)?;
+        let ((id, space_id, title, url, position, pinned), (pinned_url, pinned_title, closed)) =
+            row.map_err(schema::storage)?;
         let space_id = persisted_id("tabs", space_id)?;
         require_owner_order("tabs", space_id, position, &mut owner_positions)?;
         let id = require_id("tabs", id, identities)?;
@@ -492,12 +438,34 @@ fn load_tabs(
             return Err(invalid_value("tabs", format!("tab {id} has invalid URL")));
         }
         let pinned = require_bool("tabs", pinned)?;
+        let closed = require_bool("tabs", closed)?;
+        // Schema v5: only a pinned tab keeps a pinned page or waits closed.
+        let pinned_page = match (pinned_url, pinned_title) {
+            (None, None) => None,
+            (Some(url), Some(title)) if pinned && validation::valid_url(&url) => {
+                Some(PinnedPage { url, title })
+            }
+            _ => {
+                return Err(invalid_value(
+                    "tabs",
+                    format!("tab {id} has an invalid pinned page"),
+                ))
+            }
+        };
+        if closed && !pinned {
+            return Err(invalid_value(
+                "tabs",
+                format!("tab {id} is closed but not pinned"),
+            ));
+        }
         result.push((
             Tab {
                 id,
                 title,
                 url,
                 pinned,
+                pinned_page,
+                closed,
             },
             space_id,
         ));

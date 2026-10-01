@@ -726,13 +726,18 @@ Visuals: the favicon/monogram draws at 40 % opacity
 (`CLOSED_ICON_OPACITY`) and the title in `ink.faint`; the row offers no
 close control (it is already closed) and hover/press keep the §10.2/§10.3
 washes. Selecting it — pointer, keyboard, Favorite activation or a command
-result — opens the pinned page in a fresh session. Selection never lands on
-a closed row by itself: closing picks the next *open* neighbor, and ↑/↓ and
+result — opens the pinned page in a fresh session. Reopen Closed Tab
+(`⇧⌘T`, or History › Recently closed) instead brings back the page the tab
+showed when it closed, in the same row: closing records it like any closed
+tab, in close order with the regular ones, and opening the row any other way
+(selection, unpin, move) drops that record. Selection never lands on a
+closed row by itself: closing picks the next *open* neighbor, and ↑/↓ and
 ⌃⇥ step past closed rows. A closed tab is not an asleep (suspended) tab,
 which keeps its live URL and is not greyed; unpinning a closed tab leaves an
-unloaded regular tab. The state is session-local (task packet
-`closed-pins-and-favorites`): after a relaunch a closed row restores asleep
-at its pinned URL. **Assert:** typed `lifecycle == "closed"`,
+unloaded regular tab. The closed state, the pinned page and the reopen record
+persist (schema v5, task packet `closed-pins-and-favorites`): after a
+relaunch a closed row is still closed and greyed without a session.
+**Assert:** typed `lifecycle == "closed"`,
 `lifecycle_counts.closed`, `favorites[n].closed`, and the semantic row/tile
 value `closed` (never color-only).
 
@@ -986,8 +991,8 @@ using the IDs of §15. All rows use `density` geometry from §8.
   (`bbr-plus-menu`, `elev:2`, `material:overlay`, `radius:md`) with exactly
   two items in v1: **New Space** (`bbr-plus-new-space`) and **New Folder**
   (`bbr-plus-new-folder`). New Space creates a real space through the
-  controller; New Folder creates a session-local folder that opens in
-  inline rename (§11.11). The menu is keyboard-operable (`↑`/`↓`, Enter
+  controller; New Folder creates a folder that opens in inline rename
+  (§11.11). The menu is keyboard-operable (`↑`/`↓`, Enter
   commits, Escape dismisses without action), closes on outside pointer
   press (one pointer action, §13), and New Space preserves the invoking
   focus domain per the interaction contract (New Folder hands chrome focus
@@ -1509,7 +1514,8 @@ scheme; a title consisting only of whitespace is treated as empty.
   space. Dragging a tab into the grid toggles that same tab as a favorite
   (pinning it); closing it greys the tile, and moving it makes the favorite
   follow its stable `TabId` to the new space/profile. No second web session
-  is created.
+  is created. The grid and its order persist with the browser structure
+  (schema v5) and restore after a relaunch.
 - **Assert ids:** `bbr-section-favorites`, `bbr-favorites`,
   `bbr-fav-<n>`, `bbr-fav-icon-<n>`, `bbr-favorites-empty` (+ `-label`/
   `-hint` in the zero-favorites band), and `bbr-favorites-drop-cell` while a
@@ -1525,8 +1531,10 @@ invariant `folder member => pinned` holds
 grouping a regular tab pins it in the same transition (it moves to the end of
 the pinned region, reported as an ordinary pin); removing a member from its
 folder leaves a loose pinned tab; unpinning a member through any path ends
-its membership; a rejected grouping changes neither. Folders are
-session-local, so a restore never recreates a membership. A grouped tab
+its membership; a rejected grouping changes neither. Folders, their titles
+and members persist with the browser structure (schema v5) and restore with
+their ids; a restored member is always pinned, and the disclosure state is
+session-local. A grouped tab
 renders inside its folder only: the loose pinned block lists the ungrouped
 pinned tabs, a loose row's drag resolves among the loose rows (past the last
 one is the pinned region's end), and ↑/↓ traverse the rendered rows — loose

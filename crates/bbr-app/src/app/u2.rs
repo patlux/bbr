@@ -240,6 +240,8 @@ impl BbrApp {
                 match folder {
                     Ok(OrganizationEvent::FolderCreated { id, .. }) => {
                         created_folder = Some(id);
+                        // Schema v5: folders survive a restart.
+                        self.persist_structure();
                         cx.notify();
                     }
                     Ok(_) => unreachable!("new_folder only emits FolderCreated"),
@@ -289,6 +291,9 @@ impl BbrApp {
                 self.sync_command_bar();
                 self.ensure_active_visible();
                 self.focus_tab_list(window, cx);
+                // The selection (and the reopen of a closed Favorite) is a
+                // structural mutation like every other selection path.
+                self.persist_structure();
                 log::debug!(
                     "favorite {index} activated: tab {tab:?} in space {space:?} (profile {profile:?}) at index {tab_index}"
                 );
@@ -327,9 +332,9 @@ impl BbrApp {
         }
     }
 
-    /// Mirror a favorite toggle: the §18.5 pop for an added tile, and a
-    /// regular tab pinned by the same transition reported and persisted
-    /// like every other pin (the grouping rule of [`Self::apply_grouping`]).
+    /// Mirror a favorite toggle: the §18.5 pop for an added tile, a regular
+    /// tab pinned by the same transition reported like every other pin (the
+    /// grouping rule of [`Self::apply_grouping`]), and the grid persisted.
     pub(crate) fn apply_favorite_toggle(
         &mut self,
         event: &OrganizationEvent,
@@ -355,14 +360,16 @@ impl BbrApp {
         if let Some(index) = pinned_index {
             self.report_organizing_pin(*tab, *index);
         }
+        // Schema v5: the favorites grid survives a restart.
+        self.persist_structure();
         cx.notify();
     }
 
     /// A regular tab pinned by an organizing transition (grouping or
-    /// favoriting) is a structural browser mutation: it is observable like
-    /// every other pin (`TabPinned`) and must survive a force quit.
-    /// `TabPinned` carries an active-space index, so a pin in another space
-    /// (a Favorite's own space) is persisted but not reported.
+    /// favoriting) is observable like every other pin (`TabPinned`); the
+    /// caller persists the whole transition. `TabPinned` carries an
+    /// active-space index, so a pin in another space (a Favorite's own
+    /// space) is not reported.
     fn report_organizing_pin(&mut self, tab: bbr_domain::TabId, index: usize) {
         self.clear_command_profile_hint();
         self.sync_command_bar();
@@ -374,7 +381,6 @@ impl BbrApp {
         if in_active_space {
             self.emit_browser(&bbr_browser::ControllerEvent::TabPinned { index });
         }
-        self.persist_structure();
     }
 
     /// §11.11 folder disclosure: expand/collapse the folder with domain id
@@ -539,6 +545,7 @@ impl BbrApp {
         match removed {
             Ok(event) => {
                 log::debug!("{event:?}");
+                self.persist_structure();
                 self.focus_tab_list(window, cx);
                 cx.notify();
             }
@@ -547,8 +554,8 @@ impl BbrApp {
     }
 
     /// Mirror a grouping outcome. A regular tab pinned by the grouping
-    /// transition is a structural browser mutation: it is observable like
-    /// every other pin (`TabPinned`) and must survive a force quit.
+    /// transition is observable like every other pin (`TabPinned`), and the
+    /// grouping (with the pin) must survive a force quit.
     pub(super) fn apply_grouping(&mut self, event: &OrganizationEvent, cx: &mut Context<Self>) {
         match event {
             OrganizationEvent::TabMovedIntoFolder {
@@ -560,6 +567,8 @@ impl BbrApp {
                 if let Some(index) = pinned_index {
                     self.report_organizing_pin(*tab, *index);
                 }
+                // Schema v5: folder membership survives a restart.
+                self.persist_structure();
                 cx.notify();
             }
             other => unreachable!("grouping only emits TabMovedIntoFolder, got {other:?}"),
