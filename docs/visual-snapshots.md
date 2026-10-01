@@ -109,6 +109,21 @@ hardening, environment, transport, timeout or cleanup pass is claimed. The
 consumer host-capture guard remains closed pending adapter integration and the
 explicitly approved pilot.
 
+### Raw artifact return prerequisite
+
+The transport helper packages only flat raw PNGs and explicitly named JSON/TSV
+evidence, including a guest receipt bound to the expected payload hash. The host
+hashes every bounded archive member before creating a fresh staging directory;
+it never calls a generic archive extraction API. Missing/extra/duplicate files,
+unsafe paths, links, extended/sparse members, oversized/truncated content and
+changed bytes fail. Extraction rechecks bytes and publishes its completion
+manifest last; interrupted staging is retained without a usable completion marker
+and cannot be overwritten. PNG bytes are not decoded, transformed or accepted by
+this transport. The existing Rust validators must still prove format, dimensions,
+coverage and guest provenance after return and before upstream capture sealing.
+Fixture round trips and hostile archive tests are portable evidence only: real
+SSH transfer, native images and capture integration remain unverified.
+
 ## Capture contract
 
 `visual.toml` delegates PNG production to `scripts/visual/capture.py`. It builds

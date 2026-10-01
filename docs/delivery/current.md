@@ -250,6 +250,31 @@ transport wiring, followed by current Gallery coverage selection. These remain
 runnable without VM permission; no completion, GUI gate, baseline acceptance or
 performance pass is claimed. Boot/network and Checkbox approvals remain pending.
 
+### Raw artifact return checkpoint
+
+Added the bounded flat-file transport prerequisite, not a comparator or capture
+seal. Raw PNG and explicit JSON/TSV evidence are bound to the payload hash;
+all members are preflighted and hashed before host staging. No generic archive
+extraction, symlink/hardlink, path rewriting, sparse/extended member, resize or
+image conversion. Copied bytes are rechecked and the completion marker is last.
+An interrupted copy leaves unusable partial evidence and refuses overwrite.
+
+Six portable tests pass: exact synthetic round trip, payload mismatch,
+missing/extra/duplicate files/JSON keys, traversal/absolute paths, links,
+nonregular members, invalid sizes/hashes, truncation, byte limits, expired
+deadlines and interruption without completion. `just visual-test` now passes
+66 Python unit tests (one extra integration class skipped then run separately),
+the unchanged upstream suite and 31 Rust consumer tests. Roadmap/whitespace
+checks pass. Log: `/tmp/bbr-visual-vm-transfer-visual-test.log`.
+Self-review added cumulative-size limits and second-pass extended-member checks.
+No actual PNG, guest, SSH stream or baseline was produced/accepted; format,
+coverage and receipt validation remain Rust/upstream responsibilities.
+
+Parallelism audit: sole local writer remains; transport installation/wiring and
+current Gallery selection/coverage audit are next non-network actions. No
+subagent, new lane, host GUI, push or expanded product scope. The requested VM
+and Checkbox permissions remain pending and do not justify a completion claim.
+
 ## Status vocabulary
 
 | Status | Meaning |
