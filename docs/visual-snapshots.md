@@ -35,6 +35,39 @@ The recovered Gallery plan/catalog is a historical contract fixture, not a fresh
 registry, applicability, asset or nested-framing audit. No capture parity or
 Python cutover is claimed by this checkpoint.
 
+### Read-only Rust diagnostics
+
+The already-built consumer provides versioned upstream JSON envelopes (including
+structured invalid-input errors) without running capture/build/environment commands:
+
+```sh
+/Users/patwoz/dev/Personal/macos/bbr/scripts/visual/target/debug/bbr-visual doctor --json
+/Users/patwoz/dev/Personal/macos/bbr/scripts/visual/target/debug/bbr-visual check --dry-run --suite gallery \
+  --run /Users/patwoz/dev/Personal/macos/bbr/reports/visual/gallery-runs/example-preview \
+  --report /Users/patwoz/dev/Personal/macos/bbr/reports/visual/example-preview-review --json
+/Users/patwoz/dev/Personal/macos/bbr/scripts/visual/target/debug/bbr-visual inspect \
+  --report /absolute/path/to/explicit/review --limit 12 --json
+```
+
+Build the consumer through bounded `mbx` when needed; a missing/GC-evicted binary
+is not permission to use a native producer instead. `doctor` validates sources,
+export and authored coverage metadata, explicitly not the current Gallery
+registry or framing. Dry-run requires both run and report paths, never writes
+them, and labels the configured legacy argv as blocked pending Tart. It does not
+probe/acquire locks or authorize execution. `inspect` delegates to the portable
+stored-evidence reader; use `--case suite:case` for Collection detail. It never
+recaptures, compares or validates current source/baseline/environment integrity.
+
+`list --suite gallery --json` and dry-run `--story <exact-id>` use the immutable
+selection API. Until independently audited story catalogs and producer support
+are connected, real configs correctly return `selection_unsupported`, rather
+than advertising historical requirements as executable coverage. Disposable
+fixtures prove complete Light/Dark pairs/pages, authored selection order and
+unknown/duplicate/unsealed-catalog rejection. They do not prove producer-side
+selection before real rendering. The historical 49-story plan is already known
+to lag the current 53-story Gallery registry; fresh plan/framing evidence is
+required before full Gallery capture can pass.
+
 ## Capture contract
 
 `visual.toml` delegates PNG production to `scripts/visual/capture.py`. It builds

@@ -128,6 +128,44 @@ selection/coverage contracts and VM adapter development are runnable; VM boot an
 the real Checkbox asset-source correction still await Patrick's two requested
 approvals. No workflow/subagent/new lane, foreign worktree change or push.
 
+### Read-only consumer diagnostics checkpoint
+
+The consumer now exposes `doctor --json`, explicit-path `check --dry-run`,
+`list --suite` and `inspect --report` through immutable upstream schema-1
+response, selection, planning and inspection APIs. Strict option parsing never
+turns a malformed dry-run into execution; no implicit latest, native command,
+environment probe, gate acquisition, report creation or baseline writes. Stored
+inspection is labeled unvalidated, not a fresh seal or acceptance permission.
+The configured legacy argv remains diagnostic only and blocked pending Tart.
+
+Four new direct/actual-CLI tests pass (consumer total **21/21**), including
+compiler/native/probe tripwires, no filesystem output, structured failures,
+explicit reports, interrupted-report refusal and unchanged stored bytes. An
+allowlisted disposable fixture proves authored story order, complete pair/page
+requirements and unknown/duplicate/unsealed-catalog rejection. Initial fixture
+runs correctly rejected macOS's `/var` symlink; fixture paths were canonicalized,
+not the production safety check weakened. Strict consumer Clippy/fmt,
+`just visual-test`, roadmap and whitespace checks pass. Logs:
+`/tmp/bbr-visual-discovery-tests.log` (initial red fixture),
+`/tmp/bbr-visual-discovery-tests2.log`, `/tmp/bbr-visual-discovery-clippy.log`,
+`/tmp/bbr-visual-discovery-visual-test.log`,
+`/tmp/bbr-visual-discovery-doctor.json`. No actual PNG/report inspection or GUI
+execution is claimed; fixture tests are portable protocol evidence only.
+
+Read-only source audit found current Registry IDs 0–52 (53 stories) versus the
+historical plan's 0–48 (49): Delete Space sheet, Peek presentation, Toast/zoom and
+Media card were added. Existing selector/framing changes also need audit.
+Real `list`/selected previews therefore remain correctly unsupported until the
+independent story catalogs and real producer support are connected; no generated
+inventory or old page ranges are promoted to current coverage authority.
+
+Self-review checked library reuse, source-bound catalog loading, read-only output
+semantics, exact explicit paths, strict arguments and protected-file diffs.
+Parallelism audit: still one local writer, no agents/lanes; VM adapter development
+and independent coverage audit remain runnable. Boot/network and Checkbox asset
+approval remain pending; no VM, host GPU, baseline update, product gate or perf
+claim. All changes are confined to consumer diagnostics/tests and documentation.
+
 ## Status vocabulary
 
 | Status | Meaning |

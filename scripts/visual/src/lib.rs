@@ -1,7 +1,9 @@
+pub mod discovery;
 pub mod environment;
 pub mod gallery;
 pub mod process;
 pub mod provenance;
+pub mod read_only;
 pub mod runner;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]

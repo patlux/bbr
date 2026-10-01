@@ -27,9 +27,12 @@ fn run() -> Result<u8> {
     }
     let args: Vec<_> = std::env::args().skip(1).collect();
     let repo = std::fs::canonicalize(concat!(env!("CARGO_MANIFEST_DIR"), "/../.."))?;
+    if let Some(code) = bbr_visual::read_only::dispatch(&repo, &args)? {
+        return Ok(code);
+    }
     let command = args
         .first()
-        .context("command required: environment, produce, check, update, doctor")?;
+        .context("command required: environment, produce, check, update, doctor, list, inspect")?;
     match command.as_str() {
         "environment" => {
             ensure!(args.len() == 2, "environment requires suite");
@@ -44,19 +47,6 @@ fn run() -> Result<u8> {
                 std::env::var_os("GPUI_VISUAL_OUTPUT").context("capture output required")?,
             );
             runner::produce(&repo, Suite::parse(&args[1])?, &output, &cancelled)?;
-        }
-        "doctor" => {
-            ensure!(args.len() == 1, "doctor takes no arguments");
-            provenance::verify(&repo)?;
-            for suite in [Suite::Gallery, Suite::Browser] {
-                let config = Config::load(&repo.join(suite.config()))?;
-                let sources = store::source_hashes(
-                    &repo,
-                    &config.source_policy,
-                    Some(&repo.join(config.baselines)),
-                )?;
-                println!("{}: {} sealed source inputs", suite.id(), sources.len());
-            }
         }
         "check" => {
             ensure!(args.len() == 1, "check takes no arguments");
