@@ -105,6 +105,7 @@ def session(payload: Path, artifacts: Path):
             [f"visual:{payload}:ro,tag=bbr-visual-payload"],
             exclusive_key=True, prepare_data=harden_offline,
         )
+        ip = None
         try:
             ip = validate_ip(ssh[-1].removeprefix("admin@"))
             # Do not inherit a personal SSH config, agent, proxy, multiplexed
@@ -118,3 +119,12 @@ def session(payload: Path, artifacts: Path):
             for sig in (signal.SIGINT, signal.SIGTERM, signal.SIGHUP):
                 signal.signal(sig, signal.SIG_IGN)
             clone.cleanup()
+            # Cleanup command success alone is not absence. This narrow audit
+            # is read-only and its failure must prevent terminal acknowledgement.
+            from vm_cleanup import observe
+            import json
+            if ip is None:
+                raise tart_vm.RunnerError("cleanup reachability unproven: no validated guest IP")
+            cleanup = observe(clone, ip)
+            with (artifacts / "cleanup-observed.json").open("x") as handle:
+                json.dump(cleanup, handle, sort_keys=True)

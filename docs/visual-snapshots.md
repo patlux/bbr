@@ -138,8 +138,12 @@ gate evidence and require explicit investigation; there is no automatic recovery
 
 Real local fixture processes prove the handshake, detached-process cleanup and
 both leases' lifetime, including INT/TERM/HUP. These are not VM cleanup evidence.
-Actual clone/disk/key/SSH absence checks and end-to-end adapter wiring remain
-required. The normal capture entrypoints are still unconditionally blocked.
+The visual lifecycle now invokes a concrete read-only resource observer after
+cleanup: its own Popen must be reaped, key/clone path absent, clone absent from
+Tart inventory, disk image detached and guest SSH unreachable. Unknown or failed
+observations cannot publish cleanup evidence. Actual VM verification, independent
+host recheck and end-to-end adapter wiring remain required. The normal capture
+entrypoints are still unconditionally blocked.
 
 ### Guest installation prerequisite
 

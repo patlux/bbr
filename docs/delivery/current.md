@@ -384,6 +384,36 @@ execution/receipt/return wiring, and outer recipe budgets that preserve cleanup
 grace. Current produce/check remain blocked. Queue audit: no new agent/lane;
 those integration steps and current coverage are next defensible local work.
 
+### Concrete cleanup observation prerequisite
+
+After the supervision checkpoint, added the narrow read-only `vm_cleanup.py`
+observation and connected it after successful visual lifecycle cleanup. It
+requires the owned Popen reaped, run key absent, clone directory absent, exact
+clone absent from local Tart JSON inventory, exact disk image absent from
+hdiutil's mounted-image plist and removed guest SSH unreachable. A stopped but
+undeleted clone, unknown inventory, failed observation or missing validated IP
+cannot emit `cleanup-observed.json`. No automatic stop/delete/retry, key read,
+foreign PID signaling or other VM mutation is added. Failed/partial boot remains
+unacknowledged and requires explicit investigation rather than invented absence.
+
+Seven added contracts cover retained resources, malformed observations, unsafe IP
+and observer failure after otherwise successful commands. `just visual-test`:
+**86 Python units** + separate CLI integration, immutable upstream and 39 consumer
+tests plus the 3 signal fixtures pass. Strict Clippy/fmt, roadmap and whitespace
+pass. Logs: `/tmp/bbr-visual-vm-cleanup-visual-test.log`,
+`/tmp/bbr-visual-vm-cleanup-clippy.log`,
+`/tmp/bbr-visual-vm-cleanup-roadmap.log`. Self-review checked only exact-resource
+absence claims, bounded read-only commands, process ownership and no success
+marker after any failed observation.
+
+Read-only `tart list --help`, local JSON inventory and hdiutil plist structure
+were checked on the host; the golden image is stopped and no visual clone is
+present. No port probe, key operation, disk mount or VM boot was performed.
+These parser/fault-injection passes are not actual guest teardown evidence.
+Remaining runnable work: adapter bootstrap/producer/receipt/return wiring,
+independent host resource recheck, source-bound selection and coverage. No new
+lane or subagent; pending VM/network and Checkbox asset approvals are unchanged.
+
 ## Status vocabulary
 
 | Status | Meaning |

@@ -10,6 +10,7 @@ from unittest.mock import Mock, patch
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import vm_lifecycle
 import vm_policy
+import vm_cleanup
 
 
 class LifecycleContracts(unittest.TestCase):
@@ -24,6 +25,9 @@ class LifecycleContracts(unittest.TestCase):
         self.artifacts.mkdir(mode=0o700)
         self.clone = Mock()
         self.ssh = ["ssh", "admin@192.168.64.9"]
+        observation = patch.object(vm_cleanup, "observe", return_value={"schema": 1, "fixture": True})
+        self.observation = observation.start()
+        self.addCleanup(observation.stop)
 
     def boot(self, source, name, artifacts, keep, display, shares, **kwargs):
         self.assertEqual(source, "macos-27-golden-gate")
@@ -42,6 +46,8 @@ class LifecycleContracts(unittest.TestCase):
                 audit.assert_called_once()
                 self.clone.cleanup.assert_not_called()
             self.clone.cleanup.assert_called_once()
+        self.observation.assert_called_once_with(self.clone, "192.168.64.9")
+        self.assertTrue((self.artifacts / "cleanup-observed.json").is_file())
 
     def test_audit_failure_prevents_producer_and_still_cleans(self):
         with patch.object(vm_lifecycle.tart_vm, "boot", self.boot), \
@@ -65,6 +71,15 @@ class LifecycleContracts(unittest.TestCase):
                 with vm_lifecycle.session(self.payload, self.artifacts):
                     pass
 
+    def test_cleanup_observation_failure_prevents_completion_after_commands_succeed(self):
+        self.observation.side_effect = vm_lifecycle.tart_vm.RunnerError("owned clone still exists")
+        with patch.object(vm_lifecycle.tart_vm, "boot", self.boot), patch.object(vm_lifecycle, "audit"):
+            with self.assertRaisesRegex(vm_lifecycle.tart_vm.RunnerError, "still exists"):
+                with vm_lifecycle.session(self.payload, self.artifacts):
+                    pass
+        self.clone.cleanup.assert_called_once()
+        self.assertFalse((self.artifacts / "cleanup-observed.json").exists())
+
     def test_signal_cancellation_cleans_and_restores_handlers(self):
         old = {sig: signal.getsignal(sig) for sig in (signal.SIGINT, signal.SIGTERM, signal.SIGHUP)}
         with patch.object(vm_lifecycle.tart_vm, "boot", self.boot), patch.object(vm_lifecycle, "audit"):
@@ -74,6 +89,16 @@ class LifecycleContracts(unittest.TestCase):
         self.clone.cleanup.assert_called_once()
         for sig, handler in old.items():
             self.assertEqual(signal.getsignal(sig), handler)
+
+    def test_invalid_guest_ip_still_cleans_without_claiming_reachability(self):
+        self.ssh[-1] = "admin@203.0.113.9"
+        with patch.object(vm_lifecycle.tart_vm, "boot", self.boot):
+            with self.assertRaisesRegex(vm_lifecycle.tart_vm.RunnerError, "no validated guest IP"):
+                with vm_lifecycle.session(self.payload, self.artifacts):
+                    self.fail("invalid IP must not reach a producer")
+        self.clone.cleanup.assert_called_once()
+        self.observation.assert_not_called()
+        self.assertFalse((self.artifacts / "cleanup-observed.json").exists())
 
     def test_invalid_payload_and_diagnostics_do_not_boot(self):
         with patch.object(vm_lifecycle.tart_vm, "boot") as boot:
