@@ -146,6 +146,20 @@ reviewed case explicitly; a fresh second run must pass against those baselines.
 5. Commit coherent verified slices locally. No publication or baseline acceptance.
    Final completion requires all migration evidence above, not an import alone.
 
+### Bounded transport-supervision slice
+
+Reuse upstream process-group cleanup and gate ownership without modifying the
+immutable export. A private per-run control directory carries an explicit
+cooperative cancellation request; the Python Tart owner observes it only after
+its signal/finally handler is installed. Allow a bounded cleanup grace before
+upstream hard termination. Only a request-bound terminal acknowledgement after
+successful lifecycle cleanup plus caller-validated resource evidence may finish
+the gate. Missing/stale acknowledgements, failed cleanup and hard termination
+leave unfinished gate evidence. Test with real local fixture processes and
+private locks, including a detached stand-in for Tart; never boot a VM or native
+producer in these contracts. This slice does not remove the native capture guard
+or prove actual VM teardown. No new lane or subagent is authorized.
+
 ## Iteration policy
 
 Run targeted contracts first, diagnose failures before changing code, and

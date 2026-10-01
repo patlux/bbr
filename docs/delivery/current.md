@@ -345,6 +345,45 @@ no baseline, product/performance or actual guest claim. Next runnable work is
 transport supervision and current Gallery coverage; VM/network and Checkbox
 asset approvals still remain external boundaries, not reasons to stop local work.
 
+### Cooperative transport-supervision checkpoint
+
+Preflight: clean `main@efe470f`, no index lock or active visual/Tart/build process;
+full delivery queue read. Only this local visual owner is authorized. Portable
+transport supervision and coverage remain runnable; other product lanes and
+performance are not activated, and actual boot still needs network approval.
+
+`vm_supervision.rs` reuses upstream Gate/execute rather than changing its SIGKILL
+policy. It sends an atomic request-bound cancellation marker, allows bounded
+cleanup grace, and finishes both leases only after terminal acknowledgement and
+the caller's independent resource verifier. Hard kill, output overflow, stale or
+missing acknowledgement, signal exit or rejected cleanup leaves active unfinished
+gate evidence. `vm_control.py` installs the existing lifecycle signal guard before
+watching requests; it publishes no terminal result until lifecycle unwinding and
+concrete cleanup verification return. No automatic recovery, native entrypoint,
+VM boot, host GUI or seal/baseline write is introduced.
+
+Verification: **5 new Python contracts**, **6 new Rust top-level contracts**
+(including the inert subprocess fixture), plus 3 isolated supervisor executions
+for actual INT/TERM/HUP. Real Python processes own/reap a detached `/bin/sleep`
+stand-in while checking both private leases remain held. Normal/failure exits,
+cooperative timeout/cancellation, hard termination, output flooding, malformed
+cancel requests, stale/missing acknowledgements and both host/child cleanup
+rejection are covered. Detached stand-ins have their own 8s maximum lifetime;
+no Tart/network/production binary is invoked. `just visual-test` passes **79
+Python units** + separate CLI integration, immutable upstream and **39 consumer
+tests** plus signal fixtures; strict Clippy/fmt pass. Logs:
+`/tmp/bbr-visual-vm-supervision-final-visual-test.log`,
+`/tmp/bbr-visual-vm-supervision-final-clippy.log`,
+`/tmp/bbr-visual-vm-control-tests.log`. Self-review added atomic publication,
+panic-path monitor shutdown, strict signal-exit rejection and test cleanup even
+when lock assertions fail. No upstream/product graph/baseline diff.
+
+This proves the protocol and local process lifetime, not real clone/key/disk/SSH
+absence. The adapter still needs concrete resource evidence, bootstrap/guest
+execution/receipt/return wiring, and outer recipe budgets that preserve cleanup
+grace. Current produce/check remain blocked. Queue audit: no new agent/lane;
+those integration steps and current coverage are next defensible local work.
+
 ## Status vocabulary
 
 | Status | Meaning |

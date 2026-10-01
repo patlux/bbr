@@ -124,6 +124,23 @@ coverage and guest provenance after return and before upstream capture sealing.
 Fixture round trips and hostile archive tests are portable evidence only: real
 SSH transfer, native images and capture integration remain unverified.
 
+### Cooperative transport supervision prerequisite
+
+The Rust VM supervisor retains upstream process/gate authority but requests
+cooperative cancellation through a private, request-hash-bound control directory
+before the hard deadline. The Python Tart owner installs signal/finally handling
+before watching requests; a successful concrete cleanup verifier is required
+before atomic terminal acknowledgement. The host independently validates its
+resource evidence before finishing the gate. Timeout or cancellation can release
+a proven-clean lease, but never succeed as a capture. Missing/stale acknowledgements,
+resource-check failures, output overflow or hard termination preserve unfinished
+gate evidence and require explicit investigation; there is no automatic recovery.
+
+Real local fixture processes prove the handshake, detached-process cleanup and
+both leases' lifetime, including INT/TERM/HUP. These are not VM cleanup evidence.
+Actual clone/disk/key/SSH absence checks and end-to-end adapter wiring remain
+required. The normal capture entrypoints are still unconditionally blocked.
+
 ### Guest installation prerequisite
 
 `vm_install.py` consumes the Rust payload schema and an independently supplied
