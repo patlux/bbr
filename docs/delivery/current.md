@@ -1299,6 +1299,62 @@ runtime, legitimate input/endpoints/framing, fresh pilot/full repeats, current
 functional Tart gates and final requirement-to-artifact audit remain open. This
 source checkpoint is neither migration completion nor a global blocked stop.
 
+### Explicit stored-run review checkpoint
+
+Preflight: `main@8c769fe1`, only this session's packet/test changes followed by
+its bounded consumer implementation; no index lock or matching visual/Tart
+process. ROADMAP and all 2,034 lines of this delivery document were read in
+bounded chunks. Sole local visual writer; no workflow/subagent, foreign worktree
+or other queue activation. Ordinary app/build processes remain untouched.
+
+The Rust consumer now exposes explicit `compare --gallery-run … --browser-run …
+--report … [--json]`, with at least one named run and fresh, canonical, disjoint
+output. It uses current configured baseline paths and canonical coverage catalogs;
+config/source-policy drift fails before publication. Full still runs use unchanged
+upstream Collections with invalid sibling visibility. A single selected Gallery
+run instead gets the upstream non-accepting `TEILLAUF` report, bound to its current
+story catalog and independent page plan. Selected/full mixtures, selected browser
+runs and valid sequence inputs are refused. No latest lookup, build/probe/native
+call, resealing, baseline write, real catalog activation or Python cutover.
+
+Evidence: seven synthetic stored-run contracts plus one actual CLI tripwire test
+prove independent coverage, invalid sibling visibility, exact one-pixel difference,
+environment drift, current config/policy/source binding, image/report integrity,
+freshness/overlap/symlink refusal, pre-cancellation and partial acceptance refusal
+with/without adoption. Disposable test-only acceptance demonstrates a subsequent
+exact pass, not real baseline approval. Initial module red is retained at
+`/tmp/bbr-visual-review-red.log`. Adversarial tests exposed a real canonical-path
+guard bug: Rust Path equality normalizes `./` and duplicate separators. Comparing
+raw OsStr spelling fixes it; the negative-first regression is retained at
+`/tmp/bbr-visual-review-adversarial-red.log`. Selected output is atomically reserved
+because the upstream single-suite API otherwise permits report replacement.
+
+`just visual-test` passes 152 discovered Python tests (151 pass, one integration
+skip separately passed), unchanged upstream and **82 consumer tests** plus signal
+fixtures: `/tmp/bbr-visual-review-visual-test.log`. Final focused review tests pass
+(`/tmp/bbr-visual-review-focused-reviewed.log`); strict all-target consumer Clippy,
+formatting, roadmap and whitespace checks pass. Clippy evidence:
+`/tmp/bbr-visual-review-clippy-reviewed.log`; roadmap:
+`/tmp/bbr-visual-review-roadmap.log`. Focused pre-review times were 1.14s plus
+0.29s CLI; these are tooling timings, not product performance. Implementation and
+self-review wall time were not measured.
+
+Self-review checked delegation to immutable upstream, no-write failure paths,
+explicit selection scope, actual source/image revalidation, fresh report ownership
+and unchanged capture guard/product/config/catalog/baseline files. Cancellation
+is checked at operation boundaries: upstream comparison is synchronous, so the
+CLI documentation requires an outer hard timeout and does not claim per-image
+cooperative cancellation. Interruption can retain partial diagnostics or a finished
+report; no automatic output reuse or lock recovery. No native/VM operation, actual
+migration PNG/HTML review, current functional GUI gate or acceptance occurred.
+
+Queue audit: remaining local work includes current portable product verification
+and a requirement-to-artifact audit to identify exact uncovered integration steps;
+source audit findings do not authorize product/fixture changes. Real network/asset
+approval, guest runtime, legitimate input/framing, pilot/full repeats, current
+functional Tart gates and concrete baseline review remain open. No other lane is
+authorized; no migration completion or global pause is claimed.
+
 ## Status vocabulary
 
 | Status | Meaning |

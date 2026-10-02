@@ -68,6 +68,44 @@ selection before real rendering. The historical 49-story plan is already known
 to lag the current 53-story Gallery registry; fresh plan/framing evidence is
 required before full Gallery capture can pass.
 
+### Explicit Rust stored-run comparison
+
+The already-built consumer can review sealed runs without enabling capture:
+
+```sh
+timeout --kill-after=10s 5m /Users/patwoz/dev/Personal/macos/bbr/scripts/visual/target/debug/bbr-visual compare \
+  --gallery-run /absolute/path/to/gallery-run \
+  --browser-run /absolute/path/to/browser-run \
+  --report /absolute/path/to/fresh-review --json
+```
+
+Supply at least one explicit suite run. Paths must be absolute, canonical,
+symlink-free and disjoint from each other and the configured baseline stores.
+The report must not exist; inside the checkout it may only be a child of
+`/Users/patwoz/dev/Personal/macos/bbr/reports/visual`. There is no latest lookup,
+build, environment probe, native process, recapture, resealing or baseline write.
+Current config/source-policy binding is checked before review; unchanged upstream
+validates sources, image integrity, exact pixels, environment and independent
+canonical coverage. Invalid full-suite captures remain visible beside valid
+siblings in the Collection rather than disappearing from the report.
+
+A single selected Gallery run produces a separate `TEILLAUF` development report,
+not a Collection; its configured story catalog and independent page plan must
+still match. Selected/full mixtures, selected browser runs and sequence inputs
+are refused. Full still comparisons return `scope=collection`; selected reviews
+return `scope=selected-development`, never full-suite success. Exit codes are
+0 for a passing scope, 1 for review required/invalid suite evidence, and 2 for
+invalid request/configuration or operation failure. JSON explicitly reports
+`producer_executed=false`, `environment_probed=false`, `baseline_writes=false`.
+
+Keep the outer hard timeout: upstream comparison is synchronous and cancellation
+is checked at operation boundaries, not per image. Interruption may retain partial
+diagnostics or a completed report; it never authorizes acceptance or recovery of
+an interrupted report lock. Do not reuse the output path or remove recovery evidence
+automatically. Baseline/environment adoption still requires Patrick's concrete
+approval and explicit reviewed IDs. Python recipes are intentionally unchanged
+until real Tart capture and end-to-end parity are proven.
+
 ### VM payload foundation (not yet executable capture)
 
 The Rust payload module stages only the configured, hashed source inventory plus

@@ -9,6 +9,7 @@ pub mod prepare;
 pub mod process;
 pub mod provenance;
 pub mod read_only;
+pub mod review;
 pub mod runner;
 pub mod selected_request;
 pub mod vm_capture;

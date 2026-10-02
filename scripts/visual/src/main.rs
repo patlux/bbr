@@ -33,9 +33,12 @@ fn run() -> Result<u8> {
     if let Some(code) = bbr_visual::read_only::dispatch(&repo, &args)? {
         return Ok(code);
     }
-    let command = args
-        .first()
-        .context("command required: environment, produce, check, update, doctor, list, inspect")?;
+    if let Some(code) = bbr_visual::review::dispatch(&repo, &args, &cancelled)? {
+        return Ok(code);
+    }
+    let command = args.first().context(
+        "command required: environment, produce, check, compare, update, doctor, list, inspect",
+    )?;
     match command.as_str() {
         "prepare" => {
             ensure!(

@@ -327,6 +327,21 @@ bytes and selected schema/nonacceptance. Test the internal transport seam with
 fresh synthetic PNGs and real upstream sealing/review APIs, never VM/native code.
 No normal CLI activation, catalog activation, baseline write or parity claim.
 
+### Bounded explicit stored-run review slice
+
+Add a Rust `compare` command taking explicit Gallery/browser run paths and a
+fresh report path; never discover latest, build, probe, capture, reseal or write
+baselines. Use current configured baseline paths and canonical coverage catalogs.
+Full still runs use unchanged upstream Collections, including invalid sibling
+visibility and independent coverage failures. An explicitly supplied single
+selected Gallery run uses a separate upstream partial report, never a Collection;
+reject selected/full mixtures and sequence inputs rather than hiding their scope.
+Keep current-config/source-policy binding before review and preserve stale-source,
+image/report-integrity and explicit-only acceptance checks. Test fresh synthetic
+sealed fixtures plus actual CLI tripwires and no-write failures. This adds stored-
+run review plumbing only; normal capture guards, real catalog activation, Python
+cutover and all VM/native/visual-approval requirements remain unchanged.
+
 ## Iteration policy
 
 Run targeted contracts first, diagnose failures before changing code, and
