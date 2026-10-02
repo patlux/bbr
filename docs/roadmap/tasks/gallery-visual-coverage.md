@@ -183,6 +183,21 @@ source slice. The [Address / Sidebar components audit](../../visual/gallery-side
 records the inspected branches and six additive withheld gaps. IDs 38–48 and
 all actual framing/input/guest evidence remain open.
 
+### Bounded Downloads / Find / Error / Auth / Context-menu applicability audit
+
+Inspect IDs 38–43 against their matrices, production surfaces and recorder/test
+seams. Check Downloads completion/scroll-handle state, Find wrapper aliases versus
+actual control bounds, offline illustrations and missing recovery-pane branches,
+Auth's narrow redacted-card boundary, and menu fixture versus app-derived geometry.
+Keep static models and callback recording distinct from input-driven transitions;
+keep absent app-owned composition explicit without rebuilding it in the Gallery.
+Record concrete gaps as additive withheld rows, without guessed pages/moments or
+an arbitrary matrix cross-product. Preserve all existing requirements and blockers.
+Verify portable catalog/discovery contracts and source references only; no product,
+renderer, fixture, asset, baseline or VM changes. IDs 44–48 and actual guest/input/
+framing evidence remain subsequent work. Source evidence lives in the
+[Downloads / Find / Error / Auth / Context-menu audit](../../visual/gallery-surfaces-audit.md).
+
 ## Iteration policy
 
 Begin with audited inventory and the smallest native capture path. Diagnose

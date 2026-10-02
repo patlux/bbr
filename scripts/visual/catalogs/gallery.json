@@ -13306,6 +13306,56 @@
       "reason": "The story uses production item/state data but builds its own card and selected border_l_2 rows. Current production plus_menu_surface uses rounded menu_cursor without that rail, all-side padding, elev2 shadow, focus and key/inside-press callbacks. Story pointer recording and pure selection-wrap tests are not production menu pixels or Enter/Escape transitions; renderer identity and framing remain open."
     },
     {
+      "base": "gallery-38-download-scroll-moments",
+      "label": "Downloads: shared scroll state and static moments are not complete coverage",
+      "group": "Unproven coverage",
+      "sequence": null,
+      "moment": null,
+      "page": null,
+      "state": "withheld",
+      "reason": "All families share one ScrollHandle that family_model repeatedly resets; the 22-row fixture supplies window 8..22 but later families reset the handle to zero. A six-row viewport and laid-out overscan bounds do not prove complete visible rows or scroll traversal. Every panel is open with alpha 1 and check None; focus/washes are static model values, not real focus, completion or fade transitions. Actual descendant/shadow framing and legitimate moment/input evidence remain open."
+    },
+    {
+      "base": "gallery-39-find-wrapper-bounds",
+      "label": "Find: aliased wrapper targets do not measure production controls",
+      "group": "Unproven coverage",
+      "sequence": null,
+      "moment": null,
+      "page": null,
+      "state": "withheld",
+      "reason": "with_find_id_targets wraps the first bar container with all seven production-id debug selectors; their wrapper bounds are not each actual control's bounds. Six static DTOs represent focus/query/count but recorder callbacks do not edit, step or close them. Input-driven focus and complete field/control/shadow framing remain unproven; fixture geometry does not establish native portal placement. No stale visual or disabled control is invented where the DTO has none."
+    },
+    {
+      "base": "gallery-40-offline-illustration-gap",
+      "label": "Error: offline fixtures omit the production illustration",
+      "group": "Unproven coverage",
+      "sequence": null,
+      "moment": null,
+      "page": null,
+      "state": "withheld",
+      "reason": "build_error_fixture always sets illustration None, so even all three Offline families render Lifering. The app maps Offline to Some(None) and the production surface selects its drawn illustration. A separate foundational illustration sample does not prove this error composition. The 240pt frames and repeated-id presence checks do not establish full descendant visibility; recorder action/dismiss counts do not prove recovery."
+    },
+    {
+      "base": "gallery-41-unresponsive-pane-gap",
+      "label": "Recovery panes: the current unresponsive branch has no Gallery family",
+      "group": "Unproven coverage",
+      "sequence": null,
+      "moment": null,
+      "page": null,
+      "state": "withheld",
+      "reason": "The pane matrix only builds Crash and Empty, both at rest in 260pt frames. Production also renders unresponsive_panel with Wait/Reload/Close and distinct focus handles; there is no Gallery call or registered family for it. Static rest illustrations remain legitimate but do not prove appearance motion, input-driven recovery or full descendant framing. This records missing coverage, not permission to implement a new product branch or synthesize native pixels."
+    },
+    {
+      "base": "gallery-43-context-menu-geometry",
+      "label": "Context menu: fixed fixture height differs from production row geometry",
+      "group": "Unproven coverage",
+      "sequence": null,
+      "moment": null,
+      "page": null,
+      "state": "withheld",
+      "reason": "Every four- or five-row family uses a fixed 148pt card, whereas app placement derives height from actual row count, label size and padding. Production rows use label text plus py(sp2), not density.row; semantic-test targeting still uses density.row. Static selected values and hover/press recordings do not mutate selection or dismiss the menu. Current row/last-control/shadow framing and geometry parity require measurement, without recreating WebKit-owned menus or guessing pages."
+    },
+    {
       "base": "gallery-locked-session",
       "label": "Locked-session execution",
       "group": "Unproven coverage",

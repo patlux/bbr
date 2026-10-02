@@ -73,8 +73,13 @@ fn doctor_and_preview_are_structured_read_only_and_do_not_authorize_execution() 
         "historical requirements stay intact"
     );
     let pending = coverage["pending"].as_array().unwrap();
-    assert_eq!(pending.len(), 21);
+    assert_eq!(pending.len(), 26);
     for base in [
+        "gallery-38-download-scroll-moments",
+        "gallery-39-find-wrapper-bounds",
+        "gallery-40-offline-illustration-gap",
+        "gallery-41-unresponsive-pane-gap",
+        "gallery-43-context-menu-geometry",
         "gallery-31-address-production-gaps",
         "gallery-32-staging-edit-gaps",
         "gallery-33-favorite-image-pop-framing",

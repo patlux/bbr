@@ -1192,6 +1192,57 @@ network/asset approvals, legitimate input/endpoints/framing, fresh pilot/full
 repeats, current functional Tart gates and the final requirement-to-artifact
 completion audit remain open. Goal completion and global pause are not justified.
 
+### Downloads / Find / Error / Auth / Context-menu source-audit checkpoint
+
+Preflight: clean `main@f9b80c9c`, no Git index lock, visual/Tart process or
+observed capture-lock holder. ROADMAP and this complete delivery document were
+re-read. Sole local visual writer; no workflow/subagent, foreign worktree access
+or additional lane. Ordinary user BBR and unrelated builds remain untouched.
+Queue audit selected IDs 38–43 as the next bounded runnable source slice; actual
+VM/network and asset approvals remain pending, not bypassed.
+
+The [source continuation](../visual/gallery-surfaces-audit.md) traces six stories
+through matrices, production render predicates, recorder state and semantic-test
+seams. Downloads shares one repeatedly reset ScrollHandle across all families,
+so its 8..22 window does not establish independent scroll/viewport evidence;
+completion/fade remain static. Find aliases seven production debug IDs to whole-
+bar wrappers rather than actual control bounds. All Offline error fixtures choose
+Lifering instead of the app's illustration branch. Crash/Empty omits the existing
+production unresponsive pane. Context-menu fixtures fix height at 148pt instead
+of the app's row-count/label/padding formula. Actual clipping is not inferred from
+source arithmetic. Auth remains a legitimate narrow redacted card; no new blocker
+or fake Portal/credential case is invented for its app-owned composition boundary.
+
+Five additive withheld entries expose these concrete gaps. Structured comparison
+proves every preceding catalog JSON row unchanged: 936 required page pairs and
+21 old blockers preserved, now 26 withheld. The canonical packet was extended
+before catalog implementation. Product/Gallery fixtures/renderers, upstream,
+assets, configs, independent page plan and baselines have no diff.
+
+Evidence: missing-blocker regression is red before catalog changes (exit 101,
+`/tmp/bbr-visual-surfaces-audit-red.log`); twelve catalog/validator and four
+actual read-only discovery contracts then pass (0.74s / 0.73s measured,
+`/tmp/bbr-visual-surfaces-audit-focused.log`). Full `just visual-test` passes
+151 Python discovery tests (one additional integration skip, then separately
+passed), unchanged upstream and **73 consumer tests** plus signal fixtures:
+`/tmp/bbr-visual-surfaces-audit-visual-test.log`. Strict consumer all-target
+Clippy passes (`/tmp/bbr-visual-surfaces-audit-clippy.log`). Consumer fmt,
+source-reference existence, whitespace and roadmap checks pass (162 tracked
+Markdown files, grandfathered warnings only;
+`/tmp/bbr-visual-surfaces-audit-roadmap.log`). Timings measure tooling tests;
+audit/review elapsed time was not instrumented, no product-performance claim.
+
+Self-review checks actual render predicates and call sites, shared mutable handle
+ordering, wrapper versus control IDs, fixed bullets versus claimed masked length,
+rest versus moment branches, app-derived geometry versus measured paint, and
+narrow native/credential exclusions. Portable contracts prove diagnostic visibility,
+not repaired coverage. No native/VM execution, actual PNG/HTML review, functional
+GUI gate, baseline/environment adoption or push occurred. Final queue audit:
+IDs 44–48 remain runnable locally, no other lane authorized. Guest runtime,
+network/asset approvals, legitimate input/endpoints/framing, pilot/full repeats,
+current functional Tart gates and final requirement-to-artifact audit remain
+open; neither goal completion nor global pause is justified.
+
 ## Status vocabulary
 
 | Status | Meaning |

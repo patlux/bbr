@@ -135,7 +135,7 @@ fn authored_catalogs_cover_required_pairs_and_keep_unproven_coverage_visible() {
             .iter()
             .filter(|s| s.state == State::Withheld)
             .count(),
-        21
+        26
     );
     let browser: Catalog =
         store::read_json(&repo.join("scripts/visual/catalogs/browser.json")).unwrap();
@@ -270,6 +270,50 @@ fn address_and_sidebar_component_gaps_remain_visible_without_invented_capture_ca
         (
             "gallery-37-plus-menu-renderer-drift",
             ["border_l_2", "menu_cursor", "elev2"],
+        ),
+    ] {
+        let entry = gallery
+            .snapshots
+            .iter()
+            .find(|s| s.base == base)
+            .unwrap_or_else(|| panic!("missing concrete source-audit blocker: {base}"));
+        assert_eq!(entry.state, State::Withheld);
+        for reason in reasons {
+            assert!(
+                entry.reason.as_deref().unwrap().contains(reason),
+                "{base}: {reason}"
+            );
+        }
+        assert!(entry.page.is_none() && entry.sequence.is_none() && entry.moment.is_none());
+    }
+}
+
+#[test]
+fn surface_audit_gaps_cannot_be_reported_as_captured_or_inapplicable() {
+    let repo = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let gallery: Catalog =
+        store::read_json(&repo.join("scripts/visual/catalogs/gallery.json")).unwrap();
+    gallery.validate().unwrap();
+    for (base, reasons) in [
+        (
+            "gallery-38-download-scroll-moments",
+            ["ScrollHandle", "check", "8..22"],
+        ),
+        (
+            "gallery-39-find-wrapper-bounds",
+            ["wrapper", "control", "focus"],
+        ),
+        (
+            "gallery-40-offline-illustration-gap",
+            ["illustration", "Lifering", "Offline"],
+        ),
+        (
+            "gallery-41-unresponsive-pane-gap",
+            ["unresponsive_panel", "Wait", "260"],
+        ),
+        (
+            "gallery-43-context-menu-geometry",
+            ["148", "row", "padding"],
         ),
     ] {
         let entry = gallery
