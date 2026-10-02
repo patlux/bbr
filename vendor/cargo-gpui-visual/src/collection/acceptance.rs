@@ -22,6 +22,8 @@ struct Attempt<'a> {
     schema: u32,
     selected: &'a [String],
     adopt_suites: &'a [String],
+    #[serde(skip_serializing_if = "<[String]>::is_empty")]
+    acknowledged_withheld: &'a [String],
     completed: Vec<String>,
     state: &'static str,
     error: Option<String>,
@@ -29,6 +31,18 @@ struct Attempt<'a> {
 /// Accept only explicit exact `suite:case` IDs from this reviewed directory.
 /// Environment changes require exact suite IDs; no global implicit adoption.
 pub fn accept(root: &Path, selected: &[String], adopt_suites: &[String]) -> Result<()> {
+    accept_acknowledging_withheld(root, selected, adopt_suites, &[])
+}
+
+/// Accept reviewed references while explicitly acknowledging every withheld
+/// `suite:base` of the selected authorities. Coverage remains failing. No missing
+/// required capture, comparison error or integrity check can be acknowledged.
+pub fn accept_acknowledging_withheld(
+    root: &Path,
+    selected: &[String],
+    adopt_suites: &[String],
+    acknowledged_withheld: &[String],
+) -> Result<()> {
     let root = absolute(root)?;
     no_symlinks(&root)?;
     let _report_lock = ReportLock::acquire(&root)?;
@@ -68,6 +82,39 @@ pub fn accept(root: &Path, selected: &[String], adopt_suites: &[String]) -> Resu
     for id in adopt_suites {
         selection.entry(id).or_default();
     }
+    if !acknowledged_withheld.is_empty() {
+        ensure!(
+            acknowledged_withheld.iter().collect::<BTreeSet<_>>().len()
+                == acknowledged_withheld.len(),
+            "Duplicate withheld acknowledgement"
+        );
+        let mut expected = BTreeSet::new();
+        for id in selection.keys() {
+            let result = collection
+                .suites
+                .iter()
+                .find(|s| s.suite.id == *id)
+                .context("Unknown selected suite")?;
+            let catalog = result
+                .catalog
+                .as_ref()
+                .context("Missing reviewed catalog")?;
+            catalog.validate()?;
+            for snapshot in &catalog.snapshots {
+                if snapshot.state == State::Withheld {
+                    expected.insert(format!("{id}:{}", snapshot.base));
+                }
+            }
+        }
+        ensure!(
+            acknowledged_withheld
+                .iter()
+                .cloned()
+                .collect::<BTreeSet<_>>()
+                == expected,
+            "Acknowledge exactly every withheld suite:base of the selected suites"
+        );
+    }
     let mut prepared = Vec::new();
     let mut suite_locks = Vec::new();
     for (id, cases) in &selection {
@@ -78,10 +125,12 @@ pub fn accept(root: &Path, selected: &[String], adopt_suites: &[String]) -> Resu
             .context("Unknown selected suite")?;
         let suite = &result.suite;
         suite_locks.push(ReportLock::acquire(&root.join("suites").join(id))?);
-        ensure!(
-            result.errors.is_empty(),
-            "Cannot accept suite with invalid coverage/comparison: {id}"
-        );
+        if acknowledged_withheld.is_empty() {
+            ensure!(
+                result.errors.is_empty(),
+                "Cannot accept suite with invalid coverage/comparison: {id}"
+            );
+        }
         let catalog = result
             .catalog
             .as_ref()
@@ -89,8 +138,12 @@ pub fn accept(root: &Path, selected: &[String], adopt_suites: &[String]) -> Resu
         catalog.validate()?;
         let m = load_manifest(&suite.run)?;
         ensure!(
-            catalog.coverage(&m.cases).is_empty(),
-            "Invalid selected suite coverage"
+            catalog.capture_coverage(&m.cases).is_empty(),
+            "Invalid selected suite capture coverage"
+        );
+        ensure!(
+            result.errors == catalog.coverage(&m.cases),
+            "Cannot accept suite with invalid coverage/comparison: {id}"
         );
         for case in cases {
             ensure!(
@@ -128,7 +181,14 @@ pub fn accept(root: &Path, selected: &[String], adopt_suites: &[String]) -> Resu
     for (_, plan) in &prepared {
         plan.revalidate()?;
     }
-    execute(&root, selected, adopt_suites, &prepared, |_| Ok(()))?;
+    execute(
+        &root,
+        selected,
+        adopt_suites,
+        acknowledged_withheld,
+        &prepared,
+        |_| Ok(()),
+    )?;
     drop(locks);
     Ok(())
 }
@@ -139,15 +199,21 @@ fn execute(
     root: &Path,
     selected: &[String],
     adopt_suites: &[String],
+    acknowledged_withheld: &[String],
     prepared: &[(&super::Suite, accept::Prepared)],
     before_write: impl Fn(usize) -> Result<()>,
 ) -> Result<()> {
     let path = root.join("acceptance.json");
     no_symlinks(&path)?;
     let mut attempt = Attempt {
-        schema: 1,
+        schema: if acknowledged_withheld.is_empty() {
+            1
+        } else {
+            2
+        },
         selected,
         adopt_suites,
+        acknowledged_withheld,
         completed: Vec::new(),
         state: "started",
         error: None,

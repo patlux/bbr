@@ -9,7 +9,12 @@ use std::process::Command;
 
 #[test]
 fn interrupted_multi_authority_writes_retain_honest_attempt_evidence() {
-    for partial_current_suite in [false, true] {
+    for (partial_current_suite, acknowledged_withheld) in [
+        (false, vec![]),
+        (true, vec![]),
+        (false, vec!["second:remaining".to_owned()]),
+        (true, vec!["second:remaining".to_owned()]),
+    ] {
         let temp = tempfile::tempdir().unwrap();
         let root = temp.path().canonicalize().unwrap();
         let mut suites = Vec::new();
@@ -84,20 +89,37 @@ fn interrupted_multi_authority_writes_retain_honest_attempt_evidence() {
             prepared.push((suite, plan));
         }
         let selected = vec!["first:panel--light".into(), "second:panel--light".into()];
-        let result = execute(&report, &selected, &[], &prepared, |index| {
-            if index == 1 {
-                if partial_current_suite {
-                    // A competing/interrupted output appears after all preflight.
-                    fs::write(suites[1].baselines.join("baseline.pending"), "retained")?;
-                } else {
-                    anyhow::bail!("injected write-boundary interruption");
+        let result = execute(
+            &report,
+            &selected,
+            &[],
+            &acknowledged_withheld,
+            &prepared,
+            |index| {
+                if index == 1 {
+                    if partial_current_suite {
+                        // A competing/interrupted output appears after all preflight.
+                        fs::write(suites[1].baselines.join("baseline.pending"), "retained")?;
+                    } else {
+                        anyhow::bail!("injected write-boundary interruption");
+                    }
                 }
-            }
-            Ok(())
-        });
+                Ok(())
+            },
+        );
         assert!(result.is_err());
         let journal: Value = read_json(&report.join("acceptance.json")).unwrap();
         assert_eq!(journal["state"], "failed");
+        if !acknowledged_withheld.is_empty() {
+            assert_eq!(journal["schema"], 2);
+            assert_eq!(
+                journal["acknowledged_withheld"],
+                json!(acknowledged_withheld)
+            );
+        } else {
+            assert_eq!(journal["schema"], 1);
+            assert!(journal.get("acknowledged_withheld").is_none());
+        }
         assert_eq!(journal["completed"], json!(["first"]));
         assert!(journal["error"].as_str().unwrap().contains("second"));
         assert!(suites[0].baselines.join("baseline.json").exists());

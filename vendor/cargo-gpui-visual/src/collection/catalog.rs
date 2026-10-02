@@ -100,10 +100,19 @@ impl Catalog {
     }
 
     pub(crate) fn coverage(&self, emitted: &[String]) -> Vec<String> {
+        self.coverage_errors(emitted, true)
+    }
+
+    /// Structural capture requirements are never waived by an acknowledgement.
+    pub(crate) fn capture_coverage(&self, emitted: &[String]) -> Vec<String> {
+        self.coverage_errors(emitted, false)
+    }
+
+    fn coverage_errors(&self, emitted: &[String], include_withheld: bool) -> Vec<String> {
         let mut errors = Vec::new();
         let mut planned = BTreeSet::new();
         for s in &self.snapshots {
-            if s.state == State::Withheld {
+            if include_withheld && s.state == State::Withheld {
                 errors.push(format!(
                     "Withheld: {} — {}",
                     s.base,

@@ -7,7 +7,7 @@ use crate::{
     report,
     store::*,
 };
-pub use acceptance::accept;
+pub use acceptance::{accept, accept_acknowledging_withheld};
 use anyhow::{ensure, Context, Result};
 use catalog::Catalog;
 use serde::{Deserialize, Serialize};

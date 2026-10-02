@@ -153,6 +153,9 @@ pub enum Operation {
         cases: Vec<String>,
         #[arg(long = "adopt-suite")]
         adopt_suites: Vec<String>,
+        /// Explicitly acknowledge each selected suite's withheld suite:base; coverage stays failing.
+        #[arg(long = "acknowledge-withheld")]
+        acknowledged_withheld: Vec<String>,
     },
 }
 
@@ -178,6 +181,7 @@ pub struct Request {
     pub compatibility_gate: Vec<PathBuf>,
     pub collection: Option<PathBuf>,
     pub adopt_suites: Vec<String>,
+    pub acknowledged_withheld: Vec<String>,
     pub policy: Option<PathBuf>,
     pub inspect: cargo_gpui_visual::inspect::Options,
     pub reference: Option<String>,
@@ -293,11 +297,13 @@ impl From<Cli> for Request {
                 report,
                 cases,
                 adopt_suites,
+                acknowledged_withheld,
             } => {
                 r.command = "accept-collection";
                 r.report = Some(report);
                 r.cases = cases;
                 r.adopt_suites = adopt_suites;
+                r.acknowledged_withheld = acknowledged_withheld;
             }
         }
         r

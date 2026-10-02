@@ -31,7 +31,7 @@ no Git lock or holder of the repository/GPUI Visual capture locks was found.
 
 | ID | Slice | Status | Worktree | Owner | Contract | Next gate |
 |---|---|---|---|---|---|---|
-| VISUAL-RUST | Standalone GPUI Visual consumer migration | `running` | main, activation base above | session `01a0f8f4` | [visual tooling](../roadmap/tasks/visual-snapshot-tooling.md) | Immutable standalone import and portable adapter/upstream contracts first; no native capture or baseline acceptance yet |
+| VISUAL-RUST | Standalone GPUI Visual consumer migration | `running` | main, activation base above | session `01a0f8f4` | [visual tooling](../roadmap/tasks/visual-snapshot-tooling.md) | Acceptance correction and approved 28-image adoption verified; imported-tool same-tree Tart repeats are pixel-exact. Environment drift, complete coverage, interactive/framing pilot, public cutover and stable aggregate remain open; latest checkpoint below |
 
 Historical reuse evidence is read-only Git/session metadata, not a takeover of
 `/Users/patwoz/dev/Personal/macos/bbr-visual-snapshots`: its five migration commits
@@ -2395,8 +2395,116 @@ proves 28/28 exact, zero comparison errors and no environment mismatch. Overall
 coverage correctly remains FAIL with exactly the unchanged withheld row, exit1.
 This is a new comparison of the approved capture, **not a new guest capture**.
 Evidence: `/private/tmp/gpui-visual-withheld/bbr-{before,accept,post-adoption}.json`.
-Roadmap and whitespace checks pass. Actual fresh guest screenshots after the
-immutable import remain the next slice; no migration/full-app/performance pass.
+Roadmap and whitespace checks pass. This adoption slice is committed as
+`ee409d0e73399ea10ca42468a9d2ba6c5283dbef`. The following checkpoint records
+the subsequent immutable import and fresh guest screenshots; no migration,
+full-app or performance pass follows.
+
+### Immutable acceptance-fix import and screenshot proof
+
+The complete unchanged **84-file** standalone export at
+`4743437699567ba16fdcabf8fc12010a367f9134` replaces the prior immutable import.
+All upstream/export/vendor/provenance hashes match; LICENSE/NOTICE and prior SDK
+provenance are preserved. No consumer implementation, product renderer, dependency,
+image format, tolerance, coverage catalog or accepted baseline changes accompany
+this import. Default Collection acceptance stays strict. The new repeatable
+`--acknowledge-withheld` opt-in requires the exact withheld bases of the selected
+or adopted suites, never grants image selection or environment adoption, and never
+makes coverage pass. Opt-in attempt journals retain those IDs, including interrupted
+attempts; ordinary journals retain their existing schema.
+
+Fresh runtime evidence under `/private/tmp/gpui-visual-withheld/attempt1`:
+
+| Run | Caller duration | Capture SHA-256 |
+|---|---|---|
+| `app-acceptance-fix-20261002-a` | 158.983s | `526cbd73e81404ace453ba387ef2165f7bd90021cf42eb5990e4d704ce6ef23b` |
+| `app-acceptance-fix-20261002-b` | 102.483s | `7a6c8ce1fb0034e1d6ff8da20bea3186ca4853711a8b9ab43edf67eda3f17e20` |
+
+Both use one freshly prepared payload
+`cd7c84ee2cc438a807b25c4fe6d832b78c02c92c861ad5879b173fe766b04723`
+and the same 1,517 source hashes/cases/policy. Both callers exit0 with 28 images,
+`review_passed:false` and no baseline writes. Every original/baseline/report PNG
+matches exactly; **all 28 images are byte-identical between the two fresh runs**.
+Independent checks verify every source and all 86 sealed files of each report.
+These are new optimized real-app Tart captures through existing `vm_capture::run`
+and review APIs, not a replay of old raw output or acceptance-time recapture.
+
+Reports:
+- `/Users/patwoz/dev/Personal/macos/bbr/reports/visual/app-acceptance-fix-20261002-a/index.html`
+- `/Users/patwoz/dev/Personal/macos/bbr/reports/visual/app-acceptance-fix-20261002-b/index.html`
+
+The only environment differences versus the approved reference are
+`/host_build/tool_revision` (`c2723ca` → `4743437`) and
+`/guest_rendering/displays/0/metal/registry_id`: approved4294967700,
+A4294967701, B4294967713. All other observed values match. Both reports correctly
+retain environment mismatch and the unchanged `remaining-app-surfaces` failure,
+despite 28 `same` results and zero comparison errors. No registry normalization,
+new environment adoption or false full-suite pass. Same-tree image repeatability
+is now demonstrated for this bounded matrix; same-environment/full-migration
+acceptance is not. Redesigning environment identity is separate bounded work.
+
+Transport A owns clone `bbr-visual-50559-d017eae32b58`, former192.168.66.41,
+Tart PID50975, request
+`397e6f79bc595bfbb54c9cf12dd6d326c84b0ac91d08ea1b01687451ff47f679`.
+Transport B owns clone `bbr-visual-63323-d07298a48b38`, former192.168.66.42,
+Tart PID63794, request
+`256bcd5c734217b460b475bba5e448423bf1ac2348caaa0753bafe5b0d839980`.
+Both repeat offline runtime transfer, private-NAT/key-only SSH/listener audits,
+installed source/build checks, before/after observations and supervised teardown.
+The independent host recheck proves clone/key/disk/process absence and unreachable
+SSH for both; both capture gates are unheld. Exact report seals and cleanup records
+are in `/private/tmp/gpui-visual-withheld/final-inspection.json`. Ordinary host app,
+Golden Image, other workloads and foreign worktrees remain untouched.
+
+Seven actual managed-Chrome screenshots, each3344×1926, are retained at
+`/Users/patwoz/dev/Personal/macos/bbr/reports/visual/evidence/acceptance-fix-20261002/`:
+- `approved-report-after-acceptance.png`: stored-run 28 exact, coverage-only FAIL.
+- `fresh-report.png` and `repeat-report.png`: fresh 28 exact, environment and
+  coverage still FAIL.
+- `sidebar-light-dark.png`, `history-light-dark.png`, `settings-light.png` and
+  `settings-dark.png`: rendered production-image sections in the original report.
+
+The existing pinned task tab now displays report B. The nonempty reference/
+actual image sources of report A loaded without errors. Report screenshots and
+repeat originals Settings Appearance Dark / History Light were opened for visual
+inspection. Browser screenshots preserve red verdicts; scrolling alone changes
+viewport, not HTML/assets/styles. A first batch JavaScript quoting error produced
+no screenshots; guarded stdin evaluation corrected it without changing reports.
+Original PNGs remain unmodified, including the documented native/viewport gaps.
+
+Verification under `/private/tmp/gpui-visual-withheld`:
+- Upstream missing-option negative-first regression (`red.log`), then28 Collection
+  tests (`collection.log`) and183 passing results (180 top-level plus3 child
+  fixtures; `tests.log`); strict all-target Clippy/fmt pass.
+- Imported `RUST_TEST_THREADS=1 just visual-test` passes (`bbr-visual-test.log`):
+  171 Python discoveries (170 pass, one integration skip separately passed),
+  upstream contracts and111 top-level consumer tests plus existing fixtures.
+- Both imported-tool and consumer `mbx clippy --locked --offline --all-targets
+  -- -D warnings` pass (`bbr-upstream-clippy.log`, `bbr-consumer-clippy.log`);
+  both Cargo-root fmt checks and roadmap pass (`bbr-import-roadmap.log`).
+- Final documentation-only updates are outside capture source policy.
+  `/private/tmp/gpui-visual-withheld/precommit-inspection.json` rechecks all84
+  upstream/export/vendor/provenance hashes, unchanged LICENSE/NOTICE and adopted
+  baselines, the original report seal, both1,517-source/28-image/86-file fresh
+  reports and all7 screenshot hashes/dimensions. Read-only doctor reports1,517
+  inputs with no producer/probe. An initial manual inspection expected a boolean
+  environment mismatch; its stored schema contains both environments. The
+  corrected check requires those exact objects, without changing stored evidence.
+  Final roadmap and whitespace pass (`bbr-final-roadmap.log`); index roadmap and
+  both Cargo-root formatting are rechecked before local commit.
+
+Scheduling/self-review audit: entire delivery document reread at restoration;
+only this local acceptance-fix/import/evidence slice is authorized, no additional
+lane/workflow/subagent, other-consumer write or publication. Self-review checks
+strict defaults, exact acknowledgement sets, retained invalid coverage, original
+approval versus new environment drift, immutable import and image/source/resource
+identity. The requested acceptance error is resolved and screenshot proof exists.
+Broader Gallery/pilot, complete app/native-state coverage, public guards, Python
+cutover, unchanged Command benchmark failures and stable functional aggregate
+remain open. No completion checkbox, full verify/E2E/performance or independent
+agent-review claim. Measured durations are tooling only; implementation/self-review
+wall time was not instrumented. No additional unchanged aggregate retry or silent
+environment adoption accompanies the local checkpoint.
 
 ## Status vocabulary
 

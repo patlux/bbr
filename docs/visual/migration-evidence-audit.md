@@ -121,6 +121,53 @@ open. Public capture activation, full coverage, interactive pilot, baseline revi
 and Python parity removal are not completed. This addendum supersedes the original
 table's absent-browser/runtime-image claims only for these 28 cases.
 
+## Acceptance correction and fresh repeat addendum (2026-10-02)
+
+Patrick explicitly approved the exact original 28 images and Tart environment,
+then requested fixing the coverage-related acceptance refusal with screenshots.
+Standalone commit `4743437699567ba16fdcabf8fc12010a367f9134` adds exact opt-in
+withheld-ID acknowledgement; default acceptance stays strict and coverage stays
+red. Negative-first tests, 183 upstream results, strict Clippy and fmt pass.
+Official acceptance revalidated the still-current original before the consumer
+import, adopted only the 28 selected references/environment, and recorded a
+complete schema-2 journal acknowledging `browser:remaining-app-surfaces`.
+BBR adoption commit: `ee409d0e73399ea10ca42468a9d2ba6c5283dbef`.
+The historical sealed report remains unchanged. Its new stored-run comparison at
+`/Users/patwoz/dev/Personal/macos/bbr/reports/visual/app-surfaces-accepted-20261002-a/index.html`
+shows 28 exact matches, no environment mismatch and only withheld coverage failure;
+it is not a new capture.
+
+The complete unchanged 84-file upstream export is now imported, with provenance
+and original LICENSE/NOTICE verified. Two fresh independent supervised Tart runs
+use one payload and identical 1,517-source inventories:
+`/Users/patwoz/dev/Personal/macos/bbr/reports/visual/app-acceptance-fix-20261002-a/index.html`
+and
+`/Users/patwoz/dev/Personal/macos/bbr/reports/visual/app-acceptance-fix-20261002-b/index.html`.
+Each has 28/28 PNGs byte-identical to the approved references and the other run,
+zero comparison errors, 86 independently checked sealed report files and verified
+clone/key/disk/process/SSH absence. Caller durations are 158.983s and 102.483s,
+report-only tooling measurements. Exact seals and cleanup bindings are retained
+in `/private/tmp/gpui-visual-withheld/final-inspection.json`.
+
+Both fresh reports still fail: withheld coverage remains, and environment equality
+is **not** established. Only tool revision (`c2723ca` → `4743437`) and the Metal
+registry ID differ: approved `4294967700`, fresh A `4294967701`, fresh B
+`4294967713`. The changed values were neither normalized nor adopted. This proves
+bounded same-tree image repeatability, not the full same-environment migration
+gate. No baseline changes follow the explicit adoption commit.
+
+Seven actual managed-Chrome screenshots document the stored-run acceptance result,
+both fresh reports and Sidebar/History/Settings Light/Dark sections under
+`/Users/patwoz/dev/Personal/macos/bbr/reports/visual/evidence/acceptance-fix-20261002/`.
+The raw Settings Appearance Dark and History Light repeat images were also opened.
+Screenshots preserve the red verdicts; no DOM/report edits or replacement frontend.
+Serial full visual contracts, strict all-target Clippy for both Cargo roots,
+format and roadmap checks pass. This is sole-writer self-review, not independent
+agent review. Original failure evidence, aggregate benchmark failures, native
+exclusions, Gallery/pilot gaps, public capture guards and Python parity work stay
+open. This addendum supersedes only the earlier no-adoption/no-same-tree-repeat
+claims for the bounded 28-image application set.
+
 ## Requirement mapping at the original inspection base
 
 Paths in the table are repository-relative identifiers under

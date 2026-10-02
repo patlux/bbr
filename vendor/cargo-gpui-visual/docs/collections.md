@@ -74,6 +74,60 @@ all old single-suite tests. Run full locked/offline tests, strict Clippy/fmt, re
 the owned diff, and commit only with exact evidence. UI design and consumer imports
 remain outside R3b; R2/R4–R7 stay open.
 
+## Explicit withheld acknowledgement follow-up (2026-10-02)
+
+BBR's reviewed 28-image collection has valid image/comparison evidence but an
+explicit `remaining-app-surfaces` withheld requirement. The strict R3b route
+correctly refuses it; this follow-up separates reference acceptance from coverage
+completion without deleting or downgrading that requirement.
+
+Add opt-in `accept-collection --acknowledge-withheld <suite:base>` (repeatable)
+and an additive Rust API. The existing API/default remains strict. Acknowledgements
+must equal the entire withheld set of exactly the selected/adopted suites; reject
+unknown, duplicate, malformed, wildcard, required/unsupported or unselected-suite
+IDs. They grant no image selection or environment adoption. Missing required,
+unexpected/non-required captures, selected-development runs, unseen timelines,
+comparison errors, stale sources, locks and all integrity failures still refuse
+before writes. Derive the allowance from typed sealed catalog state, never by
+matching an error prefix. Record exact acknowledgements in the attempt journal;
+never change the sealed report, catalog, coverage verdict or original pixels.
+
+Verify negative-first CLI/API disposable-store contracts, all-selected preflight,
+unchanged strict API behavior, explicit-only environment adoption, retained failed
+attempts and a fresh comparison which remains coverage-failing after every image
+matches. Run complete locked/offline tests, strict all-target Clippy and fmt before
+an owned local commit. No dependency/report UI/renderer changes or other consumer
+writes. BBR may then use the verified CLI on its already-approved exact report
+while sources are still valid, followed by a separately verified immutable import
+and fresh Tart screenshot evidence. New/changed images are not approved by that
+historical approval. Stop at an unresolved test/integrity/runtime failure; no
+manual copying, stale resealing or per-suite back door.
+
+### Usage and verification
+
+`accept-collection --report <exact-reviewed-directory> --case browser:<case>
+--adopt-suite browser --acknowledge-withheld browser:remaining-app-surfaces`
+is explicit acceptance of that case/environment only, not a coverage pass. Repeat
+`--case` for every approved image and `--acknowledge-withheld` for every withheld
+base of the selected authorities. The Rust API is
+`collection::accept_acknowledging_withheld`; `collection::accept` stays strict.
+Opt-in attempt journals use schema 2 and retain `acknowledged_withheld` even after
+partial failure. Ordinary journals stay schema 1. Sealed report bytes never change.
+
+Standalone regression first failed on the absent CLI flag. All 28 collection tests
+then pass, including five parameterized acknowledgement contracts: exact image
+adoption with still-failing fresh coverage, malformed/incomplete acknowledgement,
+structural/comparison failures, stale authorities/locks and explicit environment
+adoption. The private interruption contract tests schema-1 and schema-2 journals
+at both suite and partial-file boundaries. Full locked/offline suite: **183 passing
+results** (180 top-level plus three child fixtures), no failures/ignored. Strict
+all-target Clippy and rustfmt pass through the pinned mbx wrapper with hard process
+group deadlines; serial test execution retains original deadlines/assertions.
+Evidence: `/private/tmp/gpui-visual-withheld/{red,collection,tests,clippy,fmt}.log`.
+Self-review only; no independent agent. Original report assets, comparator, source
+seals, codecs, dependency graph and licenses are unchanged. These are disposable
+fixtures, not BBR/native acceptance or screenshot evidence.
+
 ## R3a evidence
 
 Implemented in the standalone authority only. `collection::{Input, Suite, compare}`

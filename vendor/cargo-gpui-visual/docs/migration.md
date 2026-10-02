@@ -922,6 +922,21 @@ only the codec crates optimized and 100.5 s afterwards, with identical output
 (`new_hash` afa4b215…, 146,414,206 image bytes). Gates: 178 test results, strict
 Clippy and rustfmt. Logs `/tmp/gv-prof-{tests,clippy,fmt,dry}.*`.
 
+## BBR explicit coverage acknowledgement (2026-10-02)
+
+Patrick approved BBR's exact 28-image real-app report and Tart environment, then
+requested fixing the strict collection acceptance refusal with screenshots. This
+bounded upstream slice adds exact opt-in withheld acknowledgements while preserving
+default refusal and every missing-required/comparison/integrity check. Fresh
+comparison stays coverage-failing even after all reviewed images match. Complete
+contract and disposable-test evidence: [collections](collections.md#explicit-withheld-acknowledgement-follow-up-2026-10-02).
+Full locked/offline suite183 results, strict all-target Clippy and rustfmt pass.
+No report assets, renderer, dependencies or other consumers change. BBR's current
+local writer may use the verified CLI against the exact still-valid approved report,
+then import a complete immutable export and capture fresh Tart screenshot evidence.
+This supersedes only the historical BBR ownership observations below; it does not
+authorize the preserved isolated worktree or new/changed image acceptance.
+
 ## Current consumer ownership gates
 
 Read-only recheck after R2d (2026-09-28): BBR's complete live delivery document

@@ -1,5 +1,7 @@
 #[path = "collection/acceptance.rs"]
 mod acceptance;
+#[path = "collection/withheld.rs"]
+mod withheld;
 
 use cargo_gpui_visual::{
     collection::{self, Collection, Suite},

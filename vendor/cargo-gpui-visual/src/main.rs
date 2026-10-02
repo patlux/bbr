@@ -92,13 +92,24 @@ fn run(
         );
         let root = store::absolute(&cli.report.context("--report required")?)?;
         if cli.command == "accept-collection" {
-            collection::accept(&root, &cli.cases, &cli.adopt_suites)?;
+            collection::accept_acknowledging_withheld(
+                &root,
+                &cli.cases,
+                &cli.adopt_suites,
+                &cli.acknowledged_withheld,
+            )?;
             if !cli.json {
                 println!("Accepted {} explicit collection cases. Inspect reference diffs and acceptance.json; no commit created.", cli.cases.len());
+                if !cli.acknowledged_withheld.is_empty() {
+                    println!(
+                        "Withheld coverage remains failing: {}",
+                        cli.acknowledged_withheld.join(", ")
+                    );
+                }
             }
             return Ok(reply(
                 0,
-                json!({"accepted":cli.cases,"adopted_suites":cli.adopt_suites,"journal":root.join("acceptance.json")}),
+                json!({"accepted":cli.cases,"adopted_suites":cli.adopt_suites,"acknowledged_withheld":cli.acknowledged_withheld,"journal":root.join("acceptance.json")}),
             ));
         }
         let input = collection::Input::load(&cli.collection.context("--collection required")?)?;

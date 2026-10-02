@@ -1,9 +1,9 @@
 # Production-chrome visual snapshots
 
 BBR reuses the portable **cargo-gpui-visual 0.1.1** comparator/report from the
-standalone GPUI Visual authority. The complete unchanged 83-file export lives in
+standalone GPUI Visual authority. The complete unchanged 84-file export lives in
 `vendor/cargo-gpui-visual`, pinned to commit
-`c2723cac924b98b8a2c8c170d580bd2e434b674a`. Its file hashes and previous SDK
+`4743437699567ba16fdcabf8fc12010a367f9134`. Its file hashes and previous SDK
 import provenance are in `scripts/visual/tool-source.json`; every invocation
 verifies them and rejects
 unexpected vendor files (excluding mbx's generated target directory). The CLI is
@@ -22,19 +22,53 @@ The current report contains **28 real application stills**, not Gallery replicas
   Appearance and Shortcuts, each at its initial scroll position.
 
 Every case has Light/Dark evidence from the optimized production app in a
-throwaway headless Tart guest. The final static report is
+throwaway headless Tart guest. The approved historical report is
 `/Users/patwoz/dev/Personal/macos/bbr/reports/visual/app-surfaces-20261002-c/index.html`;
 its original PNGs and semantic snapshots are under
 `/Users/patwoz/dev/Personal/macos/bbr/reports/visual/runs/app-surfaces-20261002-c`.
-The existing managed Chrome report tab displays this report.
+The existing managed Chrome task tab now displays the fresh repeat report below.
 
-The report correctly says **REVIEW REQUIRED / FAIL**: eight changed historical
-references, twenty missing baselines, a changed rendering environment and an
-explicit withheld row for uncaptured application states. Capture and integrity
-checks succeeded; no baseline or environment was adopted. Both expanded runs
-produced 28/28 byte-identical PNGs, but their source seals differ because tests
-and environment metadata were strengthened between them. This is not the required
-two-complete-captures-of-one-final-tree migration acceptance.
+That immutable historical report says **REVIEW REQUIRED / FAIL**: eight changed
+references, twenty missing baselines, rendering-environment drift and the withheld
+uncaptured states. Patrick subsequently approved its exact 28 images and Tart
+environment. Official collection acceptance adopted only those references, before
+the source-bound tool import changed, with all 28 explicit IDs, browser-only
+adoption and `--acknowledge-withheld browser:remaining-app-surfaces`.
+
+The new stored-run comparison is
+`/Users/patwoz/dev/Personal/macos/bbr/reports/visual/app-surfaces-accepted-20261002-a/index.html`:
+**28/28 exact**, no environment mismatch/errors, but coverage correctly remains
+**FAIL**. This comparison is not a fresh guest capture. Acknowledgement never
+waives missing required captures, comparison errors or source/report integrity;
+the default API remains strict. It records the exact withheld ID in the attempt
+journal without editing report/catalog evidence. New/changed images still need
+separate approval. The earlier expanded runs matched 28/28 PNG bytes but had
+different source seals; they are not the required same-final-tree repeat proof.
+
+After importing the fixed tool, two new independent Tart captures use the same
+1,517-source inventory and staged payload:
+
+- `/Users/patwoz/dev/Personal/macos/bbr/reports/visual/app-acceptance-fix-20261002-a/index.html`
+- `/Users/patwoz/dev/Personal/macos/bbr/reports/visual/app-acceptance-fix-20261002-b/index.html`
+
+Both have **28/28 PNGs byte-identical to the approved references and each other**,
+zero comparison errors, and independently rechecked source/report seals and
+clone/key/disk/process/SSH cleanup. They remain **REVIEW REQUIRED / FAIL**:
+coverage is still withheld, and the current environment differs from the approved
+one. The only environment differences are tool revision `c2723ca` → `4743437`
+and the clone-specific Metal registry ID: approved `4294967700`, run A
+`4294967701`, run B `4294967713`. No normalization, new environment adoption or
+baseline write was performed. Thus same-tree image repeatability is demonstrated
+for this bounded matrix, not environment equality or complete migration coverage.
+
+Seven unmodified managed-Chrome screenshots are retained under
+`/Users/patwoz/dev/Personal/macos/bbr/reports/visual/evidence/acceptance-fix-20261002/`:
+`approved-report-after-acceptance.png`, `fresh-report.png`, `repeat-report.png`,
+`sidebar-light-dark.png`, `history-light-dark.png`, `settings-light.png` and
+`settings-dark.png`. These show both report verdicts and rendered image sections;
+the original capture PNGs remain alongside each run, not replaced by browser
+screenshots. Independent verification is recorded in
+`/private/tmp/gpui-visual-withheld/final-inspection.json`.
 
 This still set does **not** contain native WKWebView page pixels, AppKit traffic
 lights or Portal-child pixels. Ordinary browser content therefore appears blank.
@@ -60,9 +94,9 @@ entrypoints below remain during migration; they have **not** become Tart-aware.
 Do not execute their Gallery/browser producers on the host. The Rust consumer
 must first prove its VM pilot and full capture parity before replacing them.
 Read-only inspection and portable fixture contracts need no native session.
-Existing eight PNG references remain untouched; Gallery baselines and combined-
-product review remain open. A new tool/source/environment seal does not authorize
-reference adoption. The current task is owned by the
+The 28 application references were explicitly approved as recorded above; Gallery
+baselines and complete combined-product coverage remain open. A new tool/source/
+environment seal never authorizes reference adoption by itself. The current task is owned by the
 [visual tooling packet](roadmap/tasks/visual-snapshot-tooling.md).
 
 The separate Rust consumer foundation is restored under
