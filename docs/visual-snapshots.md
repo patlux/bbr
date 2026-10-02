@@ -291,6 +291,29 @@ unconditional `produce`/`check` guard remains. Source/current-catalog validation
 approved real pilot, two exact complete captures and upstream sealing/review
 integration are still required. No baseline is changed by transport success.
 
+### Selected Gallery plan bridge (portable only)
+
+`/Users/patwoz/dev/Personal/macos/bbr/scripts/visual/src/gallery_selection.rs`
+resolves an upstream `Selection` against both its hash-bound authored catalog and
+an independently hash-bound Gallery page plan. Its immutable schedule exposes
+numeric story IDs in authored order, retaining every planned state/page and both
+appearances (including different Light/Dark child ranges). Missing/extra,
+reordered, cross-story or sequence requirements fail before a schedule is usable.
+Rechecking cannot adopt a changed plan merely because a caller supplies new hashes.
+
+Selected raw validation reuses the existing Gallery validator, with regular
+single-link output checks and an exact upstream `selection.json` receipt only
+after complete page/image/source validation. Upstream retains schema-2 sealing,
+partial report labels and unconditional selected-run acceptance/Collection refusal,
+including when all catalog stories were explicitly selected. Portable fixtures
+exercise those APIs and the actual consumer update router with synthetic PNGs.
+They prove scheduling data and protocol boundaries, not native pre-render behavior.
+
+No production story catalog is enabled by this bridge, no current Gallery page
+counts are invented, and no guest/producer caller is connected yet. Actual
+request binding/filtering and the real approved pilot remain required. Ordinary
+capture remains blocked; these tests do not satisfy visual or framing acceptance.
+
 ### Current Gallery source-audit boundary
 
 The [bounded source audit](visual/gallery-source-audit.md) checks the pilot and

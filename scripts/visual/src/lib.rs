@@ -1,6 +1,7 @@
 pub mod discovery;
 pub mod environment;
 pub mod gallery;
+pub mod gallery_selection;
 pub mod guest;
 pub mod payload;
 pub mod prepare;

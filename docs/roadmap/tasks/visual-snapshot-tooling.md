@@ -249,6 +249,35 @@ Full evidence and remaining real-runtime/transport boundaries are in the deliver
 ledger. No network/native producer/acceptance action or milestone completion
 accompanies this checkpoint.
 
+### Retained adapter cleanup regression
+
+The selected-plan gate exposed Darwin `EPERM` during the retained Python
+adapter's group-existence probe after TERM. Do not treat permission uncertainty
+as absence or weaken descendant checks. On that path, poll/reap the owned direct
+child and repeat signal-0 observation within the existing cleanup deadline;
+return only on confirmed ESRCH plus reaped leader, otherwise fail cleanup with
+no further termination signal to the uncertain numeric group. Verify injected
+transient/persistent EPERM and real local timeout/descendant fixtures. This is a
+narrow repair of retained compatibility tooling, not another VM/native process
+authority or permission to execute the legacy host producer.
+
+### Bounded Gallery selected-plan contract
+
+Translate the immutable upstream resolved Selection into an ordered numeric
+Gallery schedule before a future producer call. Bind both the selection catalog
+and the independent page plan to the original source hashes. Each selected story
+must own every authored state/contrast/density/page pair, including asymmetric
+Light/Dark child ranges; reject unknown, partial, duplicate, reordered, sequence
+or cross-story requirements. Validate selected raw inventory/coverage/images
+against that narrowed independent plan, not against emitted output, and publish
+only an exact upstream selection receipt after complete validation. Exercise
+synthetic portable fixtures through upstream sealing/review to prove that missing
+or extra pages/appearances, ignored selection, stale sources and acceptance or
+Collection promotion fail. Do not enable a real story catalog, change Gallery
+rendering/dependencies, boot a guest or claim pre-render native evidence. The
+existing host guard remains; guest request/producer integration and approved
+real selection tests are subsequent required steps.
+
 ## Iteration policy
 
 Run targeted contracts first, diagnose failures before changing code, and

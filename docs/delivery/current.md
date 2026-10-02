@@ -803,6 +803,57 @@ selection/request integration and remaining coverage audit are runnable here;
 network and Checkbox approvals remain pending. Test timings are measured tooling
 evidence, not product performance; implementation/review timing was not recorded.
 
+### Gallery selected-plan bridge checkpoint
+
+The preceding cleanup repair is committed separately as `a9caed00`. This local
+slice adds an immutable portable `Schedule` connecting upstream story Selection
+to the independent Gallery page plan, not a producer or another coverage source.
+Both files are bounded, single-link, no-follow, exact-byte hash-bound inputs;
+caller-refreshed hashes cannot silently adopt a changed plan after scheduling.
+Canonical story/state identities, authored story order, complete planned state/
+contrast/density/page requirements and asymmetric Light/Dark child ranges survive
+selection. Unknown/partial/reordered/cross-story/sequence requirements fail.
+
+Before receipt publication, existing Gallery validation checks the narrowed plan
+against complete raw inventory/coverage and actual RGBA8 dimensions, with no
+pixel transformations. New output checks reject links. Source checks bracket
+validation; only the exact upstream selection receipt is added. Upstream retains
+schema-2 sealing, partial HTML labels and nonacceptance, even when every story
+was explicitly selected. These are synthetic portable PNG fixtures, not native
+captures or actual PNG/HTML review. The seven added contracts exercise schedule
+order, source/plan drift and rebinding, valid-byte linked requirements, incomplete/
+extra/ignored output, no-write failures and unchanged pixel bytes. Self-review
+added positive-hash hardlink rejection and noncontiguous/metadata-mismatch plan
+cases. Direct upstream acceptance rejects with `development-only` with or without
+adoption; Collection comparison records `not full-suite collection evidence`.
+The actual consumer update router rejects the unusable Collection without writing
+baselines (it has no suite review directory); its generic exit alone is not a
+selection-specific rejection claim.
+
+Fresh focused seven-contract test and strict Clippy pass after those review
+additions: `/tmp/bbr-visual-selection-plan-focused-review.log`,
+`/tmp/bbr-visual-selection-plan-clippy-review.log`. Full final combined gate logs
+are `/tmp/bbr-visual-selection-plan-final-visual-test.log` and
+`/tmp/bbr-visual-selection-plan-final-roadmap.log`: 144 Python discovery tests
+pass (one additional integration skip, then separately passed), unchanged
+upstream and **58 consumer tests** plus signal fixtures pass. Consumer formatting,
+strict all-target Clippy, whitespace and 49 shared script tests pass. Initial
+red was the missing module; the first upstream integration fixture lacked the
+required explicit `layer=gpui` environment and was corrected without changing
+production validation. The cleanup failure/reproduction/repair is preserved in
+the preceding checkpoint. Focused test time 0.92s; implementation/review elapsed
+time was not measured. No product-performance evidence.
+
+Full queue and ownership audit: same sole local visual writer, no subagent/lane
+or foreign worktree access. No real story catalog enabled, no guest/producer
+caller connected, no current page-count invention, and no normal capture guard
+removed. Gallery/product/upstream/baselines are unchanged. Next runnable local
+step is source-bound guest request → existing numeric producer selection before
+rendering, plus the remaining applicability/framing audit. Actual runtime and
+network/Checkbox approvals, real pilot, two complete independent captures,
+image/report review and current functional Tart gates remain required. These
+prerequisites do not complete any migration milestone or authorize acceptance.
+
 ## Status vocabulary
 
 | Status | Meaning |
