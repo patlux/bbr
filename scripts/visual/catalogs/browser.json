@@ -41,6 +41,17 @@
       "state": "required",
       "reason": null
     },
+    { "base": "history", "label": "History · three undated fixture visits", "group": "Application pages", "sequence": "history", "moment": "populated", "page": null, "state": "required", "reason": null },
+    { "base": "history-clear-data", "label": "Clear Browsing Data · no deletion", "group": "Application pages", "sequence": "history", "moment": "clear-data", "page": null, "state": "required", "reason": null },
+    { "base": "library-empty", "label": "Saved Pages · empty library", "group": "Application pages", "sequence": "library", "moment": "empty", "page": null, "state": "required", "reason": null },
+    { "base": "settings-general", "label": "Settings · General", "group": "Settings window", "sequence": "settings", "moment": "general", "page": null, "state": "required", "reason": null },
+    { "base": "settings-profiles", "label": "Settings · Profiles", "group": "Settings window", "sequence": "settings", "moment": "profiles", "page": null, "state": "required", "reason": null },
+    { "base": "settings-search", "label": "Settings · Search", "group": "Settings window", "sequence": "settings", "moment": "search", "page": null, "state": "required", "reason": null },
+    { "base": "settings-privacy", "label": "Settings · Privacy", "group": "Settings window", "sequence": "settings", "moment": "privacy", "page": null, "state": "required", "reason": null },
+    { "base": "settings-downloads", "label": "Settings · Downloads", "group": "Settings window", "sequence": "settings", "moment": "downloads", "page": null, "state": "required", "reason": null },
+    { "base": "settings-appearance", "label": "Settings · Appearance", "group": "Settings window", "sequence": "settings", "moment": "appearance", "page": null, "state": "required", "reason": null },
+    { "base": "settings-shortcuts", "label": "Settings · Shortcuts · initial scroll viewport", "group": "Settings window", "sequence": "settings", "moment": "shortcuts", "page": null, "state": "required", "reason": null },
+    { "base": "remaining-app-surfaces", "label": "Other application surfaces and states not yet captured", "group": "Coverage still open", "sequence": null, "moment": null, "page": null, "state": "withheld", "reason": "No full-application claim: populated Saved Pages, recently closed History, Settings sheets/menus/scrolled content, Command/Find/Downloads/Peek portals, permissions, welcome, About and other transient states remain outside this first application still set." },
     {
       "base": "native-webkit-and-window-chrome",
       "label": "Native webpage and AppKit pixels",

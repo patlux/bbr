@@ -79,6 +79,48 @@ blocked narrative retain the original inspection chronology; these two addenda
 supersede their obsolete no-runtime/no-image/no-catalog statements, not their
 unmet full-coverage, interaction, repeat or acceptance requirements.
 
+## Real application report addendum (2026-10-02)
+
+Patrick's request for Sidebar and application pages extends the bounded capture
+scope beyond Gallery. The new real-app set retains the original eight browser
+images and adds History, Clear Browsing Data (cancel only), empty Saved Pages
+and all seven Settings panes in Light/Dark: **28 exact RGBA8 PNGs**. Settings
+uses its actual production window through authenticated `visual-capture`-only
+readback, with explicit draw, closed-window refusal and shared output-path guard.
+Fixed isolated undated history, typed readiness and state-preservation assertions
+avoid live data and clock-dependent text. No production renderer was changed.
+
+Final report:
+`/Users/patwoz/dev/Personal/macos/bbr/reports/visual/app-surfaces-20261002-c/index.html`.
+Run:
+`/Users/patwoz/dev/Personal/macos/bbr/reports/visual/runs/app-surfaces-20261002-c`.
+`/private/tmp/bbr-visual-app-surfaces/final-inspection.json` independently verifies
+1,516 current source hashes, all 28 PNGs and report copies, 46 collection-sealed
+files and cleanup of all five transports. Both capture locks are unheld. The
+final successful caller takes 110.547s, report-only tooling evidence. Three failed
+transports and the stale assertion/fixture-count failures remain recorded in
+Current delivery; none was hidden by a relaxed check.
+
+All originals and the rendered report were inspected. All 44 unique nonempty
+report image sources load, including 28 actuals at exact dimensions. History,
+Sidebar and the seven Settings panes are visible. The tall empty Clear Data sheet
+body is preserved as rendered; Shortcuts is only the initial scroll viewport.
+Native webpages, traffic lights and Portal children are still absent, and a
+withheld catalog row explicitly lists other uncaptured application states. This
+is neither all-app/all-state nor nested/paint-framing acceptance.
+
+Review correctly remains false: eight changed historical references, twenty
+missing baselines, changed rendering environment and withheld coverage; no suite
+integrity errors or baseline writes. Expanded runs `a` and `c` have 28/28 identical
+PNG hashes, but different source seals after strengthened tests/environment
+metadata. Do not count them as the required same-final-tree independent repeats.
+Serial full visual contracts, strict affected feature/testkit/consumer Clippy,
+capture protocol/path tests and format/roadmap checks pass. The earlier aggregate
+Command benchmark failures and absent current stable functional aggregate remain
+open. Public capture activation, full coverage, interactive pilot, baseline review
+and Python parity removal are not completed. This addendum supersedes the original
+table's absent-browser/runtime-image claims only for these 28 cases.
+
 ## Requirement mapping at the original inspection base
 
 Paths in the table are repository-relative identifiers under

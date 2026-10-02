@@ -1,4 +1,4 @@
-//! Existing eight-image browser output contract, shared by retained and VM routes.
+//! Exact application-still contract, retaining all eight historical shell images.
 use crate::{browser_cases, gallery};
 use anyhow::{ensure, Result};
 use cargo_gpui_visual::store;
@@ -14,7 +14,10 @@ pub fn validate_and_prepare(output: &Path) -> Result<Vec<String>> {
         })
         .collect::<Result<_>>()?;
     let mut expected: BTreeSet<_> = cases.iter().map(|case| format!("{case}.png")).collect();
-    for fixture in ["ordinary", "representative"] {
+    for fixture in ["ordinary", "representative"]
+        .into_iter()
+        .chain(crate::BROWSER_SURFACES)
+    {
         for mode in ["light", "dark"] {
             let name = format!("{fixture}--{mode}.snapshot.json");
             gallery::regular(&output.join(&name))?;
@@ -28,6 +31,8 @@ pub fn validate_and_prepare(output: &Path) -> Result<Vec<String>> {
             &output.join(format!("{case}.png")),
             if case.contains("-rail--") {
                 (608, 2814)
+            } else if case.starts_with("settings-") {
+                (1560, 1240)
             } else {
                 (2160, 2814)
             },

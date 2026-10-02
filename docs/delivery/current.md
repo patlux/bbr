@@ -2238,6 +2238,115 @@ performance or baseline approval is claimed. Implementation/review wall time was
 not measured. Next migration work remains the bounded interactive/framing pilot;
 this report does not activate unrelated queue items or additional writers.
 
+### Real application stills checkpoint (2026-10-02)
+
+Patrick requested Sidebar and the actual application, including History and
+Settings, instead of Gallery alone. This bounded follow-up starts from clean
+`main@89623860314ab189fb792fc6306325b60bd45732`. Only the existing local visual
+writer is authorized. The complete delivery queue was reread at restoration;
+no additional product lane, workflow, subagent or foreign worktree is activated.
+The tooling packet records the narrow application/protocol extension before
+implementation. Production rendering, GPUI pin, immutable upstream and all real
+baselines remain unchanged.
+
+The optimized real application now emits **28 Light/Dark stills**: the original
+eight ordinary/representative browser and Sidebar cases, populated History,
+Clear Browsing Data (cancel only), empty Saved Pages and seven Settings panes.
+Fixed undated fixture visits avoid clock-dependent labels and real user data.
+Production actions and typed readiness drive each surface. The feature-only,
+authenticated `CaptureSettings` reads the existing Settings window's own renderer,
+explicitly drawing it first; closed Settings and nested output paths are rejected
+with exact error codes. Semantic state is preserved across readback. Browser,
+Sidebar and Settings dimensions remain exact RGBA8, respectively 2160×2814,
+608×2814 and 1560×1240, without resampling or masking. The independent catalog
+requires all 28 and explicitly withholds remaining application coverage.
+
+Evidence root: `/private/tmp/bbr-visual-app-surfaces`.
+- The first existing-browser transport stopped at `runtime probe deadline`.
+  A bounded read-only runtime diagnostic subsequently passed; its Nix byte check
+  took 16.016s. Host load was high, not a proven timeout cause. Fresh transport
+  then passed ordinary Light/Dark but failed the representative `pinned=1`
+  assertion. Existing `favorite => pinned` requires all four Favorites pinned;
+  the correction asserts both count four and every tab pinned, without product
+  changes or removing checks. Both failed attempts retain logs and cleanup.
+- Fresh expanded `attempt2/transport` succeeded: run `app-surfaces-20261002-a`,
+  caller exit0, 481.484s. An initial full contract gate then caught the remaining
+  synthetic expected count eight; it was corrected to 28, not skipped. Expanded
+  portable tests also reject a missing Settings image and browser-sized Settings
+  output. Exact error-code assertions and rendering metadata were strengthened.
+- Fresh final payload under `attempt3` binds 1,516 sources. Its first transport
+  failed at the SSH listener audit (`Connection timed out during banner exchange`)
+  and cleaned up before producer execution. New workspace `attempt3/transport2`
+  succeeded, caller exit0, 110.547s. No changed deadline, audit bypass or in-place
+  retry. All timings here are tooling, not product-performance measurements.
+- Final report:
+  `/Users/patwoz/dev/Personal/macos/bbr/reports/visual/app-surfaces-20261002-c/index.html`.
+  Final sealed run:
+  `/Users/patwoz/dev/Personal/macos/bbr/reports/visual/runs/app-surfaces-20261002-c`.
+  Scope `collection`, review false, baseline writes false. Eight changed historical
+  references, twenty missing baselines and environment mismatch remain review
+  requirements; suite validation errors are empty. Collection coverage additionally
+  fails on the explicit `remaining-app-surfaces` withheld requirement.
+- Final payload SHA256 `4f31bdbd5607a86f3ec3006ce02abd0bb2b33196887a4601ddbf05fb26866b04`;
+  capture SHA256 `746bedaf56c64dc010d09c8b73f305d6575f3f6d33c8a9d736117527f1a18014`;
+  request SHA256 `f4f0e295ea96e1ebeead7e739a2fc1f6567133582dcea8b1456a9013bfd2c5a7`.
+  Final clone `bbr-visual-49032-bcc4797564b0`, former IP192.168.66.40, Tart PID51335.
+  Existing offline closure import, authenticated/private-NAT audits, original
+  source/build identity and before/after guest checks pass through the same route.
+- `final-inspection.json` independently rechecks all 1,516 current source hashes,
+  28 original PNGs, 28 report actual copies and all 46 collection-sealed files.
+  The review's capture hash matches the original seal. All 28 PNGs match expanded
+  run `a` byte-for-byte; **source seals differ** across those runs. This does not
+  satisfy the two-complete-captures-of-one-final-tree migration acceptance gate.
+- The same independent inspection repeats clone/key/process/disk absence and
+  unreachable SSH for all five transports, including the three failures. Both
+  capture locks were observed unheld; no lock metadata was erased. Golden Image,
+  ordinary host app and other workloads/worktrees remain untouched.
+
+All 28 originals have been opened and visually inspected, and the actual static
+HTML is open in the existing managed Chrome-patwoz report tab. The report's 44
+unique nonempty image sources load, including all 28 actual images at exact
+original dimensions. Sidebar, History and Settings content is legible. The Clear
+Data sheet has a conspicuously tall empty body in the production render; Shortcuts
+shows only its initial scroll viewport (the next section reaches the bottom edge).
+Neither is cropped, masked, repaired or promoted to full-content/paint-framing
+acceptance. Native WKWebView, traffic lights and Portal-child pixels remain absent;
+ordinary browser content is therefore blank, not a screenshot of a webpage.
+Populated Saved Pages, recently closed History, Settings menus/sheets/scrolled
+content, Command/Find/Downloads/Peek portals, permissions, welcome, About and other
+transient states remain explicitly uncaptured. This is not the complete app.
+
+Verified checks under the evidence root:
+- Negative-first catalog mismatch (`catalog-red.log`), then passing independent
+  required-pair contract (`catalog-green.log`).
+- `RUST_TEST_THREADS=1 just visual-test` passes twice after the count correction,
+  including the final missing/wrong-sized Settings fixtures (`visual-test2.log`,
+  `visual-test-final.log`): 171 Python discoveries (170 pass, one integration skip
+  separately passed), unchanged upstream and 111 top-level consumer tests plus
+  fixtures. The earlier count failure remains in `visual-test.log`.
+- Bounded mbx strict Clippy: app visual-capture target (`app-clippy-final.log`),
+  consumer all targets (`consumer-clippy-final.log`) and ordinary app testkit all
+  targets (`testkit-clippy-final.log`) pass. No lint suppression. The first app
+  build's by-value WindowHandle call correction is retained in `app-clippy1.log`.
+- Both capture protocol wire contracts pass (`protocol-tests.log`); the pure
+  feature-on output-path regression passes (`capture-path-test-final.log`). No
+  ignored GUI test ran on the host. Existing `block v0.1.6` warning remains.
+- Final workspace/consumer format, roadmap/index-roadmap and whitespace checks
+  precede the local checkpoint. Only documentation changed after final capture.
+
+Self-review checked actual-window routing rather than reconstruction, explicit
+draw without a leased Root, feature-off refusal, isolated deterministic history,
+no deletion/settings mutation, before/after state, complete independent inventory,
+wrong-window dimensions, unchanged PNG bytes, retained native exclusions and
+source/cleanup binding. No independent agent was requested or used. This is an
+intermediate tooling checkpoint: no new full `verify`, stable functional aggregate,
+performance pass, baseline approval, migration closeout or Python removal is
+claimed. Earlier aggregate Command benchmark failures remain open. Public capture
+and Gallery endpoint guards are unchanged. Total implementation/review wall time
+was not instrumented. The broader input/framing/parity work remains open; further
+capture-affecting source changes require fresh staging rather than stale resealing.
+No push/publication or additional writer accompanies this checkpoint.
+
 ## Status vocabulary
 
 | Status | Meaning |

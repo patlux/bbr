@@ -29,6 +29,33 @@ selective acceptance workflow, without adopting the mobile SDK's GPUI graph.
   and after capture and return bounded diagnostics and raw PNGs before sealing.
   Preserve cleanup and interrupted-acceptance evidence.
 
+### Real application surfaces follow-up (2026-10-02)
+
+Patrick requested the actual Sidebar and application, including History and
+Settings, rather than only Gallery examples. The next bounded slice retains all
+eight browser cases and adds Light/Dark captures of populated History, its Clear
+Browsing Data sheet, the empty Saved Pages library and all seven Settings panes.
+Use the real production app, isolated fixture profiles, production actions and
+existing renderers. History uses fixed undated fixture visits, not live data or
+clock-dependent visit labels. Settings captures its own actual window through a
+narrow authenticated, visual-feature-only readback request; no reconstructed view.
+
+This extends the earlier no-new-surfaces/no-protocol scope only for those cases.
+Keep exact RGBA8 and dimensions, typed readiness before/after readback, independent
+required coverage, fresh source/build/guest binding, existing hardened Tart
+transport and observed teardown. Preserve native WebKit/AppKit/Portal exclusions
+and explicitly list other missing application surfaces; this is not full-app or
+all-state coverage. Never accept baselines automatically. Test the smallest real
+browser path first, then window routing/absence/path rejection and the complete
+expanded producer in Tart; run portable visual contracts, affected feature Clippy,
+format and roadmap checks. Self-review only; no subagents. Stop with retained
+attempts and cleanup evidence at a genuine unresolved capture/verification blocker.
+
+The first real browser run exposed the stale representative assertion `pinned=1`:
+all four Favorites are now pinned by the existing product invariant. Correct the
+fixture assertion to require all four pinned Favorites, without altering product
+behavior, deleting assertions or accepting changed baseline pixels.
+
 ## Non-goals
 
 - No browser appearance or behavior changes, portal capture, native WKWebView
@@ -60,7 +87,9 @@ second, followed by fresh captures and an explicit baseline review.
 ## Constraints
 
 Use the real optimized app with isolated test profiles and real WKWebViews.
-Keep capture behind visual-capture; no new runtime or testkit protocol.
+Keep capture behind visual-capture; no production runtime capture API. The
+bounded application-surface follow-up may add only the explicit Settings-window
+testkit readback described above.
 Drive readiness through typed state and deadlines, never pixel stability or
 fixed sleeps. Preserve mandatory functional E2E and performance budgets.
 All compiler commands use mbx. GUI/Gallery/browser captures execute only in

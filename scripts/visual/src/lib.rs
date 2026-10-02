@@ -48,6 +48,20 @@ impl Suite {
     }
 }
 
+/// Required additional application stills, separate from the historical shell pairs.
+pub const BROWSER_SURFACES: [&str; 10] = [
+    "history",
+    "history-clear-data",
+    "library-empty",
+    "settings-general",
+    "settings-profiles",
+    "settings-search",
+    "settings-privacy",
+    "settings-downloads",
+    "settings-appearance",
+    "settings-shortcuts",
+];
+
 pub fn browser_cases() -> Vec<String> {
     ["ordinary", "representative"]
         .into_iter()
@@ -58,5 +72,10 @@ pub fn browser_cases() -> Vec<String> {
                     .map(move |mode| format!("{fixture}-{region}--{mode}"))
             })
         })
+        .chain(BROWSER_SURFACES.into_iter().flat_map(|surface| {
+            ["light", "dark"]
+                .into_iter()
+                .map(move |mode| format!("{surface}--{mode}"))
+        }))
         .collect()
 }

@@ -153,6 +153,23 @@ impl Fixture {
                     }
                 }
             }
+            let settings = self.root.join("settings.png");
+            image::RgbaImage::new(1560, 1240).save(&settings).unwrap();
+            for surface in crate::BROWSER_SURFACES {
+                let png = if surface.starts_with("settings-") {
+                    settings.clone()
+                } else {
+                    self.root.join("full.png")
+                };
+                for mode in ["light", "dark"] {
+                    fs::copy(&png, raw.join(format!("{surface}--{mode}.png"))).unwrap();
+                    fs::write(
+                        raw.join(format!("{surface}--{mode}.snapshot.json")),
+                        "{\"synthetic\":true}",
+                    )
+                    .unwrap();
+                }
+            }
         }
         if let Some(s) = &self.selection {
             fs::write(raw.join("selection.json"), serde_json::to_vec(s).unwrap()).unwrap();
@@ -205,6 +222,10 @@ impl Fixture {
             "metadata" => fs::write(raw.join("unknown.json"), "{}").unwrap(),
             "sealed" => fs::write(raw.join("capture.json"), "{}").unwrap(),
             "dimensions" => image::RgbaImage::new(1, 1).save(&image).unwrap(),
+            "settings-dimensions" => image::RgbaImage::new(2160, 2814)
+                .save(raw.join("settings-general--light.png"))
+                .unwrap(),
+            "settings-missing" => fs::remove_file(raw.join("settings-privacy--dark.png")).unwrap(),
             "rgb" => image::RgbImage::new(2400, 2000).save(&image).unwrap(),
             "duplicate" => {
                 let p = raw.join("live-inventory.tsv");
@@ -276,7 +297,7 @@ fn fresh_selected_full_gallery_and_browser_reuse_upstream_seals_without_pixel_re
     for (suite, selected, count) in [
         (Suite::Gallery, true, 4),
         (Suite::Gallery, false, 4),
-        (Suite::Browser, false, 8),
+        (Suite::Browser, false, 28),
     ] {
         let f = Fixture::new(suite, selected);
         let run = f.run();
@@ -369,6 +390,8 @@ fn invalid_or_changed_return_never_gets_a_capture_seal() {
         (Suite::Browser, "extra"),
         (Suite::Browser, "dimensions"),
         (Suite::Browser, "rgb"),
+        (Suite::Browser, "settings-dimensions"),
+        (Suite::Browser, "settings-missing"),
     ] {
         let f = Fixture::new(suite, suite == Suite::Gallery);
         let run = f.run();
@@ -384,7 +407,8 @@ fn invalid_or_changed_return_never_gets_a_capture_seal() {
             "range" => "pages",
             "missing" | "extra" | "metadata" => "unexpected Gallery output",
             "sealed" | "inventory" | "sequences" => "must not supply",
-            "dimensions" => "dimensions",
+            "dimensions" | "settings-dimensions" => "dimensions",
+            "settings-missing" => "browser inventory differs",
             "rgb" => "RGBA8",
             "duplicate" => "duplicate live case",
             "bytes" | "receipt" | "hardlink" => "invalid returned file",

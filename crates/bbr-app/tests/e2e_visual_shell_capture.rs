@@ -8,6 +8,7 @@
 
 #[path = "e2e_common/mod.rs"]
 mod e2e_common;
+mod visual_surfaces;
 
 use bbr_testkit::protocol::{dsl, Request, Snapshot, ThemeModeOverride};
 use e2e_common::{
@@ -67,6 +68,9 @@ fn capture(kind: CaptureKind, appearance: ThemeModeOverride) {
     let root = harness_root(&root_tag, std::process::id());
     let profile = root.join("profile");
     fs::create_dir_all(&profile).expect("create capture profile");
+    if matches!(kind, CaptureKind::Representative) {
+        visual_surfaces::seed(&profile);
+    }
     let socket = harness_socket_path(&root_tag, std::process::id());
     let token = format!("visual-{}-{}", kind.name(), std::process::id());
     let output_dir = PathBuf::from(
@@ -181,6 +185,9 @@ fn capture(kind: CaptureKind, appearance: ThemeModeOverride) {
         assert_eq!(after.active_space, snapshot.active_space);
         assert_eq!(after.engine_sessions, snapshot.engine_sessions);
 
+        if matches!(kind, CaptureKind::Representative) {
+            visual_surfaces::capture(&mut client, &output_dir, appearance_name);
+        }
         client.quit().expect("graceful visual capture quit");
         wait_for_process_exit(&mut harness, deadline());
     }));
@@ -290,7 +297,8 @@ fn assert_capture_state(kind: CaptureKind, appearance: ThemeModeOverride, snapsh
         CaptureKind::Representative => {
             assert_eq!(snapshot.tabs.len(), 4, "representative real tabs");
             assert_eq!(snapshot.favorites.len(), 4, "representative real favorites");
-            assert_eq!(snapshot.pinned_count, 1, "representative real pinned tab");
+            assert_eq!(snapshot.pinned_count, 4, "every Favorite is pinned");
+            assert!(snapshot.tabs.iter().all(|tab| tab.pinned));
             assert_eq!(snapshot.active_tab_index, Some(0));
             assert_eq!(snapshot.folders.len(), 1, "representative real folder");
             assert_eq!(snapshot.folders[0].tab_count, 0, "truthful empty folder");

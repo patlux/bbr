@@ -11,6 +11,48 @@ Apache-2.0 with its original LICENSE/NOTICE retained. Its independent Cargo
 root never links GPUI; BBR does not depend on a developer's SDK checkout or
 on the SDK renderer helper. Nothing is installed or published.
 
+## Current application report (2026-10-02)
+
+The current report contains **28 real application stills**, not Gallery replicas:
+
+- ordinary and representative browser windows, plus full-height Sidebar crops;
+- populated History and its Clear Browsing Data sheet (cancelled, no deletion);
+- empty Saved Pages;
+- the actual Settings window: General, Profiles, Search, Privacy, Downloads,
+  Appearance and Shortcuts, each at its initial scroll position.
+
+Every case has Light/Dark evidence from the optimized production app in a
+throwaway headless Tart guest. The final static report is
+`/Users/patwoz/dev/Personal/macos/bbr/reports/visual/app-surfaces-20261002-c/index.html`;
+its original PNGs and semantic snapshots are under
+`/Users/patwoz/dev/Personal/macos/bbr/reports/visual/runs/app-surfaces-20261002-c`.
+The existing managed Chrome report tab displays this report.
+
+The report correctly says **REVIEW REQUIRED / FAIL**: eight changed historical
+references, twenty missing baselines, a changed rendering environment and an
+explicit withheld row for uncaptured application states. Capture and integrity
+checks succeeded; no baseline or environment was adopted. Both expanded runs
+produced 28/28 byte-identical PNGs, but their source seals differ because tests
+and environment metadata were strengthened between them. This is not the required
+two-complete-captures-of-one-final-tree migration acceptance.
+
+This still set does **not** contain native WKWebView page pixels, AppKit traffic
+lights or Portal-child pixels. Ordinary browser content therefore appears blank.
+Populated Saved Pages, recently closed History, Settings sheets/menus/scrolled
+content, Command/Find/Downloads/Peek portals, permissions, welcome, About and other
+transient states remain outside the set. In particular, Shortcuts is a viewport,
+not the entire shortcut list. The Clear Data sheet's tall empty body is present
+in the actual production render; capture does not crop or repair it.
+
+The internal supervised Rust API is runtime-verified for this bounded set and
+the earlier partial Tokens report. Public `produce`/`check` guards remain closed,
+and the retained Python capture commands below still must not run on the host.
+Python removal, complete coverage, interactive/framing pilot and stable functional
+aggregate remain open. Detailed failures, source/build/cleanup evidence and current
+ownership are in [Current delivery](delivery/current.md). The prerequisite sections
+below preserve migration history; their earlier no-runtime/no-image statements
+are superseded only by these bounded runtime checkpoints, not by full parity.
+
 ## Migration checkpoint and execution boundary
 
 The standalone import is portable-tool evidence only. The existing Python
@@ -468,19 +510,25 @@ suite under the common-directory GUI lock. The adapter holds that lock until
 its test/app process group has been reaped, including on timeout or interruption.
 Build, lock-wait and execution deadlines are bounded.
 
-The existing authenticated, feature-gated `CaptureChrome` request reads the
-running production GPUI window's Metal scene. The capture suite drives real
-WKWebViews and normal testkit mutations in fresh, non-persistent profiles:
+The authenticated, feature-gated `CaptureChrome` request reads the running
+production browser window's Metal scene. `CaptureSettings` reads the actual
+existing Settings window after an explicit production draw; it refuses closed
+Settings rather than capturing the browser instead. Both accept only direct
+`/tmp/*.png` paths and are unavailable without `visual-capture`. The capture suite
+drives real WKWebViews and normal production actions through testkit in fresh,
+isolated profiles:
 
 | Fixture | Contents | Images in each appearance |
 |---|---|---|
 | `ordinary` | One loaded fixture tab, no Favorites or folders | `ordinary-full`, `ordinary-rail` |
-| `representative` | Four loaded tabs, four Favorites, one pinned selected tab, one empty collapsed folder | `representative-full`, `representative-rail` |
+| `representative` | Four loaded pinned Favorites (first selected), one empty collapsed folder | `representative-full`, `representative-rail` |
+| Application pages | Three fixed undated History visits, Clear Data sheet, empty Saved Pages | `history`, `history-clear-data`, `library-empty` |
+| Settings window | Seven production panes, initial scroll viewport | `settings-general`, `settings-profiles`, `settings-search`, `settings-privacy`, `settings-downloads`, `settings-appearance`, `settings-shortcuts` |
 
-Each case has `--light` and `--dark`, for eight PNGs. The contract is exactly
+Each case has `--light` and `--dark`, for 28 PNGs. Browser windows are exactly
 1080×1407 points at 2× (2160×2814 pixels); the left rail crop is 304 points
-(608 pixels), including its boundary. Wrong dimensions fail; no resizing,
-masking or tolerance is applied. Appearance, normal contrast and Reduce Motion
+(608 pixels), including its boundary. Settings is 780×620 points at 2×
+(1560×1240 pixels). Wrong dimensions fail; no resizing, masking or tolerance is applied. Appearance, normal contrast and Reduce Motion
 are forced through existing typed overrides. Capture waits for settled native
 geometry, no loading/crash/unresponsive tabs and no transient motion moments.
 Semantic state is checked again after readback; pixels never synchronize state.
@@ -491,7 +539,7 @@ substitutes for them. The accompanying typed snapshots preserve native/session
 and geometry diagnostics. Functional E2E, native-boundary tests, performance
 and animation tests remain separate mandatory evidence.
 
-## One command for all current snapshots
+## Historical commands — host execution remains prohibited
 
 Use the existing macOS dev environment and Xcode/Metal toolchain:
 
@@ -565,8 +613,9 @@ Upstream CLI exit codes: 0 = exact pass/success, 1 = non-passing comparison
 (including first missing baselines; inspect the report's validation errors),
 2 = invalid capture/configuration. Build/adapter failures can also fail before
 the CLI produces a report and are never visual passes. A first run should fail for missing baselines; inspect
-all eight images before explicitly accepting them, then run a second fresh
-capture and require eight exact matches.
+all required images before explicitly accepting them, then run a second fresh
+capture and require exact matches for the full current inventory. These historical
+commands do not override the current Tart-only execution boundary.
 
 For a consciously reviewed OS/compiler/renderer environment change, use the
 underlying `python3 scripts/visual/tool.py accept --run <run> --case <id> ...

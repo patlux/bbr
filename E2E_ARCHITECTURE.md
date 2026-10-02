@@ -1220,8 +1220,19 @@ Light/Dark, full scene and exact Sidebar crop. Existing typed requests set up
 the real app; readiness and native/session state are asserted before and after
 Metal readback. `visual-capture` remains separate from ordinary `testkit`.
 
-The adapter builds through mbx, serializes GUI execution on the existing lock,
-and supplies the eight-case PNG inventory. Source/environment sealing, exact
+The application-surfaces follow-up retains the eight shell images and adds twenty
+Light/Dark images: populated History, Clear Browsing Data (cancel only), empty
+Saved Pages, and all seven Settings panes at their initial scroll position.
+Undated fixture visits avoid wall-clock text; no real user profile is read.
+`CaptureSettings` refuses closed Settings and reads that production window's
+own scene after an explicit draw, never a Gallery reconstruction or browser-frame
+substitute. Both readbacks remain authenticated, feature-only direct `/tmp` PNG
+operations. Browser readback is 2160×2814, its rail crop 608×2814, and Settings
+1560×1240 (780×620pt). No resampling. Semantic snapshots before/after capture
+preserve tab/session/profile/space and surface state.
+
+The adapter builds through mbx, serializes guest execution on the existing lock,
+and supplies the independently required 28-case PNG inventory. Source/environment sealing, exact
 RGBA comparison and explicit selective baseline acceptance stay upstream.
 This adds no network service, production screenshot API or renderer graph.
 WKWebView, AppKit traffic lights and portal-child pixels are excluded rather

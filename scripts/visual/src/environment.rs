@@ -55,7 +55,8 @@ pub fn probe(repo: &Path, suite: Suite, cancelled: &AtomicBool) -> Result<Value>
             "capture_scope":"production-chrome-only",
             "renderer":"GPUI-CE Window::render_to_image / Metal",
             "width_pt":1080,"height_pt":1407,"rail_width_pt":304,
-            "scale_policy":"assert exact 2160x2814 readback; never resample",
+            "settings_window_pt":[780,620], "settings_window_px":[1560,1240],
+            "scale_policy":"assert exact 2160x2814 browser / 1560x1240 Settings readback; never resample",
             "contrast":"standard", "readiness":"typed settled geometry, no loading or transient moments"
         }),
         Suite::Gallery => json!({

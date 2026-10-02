@@ -17,33 +17,47 @@ use crate::app::BbrApp;
 pub(crate) fn dispatch_capture(
     req: &Request,
     window: &WindowHandle<gpui_component::Root>,
-    _app: &Entity<BbrApp>,
+    app: &Entity<BbrApp>,
     cx: &mut App,
 ) -> Option<Response> {
-    let Request::CaptureChrome { path } = req else {
-        return None;
+    let path = match req {
+        Request::CaptureChrome { path } | Request::CaptureSettings { path } => path,
+        _ => return None,
     };
     let path = Path::new(path);
     if !valid_capture_path(path) {
         return Some(Response::Error(Error::new(
             "invalid_capture_path",
-            "CaptureChrome only accepts a direct /tmp/*.png path",
+            "visual readback only accepts a direct /tmp/*.png path",
         )));
     }
 
+    let target = if matches!(req, Request::CaptureSettings { .. }) {
+        let Some(handle) = app.read(cx).settings.read().window else {
+            return Some(Response::Error(Error::new(
+                "settings_closed",
+                "open Settings through its production action before readback",
+            )));
+        };
+        handle.into()
+    } else {
+        (*window).into()
+    };
     Some(
-        window
-            .update(cx, |_root, window, _cx| {
-                window
-                    .render_to_image()
-                    .map_err(|error| error.to_string())?
-                    .save(path)
-                    .map_err(|error| error.to_string())
-            })
-            .map_err(|error| error.to_string())
-            .and_then(|result| result)
-            .map(|()| Response::Ok)
-            .unwrap_or_else(|message| Response::Error(Error::new("capture_failed", message))),
+        gpui::AnyWindowHandle::update(target, cx, |_root, window, cx| {
+            // Settings is a separate hidden harness window: explicitly draw
+            // its real view, not the browser's last scene or a reconstruction.
+            let _clear = window.draw(cx);
+            window
+                .render_to_image()
+                .map_err(|error| error.to_string())?
+                .save(path)
+                .map_err(|error| error.to_string())
+        })
+        .map_err(|error| error.to_string())
+        .and_then(|result| result)
+        .map(|()| Response::Ok)
+        .unwrap_or_else(|message| Response::Error(Error::new("capture_failed", message))),
     )
 }
 

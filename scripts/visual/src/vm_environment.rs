@@ -213,7 +213,7 @@ pub(crate) fn validate_receipt(
 }
 
 fn rendering_environment(suite: Suite, host: &HostBuild, guest: &Guest) -> Value {
-    json!({
+    let mut environment = json!({
         "layer":"gpui", "environment_schema":2,
         // Executable/source hashes bind this run's receipt, not the rendering
         // environment. Ordinary code changes must not require environment adoption.
@@ -231,5 +231,12 @@ fn rendering_environment(suite: Suite, host: &HostBuild, guest: &Guest) -> Value
             "precision":"exact decoded RGBA8; no masks, tolerance or resampling",
             "coverage":"independent catalog and framing audit required"
         }
-    })
+    });
+    if suite == Suite::Browser {
+        environment["capture_policy"]["settings_window_pt"] = json!([780, 620]);
+        environment["capture_policy"]["settings_window_px"] = json!([1560, 1240]);
+        environment["capture_policy"]["viewport_scope"] =
+            json!("initial scroll viewport, not all content or all application states");
+    }
+    environment
 }

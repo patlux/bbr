@@ -18,6 +18,13 @@ CASES = tuple(
     for fixture in ("ordinary", "representative")
     for region in ("full", "rail")
     for appearance in ("light", "dark")
+) + tuple(
+    f"{surface}--{appearance}"
+    for surface in ("history", "history-clear-data", "library-empty",
+                    "settings-general", "settings-profiles", "settings-search",
+                    "settings-privacy", "settings-downloads", "settings-appearance",
+                    "settings-shortcuts")
+    for appearance in ("light", "dark")
 )
 
 

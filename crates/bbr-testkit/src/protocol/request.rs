@@ -1723,6 +1723,11 @@ pub enum Request {
     CaptureChrome {
         path: String,
     },
+    /// Read the existing Settings window's production GPUI scene. Requires
+    /// visual-capture; never opens a window and accepts only a direct /tmp PNG.
+    CaptureSettings {
+        path: String,
+    },
     /// Full app snapshot.
     GetSnapshot,
     /// Force the effective production `ThemeMode` regardless of the host

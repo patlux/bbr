@@ -85,7 +85,13 @@ class AdapterTests(unittest.TestCase):
                 fcntl.flock(contender, fcntl.LOCK_EX | fcntl.LOCK_NB)
 
     def test_inventory_has_complete_light_dark_pairs(self):
-        self.assertEqual(len(CASES), 8)
+        self.assertEqual(len(CASES), 28)
+        required = json.loads((ROOT / 'scripts/visual/catalogs/browser.json').read_text())
+        self.assertEqual(set(CASES), {
+            f"{row['base']}--{mode}"
+            for row in required['snapshots'] if row['state'] == 'required'
+            for mode in ('light', 'dark')
+        })
         for case in CASES:
             base, _ = case.rsplit("--", 1)
             self.assertIn(base + "--light", CASES)

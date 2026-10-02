@@ -497,6 +497,16 @@ mod tests {
         );
     }
 
+    #[test]
+    fn capture_settings_request_has_exact_wire_shape() {
+        let request = Request::CaptureSettings {
+            path: "/tmp/settings.png".into(),
+        };
+        let literal = json!({ "CaptureSettings": { "path": "/tmp/settings.png" } });
+        assert_eq!(serde_json::to_value(&request).unwrap(), literal);
+        assert_eq!(serde_json::from_value::<Request>(literal).unwrap(), request);
+    }
+
     /// The portal probe requests keep their exact externally-tagged JSON
     /// shape on the wire (unit variants serialize as the bare name) and the
     /// fixed literals deserialize back into the same typed values.
