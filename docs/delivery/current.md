@@ -1037,6 +1037,57 @@ approval, current catalog, real pilot, two independent complete captures, actual
 image/report review and current functional Tart gates remain open. This internal
 bridge is prerequisite evidence, not migration completion or parity acceptance.
 
+### Foundations / Primitives / Core Controls source-audit checkpoint
+
+Preflight: clean `main@4a5fedf9` after the raw-to-seal commit, same sole local
+visual owner and no new lane/subagent authorization. Current full queue and
+ownership were reviewed in the preceding checkpoint; only bounded visual source
+work is runnable here. No native/VM/network/asset operation is activated.
+
+The [source continuation](../visual/gallery-foundations-audit.md) inspects IDs
+0–20 against actual story, fixture, token/component and vendored-control symbols.
+It separates represented samples from narrow non-applicability and still-open
+states/framing. Findings: States' eleven names collapse to monogram/Loading/Error
+favicon branches; Iconography lists only 25 samples and omits newer production
+variants; Core Controls expose initial recorder/entities with separate vendored
+Light/Dark but no explicit BBR contrast/density propagation. The initially checked
+Radio already requires the same missing `icons/check.svg` as the Checkbox pilot.
+The checked-icon transition also owns a 250ms animation/timer; no source-only
+claim of a settled real endpoint follows. Direct-child bounds do not prove nested
+text, glyph, focus-ring or painted shadow extents.
+
+Four additive withheld catalog entries expose those concrete gaps through the
+existing read-only doctor path. Every one of the prior catalog rows is byte-value
+preserved, including all 936 required page pairs and eight prior blockers; no
+page/moment invention, required-row deletion or unsupported-state relabeling.
+The earlier source note now distinguishes the implemented internal selected path
+from still-unproven guest/native parity. Renderer, asset, dependency, upstream,
+normal configs and baseline sources are unchanged.
+
+Evidence: the added missing-blocker contract fails before catalog edits
+(`/tmp/bbr-visual-foundation-audit-red.log`), then all nine catalog/validator and
+four discovery contracts pass (`/tmp/bbr-visual-foundation-audit-focused.log`,
+0.79s/0.81s). Actual CLI tripwires still prohibit builds, producers, probes and
+writes. The first roadmap check correctly rejected the new untracked linked
+report; staging the owned report makes it visible, without validator changes.
+Full `just visual-test` passes 151 Python discovery tests plus separate CLI
+integration, unchanged upstream and **70 consumer tests** plus signal fixtures:
+`/tmp/bbr-visual-foundation-audit-visual-test.log`. Strict consumer all-target
+Clippy/fmt, roadmap and whitespace pass:
+`/tmp/bbr-visual-foundation-audit-clippy.log`,
+`/tmp/bbr-visual-foundation-audit-roadmap2.log`. An independent structured diff
+confirms all old catalog rows unchanged and exactly four additive withheld rows.
+No actual image/HTML review, guest or functional gate was performed. These are
+source/contract observations, not product-performance or visual acceptance.
+
+Self-review traces each finding to actual call sites, checks default recorder and
+entity values, compares the literal icon list with the production enum, and
+preserves original catalog entries. Parallelism audit: IDs 21–48 and remaining
+matrix/composition applicability are locally runnable, no other lane authorized.
+Actual network/asset permissions, runtime availability, legitimate endpoint and
+nested framing, fresh pilot/full repeats and current functional Tart gates remain
+required. The goal and Gallery acceptance stay open.
+
 ## Status vocabulary
 
 | Status | Meaning |

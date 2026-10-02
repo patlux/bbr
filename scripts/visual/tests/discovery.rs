@@ -73,7 +73,17 @@ fn doctor_and_preview_are_structured_read_only_and_do_not_authorize_execution() 
         "historical requirements stay intact"
     );
     let pending = coverage["pending"].as_array().unwrap();
-    assert_eq!(pending.len(), 8);
+    assert_eq!(pending.len(), 12);
+    for base in [
+        "gallery-07-state-projection",
+        "gallery-08-iconography-gaps",
+        "gallery-core-control-applicability",
+        "gallery-18-radio-check-asset",
+    ] {
+        assert!(pending
+            .iter()
+            .any(|item| item["base"] == base && item["state"] == "withheld"));
+    }
     for id in 49..=52 {
         assert!(
             pending

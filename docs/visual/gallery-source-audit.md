@@ -3,7 +3,9 @@
 Canonical acceptance owner: [Gallery visual coverage](../roadmap/tasks/gallery-visual-coverage.md).
 This document records a bounded **source inspection**, not complete visual
 coverage, measured page ranges, real input evidence or approved reference images.
-Inspection base: `b9228dce`; no product or Gallery renderer changes accompany it.
+Initial inspection base: `b9228dce`; the [Foundations / Primitives / Core Controls
+continuation](gallery-foundations-audit.md) audits IDs 0–20 at `4a5fedf9`.
+No product or Gallery renderer changes accompany either inspection.
 
 ## Registry and historical-plan mismatch
 
@@ -31,11 +33,13 @@ Source authority:
 - `/Users/patwoz/dev/Personal/macos/bbr/crates/bbr-gallery/src/app/capture.rs`
 
 The producer accepts one numeric `--story` and filters cases before creating its
-rendering context. It does not yet consume upstream `GPUI_VISUAL_SELECTION`,
-select several authored story IDs, verify independently required pages before
-rendering, or bind that selection into the guest request. Inventory always lists
-the complete registry. Therefore existing filtering is a useful seam, not proof
-of standalone selection parity. Normal consumer capture remains blocked.
+rendering context. Inventory always lists the complete registry. The internal
+Rust consumer now binds an upstream Selection to an independent schedule and
+original host request, invokes that existing numeric command per authored story,
+and validates returned scope before upstream sealing. The producer itself remains
+unchanged and does not consume `GPUI_VISUAL_SELECTION`. Portable fixtures prove
+this composition, not actual guest/native selection parity. No real story catalog
+is enabled; normal consumer capture remains blocked.
 
 The producer enumerates each registered selector across two appearances, two
 contrast settings and three density settings. This is **canvas settings**, not
@@ -102,9 +106,10 @@ ranges remain historical diagnostics until fresh current-source evidence.
 1. Audit remaining story/matrix families and effective-state applicability from
    their source authorities. Preserve an explicit open item where interaction,
    framing or production identity is not proven.
-2. Build upstream-selection → guest-request → existing producer filtering with
-   pure/contract tests, then real approved guest tests. Selected reports remain
-   explicitly partial and non-accepting; complete appearances/pages are required.
+2. Verify the now internally composed upstream-selection → guest-request →
+   existing producer filtering → upstream-seal path with real approved guest
+   tests. Selected reports remain explicitly partial and non-accepting; complete
+   appearances/pages are required. Synthetic contract passes are not that proof.
 3. Obtain network-route and legitimate Checkbox asset approval; verify actual
    guest runtime availability without installation/repair/download fallback.
 4. Run Tokens/real Checkbox/multipage Sidebar pilot, measure complete framing,

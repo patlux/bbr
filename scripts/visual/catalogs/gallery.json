@@ -13176,6 +13176,46 @@
       "reason": "Broader applicability and nested/shadow audit remains unproven; registered selector pages are not complete interaction coverage."
     },
     {
+      "base": "gallery-07-state-projection",
+      "label": "States: vocabulary is not rendered row-state coverage",
+      "group": "Unproven coverage",
+      "sequence": null,
+      "moment": null,
+      "page": null,
+      "state": "withheld",
+      "reason": "The story passes eleven state names to a favicon without an image; only loading and error change that component branch. Hover, focus, selection, attention and drag labels do not paint those row states or drive input. Production-state applicability and framing remain open."
+    },
+    {
+      "base": "gallery-08-iconography-gaps",
+      "label": "Iconography: newer production glyphs are not enumerated",
+      "group": "Unproven coverage",
+      "sequence": null,
+      "moment": null,
+      "page": null,
+      "state": "withheld",
+      "reason": "The explicit 25-sample list omits Search, Warning, Gear, Info, Document, settings/permission/media/split glyphs and curated Bbr glyph variants. Complete production-glyph coverage and nested bounds require an independently authored contract; no page counts are inferred."
+    },
+    {
+      "base": "gallery-core-control-applicability",
+      "label": "Core Controls: initial state and theme applicability",
+      "group": "Unproven coverage",
+      "sequence": null,
+      "moment": null,
+      "page": null,
+      "state": "withheld",
+      "reason": "IDs 14-20 render default entities/recorder state. Capture changes gpui-component Light/Dark but does not explicitly propagate BBR contrast/density or drive pointer, editing, focus or disabled states. Canvas setting names are not proof of distinct control variants; nested shadows/focus extents remain unproven."
+    },
+    {
+      "base": "gallery-18-radio-check-asset",
+      "label": "Radio: initial selected option requires the checked asset",
+      "group": "Unproven coverage",
+      "sequence": null,
+      "moment": null,
+      "page": null,
+      "state": "withheld",
+      "reason": "The first Radio is selected by default and calls checkbox_check_icon, which resolves icons/check.svg. The empty Gallery asset source cannot supply it; this affects initial Radio captures, not only a future Checkbox transition. Legitimate asset-source approval and fresh guest visual evidence are required."
+    },
+    {
       "base": "gallery-locked-session",
       "label": "Locked-session execution",
       "group": "Unproven coverage",

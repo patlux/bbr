@@ -134,8 +134,23 @@ The [bounded source audit](../../visual/gallery-source-audit.md) records the ins
 pilot/additions, concrete endpoint/placeholder/framing gaps and remaining work.
 Four added stories are explicitly withheld in the consumer catalog without
 invented page counts; the retained 936 required page pairs are unchanged.
-The next slice may implement selection from independently authored requirements,
-but actual selection/framing claims still require approved guest evidence.
+The selected request/transport/seal prerequisites are implemented internally;
+actual selection/framing claims still require approved guest evidence.
+
+### Bounded Foundations / Primitives / Core Controls applicability audit
+
+Inspect IDs 0–20 against the production symbols they actually render: distinguish
+token/value demonstrations and static model projections from exercised pointer,
+keyboard, focus and animation states. Check explicit theme/size propagation,
+asset dependencies, initial recorder/entity state, icon coverage and direct versus
+nested/shadow framing. Record source-supported non-applicability only for the
+narrow displayed sample; never use it to remove required interaction coverage.
+Expose concrete omitted glyph, projected-state, control-applicability and checked
+Radio asset gaps as additive withheld catalog rows with no invented page/moment
+requirements. Preserve every historical required pair and existing blocker.
+Verify the catalog and read-only diagnostics with consumer/upstream contracts;
+no product/renderer/vendor/asset change, native run or real-capture claim. Remaining
+browser-component/composition families and runtime framing retain open status.
 
 ## Iteration policy
 

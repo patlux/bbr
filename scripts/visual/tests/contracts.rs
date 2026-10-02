@@ -135,7 +135,7 @@ fn authored_catalogs_cover_required_pairs_and_keep_unproven_coverage_visible() {
             .iter()
             .filter(|s| s.state == State::Withheld)
             .count(),
-        8
+        12
     );
     let browser: Catalog =
         store::read_json(&repo.join("scripts/visual/catalogs/browser.json")).unwrap();
@@ -181,6 +181,29 @@ fn newly_registered_gallery_stories_remain_explicitly_withheld_until_audited() {
             entry.page.is_none() && entry.sequence.is_none() && entry.moment.is_none(),
             "source audit cannot invent captured pages/moments"
         );
+    }
+}
+
+#[test]
+fn source_projected_states_and_missing_assets_never_become_coverage() {
+    let repo = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let gallery: Catalog =
+        store::read_json(&repo.join("scripts/visual/catalogs/gallery.json")).unwrap();
+    gallery.validate().unwrap();
+    for (base, reason) in [
+        ("gallery-07-state-projection", "favicon"),
+        ("gallery-08-iconography-gaps", "Search"),
+        ("gallery-core-control-applicability", "contrast"),
+        ("gallery-18-radio-check-asset", "icons/check.svg"),
+    ] {
+        let entry = gallery
+            .snapshots
+            .iter()
+            .find(|s| s.base == base)
+            .unwrap_or_else(|| panic!("missing concrete source-audit blocker: {base}"));
+        assert_eq!(entry.state, State::Withheld);
+        assert!(entry.reason.as_deref().unwrap().contains(reason));
+        assert!(entry.page.is_none() && entry.sequence.is_none() && entry.moment.is_none());
     }
 }
 
