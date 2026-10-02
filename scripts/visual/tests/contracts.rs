@@ -135,7 +135,7 @@ fn authored_catalogs_cover_required_pairs_and_keep_unproven_coverage_visible() {
             .iter()
             .filter(|s| s.state == State::Withheld)
             .count(),
-        4
+        8
     );
     let browser: Catalog =
         store::read_json(&repo.join("scripts/visual/catalogs/browser.json")).unwrap();
@@ -147,6 +147,41 @@ fn authored_catalogs_cover_required_pairs_and_keep_unproven_coverage_visible() {
         .flat_map(|s| [format!("{}--light", s.base), format!("{}--dark", s.base)])
         .collect();
     assert_eq!(required, browser_cases());
+}
+
+#[test]
+fn newly_registered_gallery_stories_remain_explicitly_withheld_until_audited() {
+    let repo = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let gallery: Catalog =
+        store::read_json(&repo.join("scripts/visual/catalogs/gallery.json")).unwrap();
+    gallery.validate().unwrap();
+    // Independently authored source-audit requirements, not producer inventory
+    // or guessed page counts. Existing historical requirements stay unchanged.
+    for (base, label, limitation) in [
+        ("gallery-49-audit-pending", "Delete Space sheet", "shadow"),
+        ("gallery-50-audit-pending", "Peek presentation", "stand-in"),
+        ("gallery-51-audit-pending", "Toast and zoom readout", "fade"),
+        ("gallery-52-audit-pending", "Media card", "six"),
+    ] {
+        let entry = gallery
+            .snapshots
+            .iter()
+            .find(|s| s.base == base)
+            .unwrap_or_else(|| {
+                panic!("new registered story lacks an explicit coverage blocker: {base}")
+            });
+        assert_eq!(entry.label, label);
+        assert_eq!(
+            entry.state,
+            State::Withheld,
+            "{base} is not proven coverage or an inapplicable story"
+        );
+        assert!(entry.reason.as_deref().unwrap().contains(limitation));
+        assert!(
+            entry.page.is_none() && entry.sequence.is_none() && entry.moment.is_none(),
+            "source audit cannot invent captured pages/moments"
+        );
+    }
 }
 
 #[test]

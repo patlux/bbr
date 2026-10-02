@@ -704,6 +704,57 @@ real pilot still needs the recorded network and asset approvals. Performance
 remains deferred. Test durations are logged; implementation/review timing was not
 instrumented. Parallelism audit: no additional lane authorized.
 
+### Current Gallery source-audit checkpoint
+
+Preflight: transport slice committed clean as `b9228dce`; no active visual/Tart
+process or other authorized main writer. ROADMAP/current queue were re-read at
+continuation; only this local owner may work on the visual migration. No additional
+lane, workflow, subagent or foreign worktree inspection is authorized. Current
+source audit/coverage diagnostics are runnable while real VM/network and Checkbox
+asset approvals remain pending. Stable functional/performance gates are not
+claimed by this non-rendering prerequisite.
+
+The [bounded source audit](../visual/gallery-source-audit.md) records the pilot
+and four added stories directly against current story and production sources.
+The historical 49-story plan/936 required page pairs stay unchanged. Four explicit
+withheld entries now name IDs 49–52 (Delete Space, Peek, Toast/zoom, Media card),
+without guessing their page counts or calling missing work inapplicable.
+Read-only `doctor --json` now exposes all eight pending rows. This does not
+complete the remaining stories' applicability audit or enable selected capture.
+
+Source findings: one numeric producer filter already precedes context creation,
+but upstream multi-story selection/request binding is not connected. Canvas
+settings do not necessarily equal family density/contrast. Checkbox captures no
+pointer transition and its checked asset approval is still pending. Direct-child
+framing is not nested/shadow proof; Sidebar's app slots are labeled placeholders
+and its dense model is windowed. Peek paints stand-in pages/empty portal bar,
+never native page/portal proof. Toast entrance fades survive Reduced Motion but
+story 51 currently has zero settling duration. Media cards have six static
+fragments/no-op callbacks. None of these findings invents runtime/pixel evidence
+or authorizes production changes.
+
+Evidence: new missing-blocker contract fails on the unchanged catalog, then passes
+with the four authored entries. Existing 936 required pairs and original blockers
+are preserved. Actual read-only CLI/tripwire tests prove the added blockers remain
+visible without builds/producers/environment probes/gates/baseline writes.
+`just visual-test`: 141 Python tests (one integration skip rerun separately),
+unchanged upstream and **51 consumer tests** plus signal fixtures pass. Strict
+all-target consumer Clippy, fmt and roadmap pass. Logs:
+`/tmp/bbr-visual-gallery-audit-red.log`,
+`/tmp/bbr-visual-gallery-audit-contracts.log`,
+`/tmp/bbr-visual-gallery-audit-clippy.log`,
+`/tmp/bbr-visual-gallery-audit-visual-test.log`,
+`/tmp/bbr-visual-gallery-audit-doctor.json`,
+`/tmp/bbr-visual-gallery-audit-roadmap2.log`.
+Initial roadmap validation rejected an evidence note under the task-packet path
+and an absolute Markdown link; the note moved to the evidence directory and uses
+a durable repository link. No validator relaxation. Self-review checked direct
+source support, catalog-only additions, unchanged page requirements and truthful
+static/native exclusions. No Gallery/product/upstream/baseline edits, VM/native
+execution, runtime installation or visual review. Test timings are logged; audit
+elapsed time was not measured. Next local work: remaining applicability audit
+and pre-render selection contracts; real pilot needs the recorded approvals.
+
 ## Status vocabulary
 
 | Status | Meaning |

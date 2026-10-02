@@ -116,6 +116,27 @@ increments; retain ownership until explicit handoff. Integration requires an
 explicit user request and combined-tree verification. A merge does not authorize
 push or acceptance of combined-tree baselines; baseline review remains separate.
 
+## Current migration: bounded source audit
+
+The standalone migration supersedes the historical host execution direction:
+all real capture/E2E evidence now runs in approved disposable Tart guests. The
+current source audit is a non-rendering prerequisite, not full applicability or
+framing acceptance. Compare the current 53-story registry with the retained
+49-story page plan; inspect the Tokens/Checkbox/Sidebar pilot and the four added
+stories through their actual production symbols and fixture boundaries. Record
+which states are represented statically, which are inapplicable to the narrow
+capture, and which interactions/assets/nested frames remain unproven. Add explicit
+withheld entries for new stories rather than guessing page counts or deriving
+required coverage from producer output. Retain historical requirements and fail
+closed on new live inventory. Verify through consumer/upstream contracts and
+source review only; no producer, VM, native asset correction or baseline change.
+The [bounded source audit](../../visual/gallery-source-audit.md) records the inspected
+pilot/additions, concrete endpoint/placeholder/framing gaps and remaining work.
+Four added stories are explicitly withheld in the consumer catalog without
+invented page counts; the retained 936 required page pairs are unchanged.
+The next slice may implement selection from independently authored requirements,
+but actual selection/framing claims still require approved guest evidence.
+
 ## Iteration policy
 
 Begin with audited inventory and the smallest native capture path. Diagnose

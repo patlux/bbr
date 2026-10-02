@@ -67,6 +67,23 @@ fn doctor_and_preview_are_structured_read_only_and_do_not_authorize_execution() 
         doctor["data"]["suites"][0]["coverage"]["current_registry_verified"],
         false
     );
+    let coverage = &doctor["data"]["suites"][0]["coverage"];
+    assert_eq!(
+        coverage["required_images"], 1872,
+        "historical requirements stay intact"
+    );
+    let pending = coverage["pending"].as_array().unwrap();
+    assert_eq!(pending.len(), 8);
+    for id in 49..=52 {
+        assert!(
+            pending
+                .iter()
+                .any(|item| item["base"] == format!("gallery-{id}-audit-pending")
+                    && item["state"] == "withheld"
+                    && item["reason"].as_str().is_some_and(|s| !s.is_empty())),
+            "new story must remain visible in read-only diagnostics"
+        );
+    }
     let run = root.join("run");
     let report = root.join("report");
     let (code, preview) = cli(

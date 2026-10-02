@@ -13106,6 +13106,46 @@
       "reason": null
     },
     {
+      "base": "gallery-49-audit-pending",
+      "label": "Delete Space sheet",
+      "group": "Unproven coverage",
+      "sequence": null,
+      "moment": null,
+      "page": null,
+      "state": "withheld",
+      "reason": "Registry story 49 is absent from the historical page plan. Two static focus/count families use the production sheet; full shadow framing, current page ranges and guest captures remain unproven. No real keyboard transition or portal capture is represented."
+    },
+    {
+      "base": "gallery-50-audit-pending",
+      "label": "Peek presentation",
+      "group": "Unproven coverage",
+      "sequence": null,
+      "moment": null,
+      "page": null,
+      "state": "withheld",
+      "reason": "Registry story 50 is absent from the historical page plan. The production wash/geometry surrounds stand-in pages and an empty portal-bar rectangle. This is not native page or actual portal evidence; a legitimate narrow capture contract and framing audit are required."
+    },
+    {
+      "base": "gallery-51-audit-pending",
+      "label": "Toast and zoom readout",
+      "group": "Unproven coverage",
+      "sequence": null,
+      "moment": null,
+      "page": null,
+      "state": "withheld",
+      "reason": "Registry story 51 is absent from the historical page plan. Its three production toasts retain an entrance fade under Reduced Motion, but the current capture settling policy returns zero for this story. Endpoint readiness, independent page ranges and shadow framing remain unproven; lifecycle/portal/interaction evidence is excluded."
+    },
+    {
+      "base": "gallery-52-audit-pending",
+      "label": "Media card",
+      "group": "Unproven coverage",
+      "sequence": null,
+      "moment": null,
+      "page": null,
+      "state": "withheld",
+      "reason": "Registry story 52 is absent from the historical page plan. The six production card fragments use static fixture models and no-op callbacks; independent pagination, nested framing and guest captures remain unproven. These images cannot prove live WebKit media, seek or playback transitions."
+    },
+    {
       "base": "gallery-checkbox-checked",
       "label": "Checkbox: checked after real pointer",
       "group": "Unproven coverage",

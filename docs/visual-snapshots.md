@@ -291,6 +291,22 @@ unconditional `produce`/`check` guard remains. Source/current-catalog validation
 approved real pilot, two exact complete captures and upstream sealing/review
 integration are still required. No baseline is changed by transport success.
 
+### Current Gallery source-audit boundary
+
+The [bounded source audit](visual/gallery-source-audit.md) checks the pilot and
+four additions against actual story/production sources. The retained 49-story
+plan still requires 936 page pairs; it is not current 53-story coverage. Explicit
+withheld catalog entries now name Delete Space, Peek, Toast/zoom and Media card,
+without fabricated page counts. Read-only `doctor --json` exposes those blockers
+alongside the four historical interaction/framing/locked-session blockers.
+
+In particular, outer-child pagination does not prove nested/shadow bounds,
+canvas density is not always effective component density, Checkbox capture does
+not drive pointer transitions, and Peek's stand-in pages are not native content.
+Toast retains its entrance fade under Reduced Motion but lacks a nonzero current
+settling policy. These are source findings, not observed guest pixels. Selection,
+full applicability/framing, runtime readiness and two exact captures remain open.
+
 ## Capture contract
 
 `visual.toml` delegates PNG production to `scripts/visual/capture.py`. It builds
