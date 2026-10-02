@@ -67,6 +67,21 @@ class PolicyContracts(unittest.TestCase):
         with self.assertRaises(vm_policy.PolicyError):
             vm_policy.validate_sshd(valid.replace("passwordauthentication no", "passwordauthentication yes"))
 
+    def test_effective_sshd_accepts_distinct_address_and_hostkey_entries(self):
+        # Observed OpenSSH -T output in the first hardened macOS 27 clone.
+        repeatable = ("listenaddress 0.0.0.0:22\nlistenaddress [::]:22\n"
+                      "hostkey /etc/ssh/ssh_host_rsa_key\n"
+                      "hostkey /etc/ssh/ssh_host_ecdsa_key\n"
+                      "hostkey /etc/ssh/ssh_host_ed25519_key")
+        valid = self.effective() + "\n" + repeatable
+        vm_policy.validate_sshd(valid)
+        for extra in ("listenaddress 0.0.0.0:22", "hostkey /etc/ssh/ssh_host_rsa_key",
+                      "passwordauthentication no", "passwordauthentication yes",
+                      "port 22", "port 2222", "unknown first\nunknown second",
+                      "hostkey", "listenaddress"):
+            with self.subTest(extra=extra), self.assertRaises(vm_policy.PolicyError):
+                vm_policy.validate_sshd(valid + "\n" + extra)
+
     def test_listener_audit_rejects_unrelated_services_or_failed_observations(self):
         valid = "p1\nclaunchd\nf3\nn*:22\np2\ncfixture\nn127.0.0.1:3456\nn[::1]:7890\n"
         vm_policy.validate_listeners(valid)

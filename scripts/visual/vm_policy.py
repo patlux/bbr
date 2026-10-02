@@ -88,14 +88,20 @@ def validate_ip(raw: str) -> str:
 
 
 def validate_sshd(text: str) -> None:
-    actual = {}
+    actual: dict[str, list[str]] = {}
     for line in text.splitlines():
         parts = line.split(None, 1)
-        if len(parts) != 2 or parts[0] in actual:
-            raise PolicyError("malformed or duplicate effective sshd setting")
-        actual[parts[0]] = parts[1]
+        if len(parts) != 2:
+            raise PolicyError("malformed effective sshd setting")
+        key, value = parts
+        values = actual.setdefault(key, [])
+        # OpenSSH -T emits one line per address and host-key path. Only these
+        # observed list fields may repeat; security-policy fields stay singular.
+        if values and (key not in {"listenaddress", "hostkey"} or value in values):
+            raise PolicyError("duplicate effective sshd setting")
+        values.append(value)
     for key, value in {**SSH_SETTINGS, "port": "22"}.items():
-        if actual.get(key) != value:
+        if actual.get(key) != [value]:
             raise PolicyError(f"unsafe/missing effective sshd setting: {key}")
 
 
