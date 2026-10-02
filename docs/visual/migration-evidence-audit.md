@@ -41,7 +41,45 @@ adoption follows from semantic success. Detailed failed attempts and current nex
 work are recorded in Current delivery; historical no-install/approval stops are not
 new user prohibitions.
 
-## Requirement mapping
+## Static Tokens report addendum (2026-10-02)
+
+After semantic checkpoint `299dc644`, Patrick authorized the first partial Tokens
+report. The existing internal supervised capture → upstream seal → compare route
+now produces twelve actual 2400×2000 RGBA8 guest images: all six authored Tokens
+cases in Light/Dark. The configured story catalog is deliberately Tokens-only,
+with no default selection and no claim to full Gallery coverage. All 936 historical
+required pairs and 31 withheld requirements remain unchanged. Public capture and
+interactive endpoint guards remain closed.
+
+Report: `/Users/patwoz/dev/Personal/macos/bbr/reports/visual/tokens-pilot-20261002-a/index.html`.
+Run: `/Users/patwoz/dev/Personal/macos/bbr/reports/visual/gallery-runs/tokens-pilot-20261002-a`.
+Evidence: `/private/tmp/bbr-visual-tokens-pilot/attempt1`, including original payload,
+request-bound transport/cleanup, and independent source/image/resource recheck.
+All 1,515 source hashes and twelve image/report-copy hashes match; the schema-2
+review has twelve missing baselines, zero validation errors and no environment
+mismatch. Its `selected-development` scope forbids adoption. No baseline changed.
+
+All twelve original PNGs and the rendered HTML were visually inspected through
+file reads and existing managed Chrome. Material swatches, labels and elevation
+text are legible without observed truncation. Elevation rows are descriptions,
+not painted shadow samples; complete paint-framing is still unproven. The report
+shows TEILLAUF and blocked adoption; all twelve unique image sources load. No exact
+second capture, Checkbox journey, Sidebar framing, full Gallery/browser coverage
+or stable-migration acceptance follows. Clone/key/process/disk/SSH absence and both
+unheld gates were independently rechecked. Measured caller duration 286.428s is
+report-only tooling evidence.
+
+Focused catalog/discovery tests, serial full visual contracts, strict consumer
+Clippy and formatting pass. The initial default-concurrency visual test run failed
+in two unchanged upstream 250ms process fixtures with absent PID files during high
+host load; the serial pass retains every deadline/assertion and does not erase
+those failures. The prior aggregate Command benchmark failures remain separately
+open. Current delivery records exact logs and next work. The remaining table and
+blocked narrative retain the original inspection chronology; these two addenda
+supersede their obsolete no-runtime/no-image/no-catalog statements, not their
+unmet full-coverage, interaction, repeat or acceptance requirements.
+
+## Requirement mapping at the original inspection base
 
 Paths in the table are repository-relative identifiers under
 `/Users/patwoz/dev/Personal/macos/bbr`, not commands to execute.

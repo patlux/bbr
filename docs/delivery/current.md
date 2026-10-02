@@ -2168,6 +2168,76 @@ failures above remain unresolved; intermediate commit does not claim full verify
 stable-migration handoff or visual acceptance. No further unchanged aggregate retry
 is useful while host contention persists.
 
+### First static Tokens image report (2026-10-02)
+
+Patrick's “lets go” activated the proposed first partial Tokens Light/Dark
+report. Base is `299dc64408c7fdc1b486b64bb9f68cb995c50a53`, the committed
+semantic/runtime checkpoint above. Only this local writer is authorized; the
+complete delivery queue was reread, with no additional lane, agent, foreign
+worktree, product change or publication activated.
+
+The independent Tokens-only story catalog now maps story 0 to all six existing
+standard/increased × small/normal/extralarge cases, both appearances and ten
+ordered children per case. No persistent selection/default filter, public capture
+activation, endpoint guard removal or change to the historical 936 required pairs
+and 31 withheld requirements. A fixed external caller reuses `vm_capture::run`
+and upstream sealing/comparison through the existing hardened Tart transport.
+
+Actual first run:
+- Report: `/Users/patwoz/dev/Personal/macos/bbr/reports/visual/tokens-pilot-20261002-a/index.html`.
+  Sealed run: `/Users/patwoz/dev/Personal/macos/bbr/reports/visual/gallery-runs/tokens-pilot-20261002-a`.
+  Preparation, transport and verification evidence: `/private/tmp/bbr-visual-tokens-pilot/attempt1`.
+- Twelve actual guest Metal PNGs, each 2400×2000 RGBA8. Schema 2,
+  `selected-development`, six complete pairs; upstream review has exactly twelve
+  `missing-baseline` results, no validation errors and no environment mismatch.
+  Review remains false, with no baseline writes; partial runs cannot be accepted.
+- Payload SHA256 `af480208076a7e2d5e65ff2cc845cea6d80b4748e3fcf376843052eaa28dd787`;
+  capture SHA256 `d50c8114f1dea8e66fb628aaef1f939f8d67b23fbcc74ce6388a87140f906301`.
+  Caller exit 0, 286.428s outer measured duration; this is tooling, not product
+  performance. `final-inspection.json` independently rechecks all 1,515 source
+  hashes, twelve sealed PNG hashes and twelve unchanged report copies.
+- Clone `bbr-visual-45196-b56cb7c3b3e8`, former IP 192.168.66.35: request-bound
+  teardown and a later independent recheck prove clone/key/process/disk absent
+  and SSH unreachable. Both capture gates are unheld. Offline import and original
+  before/after guest/source/build checks passed; host and Golden Image unchanged.
+
+All twelve original PNGs were opened and visually inspected: five labeled material
+swatches and three elevation-description rows are legible in Light/Dark, with no
+observed truncation; increased contrast strengthens borders/text and the three
+text densities remain visible. Elevation is descriptive text, not actual shadow
+samples, so no shadow/paint-framing proof is inferred. The original HTML was opened
+through existing managed Chrome-patwoz. Its rendered banner says TEILLAUF, twelve
+missing references are visible and adoption is explicitly blocked. All twelve
+unique local images load at their original dimensions. A broad DOM check initially
+counted empty/lazy hidden image elements as broken; explicit loading of the twelve
+nonempty sources found zero failures. Screenshot evidence is
+`/private/tmp/bbr-visual-tokens-pilot/report-viewport.png`. No report bytes changed.
+
+Verification under `/private/tmp/bbr-visual-tokens-pilot`:
+- `catalog-red.log` fails for the intended missing configured story catalog;
+  `catalog-green.log` passes the focused selection/discovery contracts.
+- Ordinary `just visual-test` stopped in two unchanged upstream 250ms process
+  tests because their expected child PID files were absent. Host load was 365.66;
+  this is observed contention, not a proven root cause. `final-visual-test.log`
+  preserves both failures. One serial recheck, `RUST_TEST_THREADS=1 just visual-test`,
+  passes every suite with unchanged assertions/deadlines: 171 Python discoveries
+  (170 pass, one integration skip separately passed), immutable upstream and 111
+  top-level consumer tests plus existing fixtures (`final-visual-test-serial.log`).
+- Strict consumer all-target Clippy and formatting pass (`final-consumer-clippy.log`,
+  `final-fmt.log`); roadmap and whitespace are checked before the local checkpoint.
+  No source-bound file changed after capture; following edits are documentation.
+
+Self-review checked authored selection completeness, unknown/duplicate story
+refusal, current-source binding, partial nonacceptance and unchanged renderer,
+upstream, plan, guards and baselines. This closes only the first-static-report
+prerequisite, not a pilot/migration milestone. One image run is not an exact repeat.
+Checkbox assets/input/two-clock readiness, Sidebar framing, complete Gallery/browser
+captures, stable functional aggregate and Python parity removal remain open. The
+preceding aggregate Command benchmark failures remain unresolved; no full verify,
+performance or baseline approval is claimed. Implementation/review wall time was
+not measured. Next migration work remains the bounded interactive/framing pilot;
+this report does not activate unrelated queue items or additional writers.
+
 ## Status vocabulary
 
 | Status | Meaning |

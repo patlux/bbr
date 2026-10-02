@@ -137,6 +137,47 @@ fn doctor_and_preview_are_structured_read_only_and_do_not_authorize_execution() 
 }
 
 #[test]
+fn tokens_discovery_and_preview_are_read_only_partial_and_complete() {
+    let temp = tempfile::tempdir().unwrap();
+    let root = temp.path().canonicalize().unwrap();
+    let (code, listed) = cli(&["list", "--suite", "gallery"], &root);
+    assert_eq!(code, 0);
+    assert_eq!(
+        listed["data"]["catalog"]["stories"]
+            .as_array()
+            .unwrap()
+            .len(),
+        1
+    );
+    assert_eq!(listed["data"]["catalog"]["stories"][0]["id"], "gallery-00");
+    let run = root.join("run");
+    let report = root.join("report");
+    let (code, preview) = cli(
+        &[
+            "check",
+            "--dry-run",
+            "--suite",
+            "gallery",
+            "--story",
+            "gallery-00",
+            "--run",
+            run.to_str().unwrap(),
+            "--report",
+            report.to_str().unwrap(),
+        ],
+        &root,
+    );
+    assert_eq!(code, 0, "{preview}");
+    assert_eq!(preview["data"]["requirements"]["still_images"], 12);
+    assert_eq!(
+        preview["data"]["selection"]["stories"][0]["id"],
+        "gallery-00"
+    );
+    assert_eq!(preview["data"]["producer_executed"], false);
+    assert!(!run.exists() && !report.exists());
+}
+
+#[test]
 fn invalid_previews_and_unconfigured_selection_fail_without_fallback() {
     let temp = tempfile::tempdir().unwrap();
     for args in [
@@ -172,7 +213,7 @@ fn invalid_previews_and_unconfigured_selection_fail_without_fallback() {
             "--story",
             "*",
         ],
-        vec!["list", "--suite", "gallery"],
+        vec!["list", "--suite", "browser"],
         vec!["doctor", "--story", "tokens"],
         vec!["inspect"],
         vec!["inspect", "--report", "missing", "--limit", "0"],

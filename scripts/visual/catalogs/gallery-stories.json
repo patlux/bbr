@@ -1,0 +1,17 @@
+{
+  "schema": 1,
+  "stories": [
+    {
+      "id": "gallery-00",
+      "label": "Tokens",
+      "cases": [
+        "gallery-00-state-00-standard-small-page-00",
+        "gallery-00-state-00-standard-normal-page-00",
+        "gallery-00-state-00-standard-extralarge-page-00",
+        "gallery-00-state-00-increased-small-page-00",
+        "gallery-00-state-00-increased-normal-page-00",
+        "gallery-00-state-00-increased-extralarge-page-00"
+      ]
+    }
+  ]
+}

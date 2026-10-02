@@ -4,6 +4,8 @@ environment_command = ["python3", "scripts/visual/gallery_environment.py"]
 baselines = "tests/visual/gallery-baselines"
 report = "reports/visual/gallery-latest"
 runs = "reports/visual/gallery-runs"
+# Bounded Tokens-only development mapping; not full Gallery coverage or a default filter.
+story_catalog = "scripts/visual/catalogs/gallery-stories.json"
 
 [source_policy]
 scopes = ["crates", "vendor/gpui-component", "vendor/cargo-gpui-visual", "scripts/visual", "scripts/tart_vm.py", "scripts/with_gui_lock.py", "scripts/xcode-shims", "Cargo.toml", "Cargo.lock", "flake.nix", "flake.lock", "justfile", "visual.toml", "visual-gallery.toml"]

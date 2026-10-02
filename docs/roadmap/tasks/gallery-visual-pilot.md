@@ -171,6 +171,28 @@ Sidebar and paint-framing requirements:
   not current native proof. Do not copy them into a newly active contract without
   fresh measured checks of child identities, ranges and nested layout.
 
+### Static Tokens report prerequisite (authorized 2026-10-02)
+
+Before further input/framing implementation, exercise the smallest real image
+path: story 0 Tokens, every existing standard/increased × small/normal/extralarge
+case in both Light/Dark (six page pairs, ten ordered children each). Activate an
+independent Tokens-only development-selection catalog in the existing Gallery
+config, retaining the full historical page plan, 936 required pairs and 31 withheld
+requirements. Unsupported stories still fail; selecting the sole catalog story
+is still a schema-2 partial run, never full-suite evidence or baseline-eligible.
+
+Use fresh source/build staging, the existing `vm_capture::run` supervised guest
+route and upstream seal/compare/report APIs. No new renderer, transport, native
+host call, public guard bypass or asset modification. Validate exact 2400×2000
+RGBA8 images and all planned child ranges, then inspect actual Light/Dark PNGs
+and the partial HTML. A missing baseline is review-needed, not capture failure.
+Do not accept/adopt baselines. Failures require diagnosis and a fresh attempt,
+not resealing old output or weakening source/environment/cleanup checks. This
+proves the Metal-to-report boundary early; it does not complete the interactive
+Checkbox/Sidebar pilot. Run focused selection/discovery contracts before the real
+capture, then visual tests, strict consumer Clippy, fmt and roadmap. Preserve the
+unrelated aggregate benchmark failure separately from this targeted evidence.
+
 ### Bounded portable endpoint-plan increment
 
 Extend only the consumer's independent plan with schema 2 and a typed optional
