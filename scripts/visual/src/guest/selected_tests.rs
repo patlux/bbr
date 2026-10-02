@@ -254,7 +254,7 @@ fn actual_guest_schedule_uses_fixed_story_commands_before_output_and_keeps_raw_b
     assert_eq!(calls, [99, 44, 0]);
     assert_eq!(
         store::read_json::<Selection>(&f.work.join("raw/selection.json")).unwrap(),
-        request.selection
+        *request.selection()
     );
     assert_eq!(
         store::digest(&f.png).unwrap(),

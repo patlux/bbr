@@ -1,19 +1,15 @@
 //! Selected execution policy behind the existing actual-guest/install boundary.
-//! The host transport does not yet supply these requests; no normal CLI bypass.
-use crate::{
-    gallery,
-    gallery_selection::{bound_bytes, Schedule},
-    payload::Payload,
-    Suite,
-};
-use anyhow::{ensure, Context, Result};
+//! The fixed host transport supplies bound requests; no normal CLI bypass.
+#[cfg(test)]
+use crate::selected_request::PATH as REQUEST;
+use crate::{gallery, gallery_selection::Schedule, payload::Payload, selected_request::Request};
+use anyhow::{ensure, Result};
+#[cfg(test)]
+use cargo_gpui_visual::{config::Config, selection::Selection};
 use cargo_gpui_visual::{
-    config::Config,
     process::{Limits, Output},
-    selection::Selection,
     store,
 };
-use serde::Deserialize;
 use std::{
     collections::BTreeSet,
     fs,
@@ -28,18 +24,8 @@ use std::{
 #[path = "selected_tests.rs"]
 mod tests;
 
+#[cfg(test)]
 const PLAN: &str = "scripts/visual/catalogs/gallery-plan.json";
-const REQUEST: &str = "selected-request.json";
-
-#[derive(Deserialize)]
-#[serde(deny_unknown_fields)]
-pub(super) struct Request {
-    schema: u32,
-    payload_sha256: String,
-    selection: Selection,
-    #[serde(skip)]
-    digest: String,
-}
 
 pub(super) fn load(
     payload: &Payload,
@@ -47,29 +33,7 @@ pub(super) fn load(
     digest: &str,
     request_hash: &str,
 ) -> Result<Request> {
-    ensure!(
-        payload.suite == "gallery",
-        "selected guest request requires Gallery"
-    );
-    let mut request: Request = serde_json::from_slice(&bound_bytes(work, REQUEST, request_hash)?)?;
-    ensure!(
-        request.schema == 1 && request.payload_sha256 == digest,
-        "selected request payload/schema differs"
-    );
-    let config_path = Suite::Gallery.config();
-    let hash = payload
-        .sources
-        .get(config_path)
-        .context("unsealed Gallery config")?;
-    let bytes = bound_bytes(&payload.repo, config_path, hash)?;
-    let config = Config::from_toml(std::str::from_utf8(&bytes)?)?;
-    ensure!(
-        config.story_catalog.as_deref() == Some(Path::new(&request.selection.catalog)),
-        "selected request is not the configured story catalog"
-    );
-    Schedule::resolve(&payload.repo, &payload.sources, PLAN, &request.selection)?;
-    request.digest = request_hash.into();
-    Ok(request)
+    Request::load(payload, work, digest, request_hash)
 }
 
 /// The Gallery inventory command constructs descriptors, not a rendering context.
@@ -120,7 +84,7 @@ fn checkpoint(
         "selected guest capture cancelled"
     );
     ensure!(Instant::now() < deadline, "selected guest capture deadline");
-    load(payload, work, &request.payload_sha256, &request.digest)?;
+    load(payload, work, request.payload_digest(), request.digest())?;
     schedule.check_sources(&payload.repo, &payload.sources)
 }
 fn regular_output(output: &Path) -> Result<()> {
@@ -155,8 +119,9 @@ pub(super) fn execute(
     mut invoke: impl FnMut(&mut Command, &Limits) -> Result<Output>,
 ) -> Result<()> {
     let deadline = Instant::now() + Duration::from_secs(600);
-    let schedule = Schedule::resolve(&payload.repo, &payload.sources, PLAN, &request.selection)?;
-    checkpoint(payload, work, request, &schedule, cancelled, deadline)?;
+    request.check(payload)?;
+    let schedule = request.schedule();
+    checkpoint(payload, work, request, schedule, cancelled, deadline)?;
     let raw = work.join("raw");
     let stories = work.join("selected-stories");
     for path in [&raw, &stories, &work.join("live-inventory.tsv")] {
@@ -164,7 +129,7 @@ pub(super) fn execute(
         ensure!(!path.exists(), "fresh selected guest output required");
     }
     let mut run = |cmd: &mut Command| -> Result<Vec<u8>> {
-        checkpoint(payload, work, request, &schedule, cancelled, deadline)?;
+        checkpoint(payload, work, request, schedule, cancelled, deadline)?;
         super::environment(cmd, &payload.repo);
         let output = invoke(
             cmd,
@@ -174,7 +139,7 @@ pub(super) fn execute(
                 ..Limits::default()
             },
         )?;
-        checkpoint(payload, work, request, &schedule, cancelled, deadline)?;
+        checkpoint(payload, work, request, schedule, cancelled, deadline)?;
         ensure!(
             output.status.success(),
             "selected guest producer failed: {}",
@@ -219,13 +184,13 @@ pub(super) fn execute(
     write_new(&raw.join("coverage.tsv"), coverage.as_bytes())?;
     regular_output(&raw)?;
     gallery::validate_raw(&raw, schedule.plan(), &all_inventory)?;
-    checkpoint(payload, work, request, &schedule, cancelled, deadline)?;
+    checkpoint(payload, work, request, schedule, cancelled, deadline)?;
     write_new(&work.join("live-inventory.tsv"), all_inventory.as_bytes())?;
     // Raw names stay unchanged for the host validator. This receipt is not a
     // capture seal; only upstream may seal or review selected evidence.
     write_new(
         &raw.join("selection.json"),
-        &serde_json::to_vec(&request.selection)?,
+        &serde_json::to_vec(request.selection())?,
     )?;
     Ok(())
 }

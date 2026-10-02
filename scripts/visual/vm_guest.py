@@ -18,6 +18,7 @@ import time
 import vm_install
 import vm_observe
 import vm_transfer
+import vm_selection
 
 LOG_LIMIT = 16 * 1024 * 1024
 CONSUMER_GRACE = 15
@@ -28,14 +29,19 @@ class GuestError(RuntimeError):
 
 
 def _producer(consumer: Path, suite: str, action: str, repo: Path, share: Path,
-              payload_hash: str, work: Path, seconds: float) -> None:
+              payload_hash: str, work: Path, seconds: float, selected_sha256: str | None = None) -> None:
     """Wait on the owned Rust consumer, never kill a numeric saved group/PID."""
     env = {"HOME": "/Users/admin", "USER": "admin", "LOGNAME": "admin",
            "PATH": "/usr/bin:/bin:/usr/sbin:/sbin", "TMPDIR": "/private/tmp",
            "TZ": "UTC", "LANG": "C", "LC_ALL": "C", "SEED": "0"}
+    if (action == "capture-selected") != (selected_sha256 is not None):
+        raise GuestError("selected action requires independent request hash")
+    argv = [str(consumer), "guest-execute", suite, action, str(repo), str(share), payload_hash, str(work)]
+    if selected_sha256 is not None:
+        vm_selection.read(work, selected_sha256, payload_hash, suite)
+        argv.append(selected_sha256)
     with (work / f"{action}.log").open("xb") as log:
-        child = subprocess.Popen([str(consumer), "guest-execute", suite, action,
-                                  str(repo), str(share), payload_hash, str(work)],
+        child = subprocess.Popen(argv,
                                  cwd=repo, env=env, stdin=subprocess.DEVNULL,
                                  stdout=log, stderr=subprocess.STDOUT)
         try:
@@ -67,11 +73,13 @@ def _check_observation(value: dict) -> None:
         raise GuestError("actual unlocked disposable guest observation required; host capture forbidden")
 
 
-def run(share: Path, payload_hash: str, repo: Path, suite: str, work: Path) -> dict:
+def run(share: Path, payload_hash: str, repo: Path, suite: str, work: Path,
+        selected: str | None = None, selected_sha256: str | None = None) -> dict:
     # Observe before writes/installation. A fabricated environment variable is
     # insufficient; the observer probes the guest console, hardware and fonts.
     before = vm_observe.observe()
     _check_observation(before)
+    vm_selection.decode(selected, selected_sha256, payload_hash, suite)
     for path in (share, repo, work):
         vm_install._absolute(path)
     for left, right in ((share, repo), (share, work), (repo, work)):
@@ -83,10 +91,16 @@ def run(share: Path, payload_hash: str, repo: Path, suite: str, work: Path) -> d
     installed = vm_install.install(share, payload_hash, repo, suite)
     work.mkdir(mode=0o700)
     consumer = repo / "scripts/visual/target/release/bbr-visual"
-    if suite == "gallery":
-        _producer(consumer, suite, "inventory", repo, share, payload_hash, work, 90)
-    _producer(consumer, suite, "capture", repo, share, payload_hash, work,
-              660 if suite == "gallery" else 240)
+    if selected is not None:
+        vm_selection.write(work, selected, selected_sha256, payload_hash, suite)
+        _producer(consumer, suite, "capture-selected", repo, share, payload_hash, work, 660, selected_sha256)
+        if vm_selection.read(work, selected_sha256, payload_hash, suite) != selected:
+            raise GuestError("selected request changed during execution")
+    else:
+        if suite == "gallery":
+            _producer(consumer, suite, "inventory", repo, share, payload_hash, work, 90)
+        _producer(consumer, suite, "capture", repo, share, payload_hash, work,
+                  660 if suite == "gallery" else 240)
     after_installed = vm_install.verify_installed(share, payload_hash, repo, suite)
     after = vm_observe.observe()
     _check_observation(after)
@@ -114,8 +128,8 @@ def run(share: Path, payload_hash: str, repo: Path, suite: str, work: Path) -> d
 
 
 def main(argv: list[str]) -> None:
-    if len(argv) != 6:
-        raise GuestError("usage: vm_guest.py <share> <payload-hash> <repo> <suite> <fresh-work>")
+    if len(argv) not in (6, 8):
+        raise GuestError("usage: vm_guest.py <share> <payload-hash> <repo> <suite> <fresh-work> [selected-json selected-hash]")
     previous = {}
     def interrupt(number, _frame):
         for sig in previous:
@@ -124,7 +138,7 @@ def main(argv: list[str]) -> None:
     try:
         for sig in (signal.SIGINT, signal.SIGTERM, signal.SIGHUP):
             previous[sig] = signal.signal(sig, interrupt)
-        run(Path(argv[1]), argv[2], Path(argv[3]), argv[4], Path(argv[5]))
+        run(Path(argv[1]), argv[2], Path(argv[3]), argv[4], Path(argv[5]), *argv[6:])
     finally:
         for sig, handler in previous.items(): signal.signal(sig, handler)
 

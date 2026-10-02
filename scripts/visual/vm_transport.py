@@ -20,6 +20,7 @@ import vm_evidence
 import vm_install
 import vm_lifecycle
 import vm_transfer
+import vm_selection
 
 LOG_LIMIT = 16 * 1024 * 1024
 ARCHIVE_LIMIT = vm_transfer.TOTAL_LIMIT + vm_transfer.MAX_FILES * 1024 + vm_transfer.MANIFEST_LIMIT
@@ -105,7 +106,7 @@ def _exchange(session, script: str, workspace: Path) -> None:
 
 
 def run(share: Path, digest: str, repo: Path, suite: str, workspace: Path, vm: str,
-        control: Path, request_sha256: str) -> dict:
+        control: Path, request_sha256: str, selected_sha256: str | None = None) -> dict:
     """Called by vm_supervision only, after external network approval.
 
     No retries or runtime installation. Payload/build/coverage/seal authority stays
@@ -117,14 +118,16 @@ def run(share: Path, digest: str, repo: Path, suite: str, workspace: Path, vm: s
     for left, right in ((share, repo), (share, workspace), (repo, workspace)):
         if left == right or left in right.parents or right in left.parents:
             raise TransportError("transport workspace/payload/repo must be disjoint")
+    entries = {"control", "vm"} | ({vm_selection.NAME} if selected_sha256 is not None else set())
     if (not workspace.is_dir() or workspace.stat().st_mode & 0o077
-            or control != workspace / "control" or set(p.name for p in workspace.iterdir()) != {"control", "vm"}):
+            or control != workspace / "control" or set(p.name for p in workspace.iterdir()) != entries):
         raise TransportError("fresh private transport workspace required")
     request, fields = vm_control._read(control / "request.json")
     if (hashlib.sha256(request).hexdigest() != request_sha256 or fields.get("payload_sha256") != digest):
         raise TransportError("transport request payload/identity differs")
     payload = vm_install.inspect(share, digest, repo, suite)
-    script = vm_bootstrap.plan(share, digest, repo, suite)
+    selected = None if selected_sha256 is None else vm_selection.read(workspace, selected_sha256, digest, suite)
+    script = vm_bootstrap.plan(share, digest, repo, suite, selected, selected_sha256)
     binding = vm_evidence.Binding(workspace / "vm", vm, request_sha256, digest)
     binding.fields()
 
@@ -134,6 +137,8 @@ def run(share: Path, digest: str, repo: Path, suite: str, workspace: Path, vm: s
             vm_transfer.inspect(workspace / "return.tar", digest)
             if vm_install.inspect(share, digest, repo, suite) != payload:
                 raise TransportError("payload changed during SSH execution")
+            if selected is not None and vm_selection.read(workspace, selected_sha256, digest, suite) != selected:
+                raise TransportError("selected request changed during SSH execution")
         # Lifecycle has unwound. Commands succeeding is not proof: re-observe
         # owned resource absence before exposing raw files even as diagnostics.
         vm_evidence.verify(binding)

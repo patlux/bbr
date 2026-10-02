@@ -6,6 +6,7 @@ import subprocess
 
 import vm_guest
 import vm_install
+import vm_selection
 
 REPO = Path("/Users/patwoz/dev/Personal/macos/bbr")
 
@@ -42,10 +43,11 @@ def prepare_parent(repo):
         current.mkdir(mode=0o700)
 
 
-def run(share, digest, repo, suite, work):
+def run(share, digest, repo, suite, work, selected=None, selected_sha256=None):
     identity()  # Must precede source probes, sudo and writes.
     if repo != REPO:
         raise vm_guest.GuestError("bootstrap compiled repository differs")
+    vm_selection.decode(selected, selected_sha256, digest, suite)
     vm_install.inspect(share, digest, repo, suite)
     if work.exists() or work.is_symlink() or not work.parent.is_dir():
         raise vm_guest.GuestError("fresh guest capture work required")
@@ -54,4 +56,7 @@ def run(share, digest, repo, suite, work):
         if left == right or left in right.parents or right in left.parents:
             raise vm_guest.GuestError("bootstrap source/share/work must be disjoint")
     prepare_parent(repo)
-    vm_guest.main(["vm_guest.py", str(share), digest, str(repo), suite, str(work)])
+    argv = ["vm_guest.py", str(share), digest, str(repo), suite, str(work)]
+    if selected is not None:
+        argv.extend([selected, selected_sha256])
+    vm_guest.main(argv)

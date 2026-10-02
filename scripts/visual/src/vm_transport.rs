@@ -1,8 +1,11 @@
 //! Supervised fixed Tart transport. Not wired to normal capture entrypoints:
 //! external VM approval, pilot/coverage and real return evidence are still required.
-use crate::{payload, vm_cleanup, vm_environment, vm_runtime, vm_supervision, Suite};
+use crate::{
+    gallery_selection::bound_bytes, payload, selected_request, vm_cleanup, vm_environment,
+    vm_runtime, vm_supervision, Suite,
+};
 use anyhow::{ensure, Context, Result};
-use cargo_gpui_visual::{config::Config, gate, store};
+use cargo_gpui_visual::{config::Config, gate, selection::Selection, store};
 use serde::Deserialize;
 use serde_json::Value;
 use std::{
@@ -33,6 +36,16 @@ pub struct Returned {
 pub struct Captured {
     pub raw: PathBuf,
     pub environment: Value,
+    /// Explicit selected runs can never be interpreted as full-suite evidence.
+    pub selection: Option<Selection>,
+}
+
+pub struct ExpectedReturn<'a> {
+    pub suite: Suite,
+    pub staged: &'a payload::Payload,
+    pub digest: &'a str,
+    pub host: &'a vm_environment::HostBuild,
+    pub selected: Option<&'a selected_request::Request>,
 }
 
 /// Only transport integrity/receipt binding, never coverage or a capture seal.
@@ -40,12 +53,16 @@ pub struct Captured {
 pub fn validate_return(
     raw: &[u8],
     workspace: &Path,
-    suite: Suite,
-    staged: &payload::Payload,
-    digest: &str,
-    host: &vm_environment::HostBuild,
+    expected: ExpectedReturn<'_>,
     cancelled: &AtomicBool,
 ) -> Result<Captured> {
+    let ExpectedReturn {
+        suite,
+        staged,
+        digest,
+        host,
+        selected,
+    } = expected;
     ensure!(
         raw.len() <= 8 * 1024 * 1024,
         "transport evidence exceeds bound"
@@ -155,9 +172,27 @@ pub fn validate_return(
     );
     let receipt: vm_environment::Receipt = serde_json::from_slice(&receipt_bytes)?;
     let environment = vm_environment::bind(suite, host, staged, digest, &receipt)?;
+    ensure!(
+        returned.files.contains_key("selection.json") == selected.is_some(),
+        "returned selection presence differs from original host request"
+    );
+    if let Some(request) = selected {
+        ensure!(
+            suite == Suite::Gallery && request.payload_digest() == digest,
+            "host selected request payload/suite differs"
+        );
+        request.check(staged)?;
+        let record = &returned.files["selection.json"];
+        let bytes = bound_bytes(&returned.raw, "selection.json", &record.sha256)?;
+        ensure!(
+            bytes.len() as u64 == record.bytes && bytes == serde_json::to_vec(request.selection())?,
+            "returned selection differs from original host request"
+        );
+    }
     Ok(Captured {
         raw: returned.raw,
         environment,
+        selection: selected.map(|r| r.selection().clone()),
     })
 }
 
@@ -171,6 +206,7 @@ pub struct Input<'a> {
     pub staged: &'a payload::Payload,
     pub host: &'a vm_environment::HostBuild,
     pub workspace: &'a Path,
+    pub selection: Option<&'a Selection>,
 }
 
 pub fn run(input: Input<'_>, options: &gate::Options, cancelled: &AtomicBool) -> Result<Captured> {
@@ -181,6 +217,7 @@ pub fn run(input: Input<'_>, options: &gate::Options, cancelled: &AtomicBool) ->
         staged,
         host,
         workspace,
+        selection,
     } = input;
     store::disjoint(&[repo, share, workspace])?;
     ensure!(
@@ -212,6 +249,13 @@ pub fn run(input: Input<'_>, options: &gate::Options, cancelled: &AtomicBool) ->
         "host build differs from transport payload"
     );
     let digest = store::digest(&share.join("payload.json"))?;
+    ensure!(
+        selection.is_none() || suite == Suite::Gallery,
+        "only Gallery supports selected transport"
+    );
+    let selected = selection
+        .map(|s| selected_request::Request::new(staged, &digest, s.clone()))
+        .transpose()?;
     let now = SystemTime::now().duration_since(UNIX_EPOCH)?.as_nanos();
     let vm = format!(
         "bbr-visual-{}-{:012x}",
@@ -223,6 +267,15 @@ pub fn run(input: Input<'_>, options: &gate::Options, cancelled: &AtomicBool) ->
     let artifacts = workspace.join("vm");
     fs::create_dir(&artifacts)?;
     fs::set_permissions(&artifacts, fs::Permissions::from_mode(0o700))?;
+    if let Some(request) = &selected {
+        use std::io::Write;
+        let file = fs::OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .open(workspace.join(selected_request::PATH))?;
+        file.set_permissions(fs::Permissions::from_mode(0o400))?;
+        (&file).write_all(request.bytes())?;
+    }
     let control = workspace.join("control");
     let output = vm_supervision::run(options,
         Command::new("python3").args(["-I", "-B", "-c", r#"
@@ -232,12 +285,13 @@ sys.path.insert(0, sys.argv[1])
 import vm_transport
 try:
     result = vm_transport.run(Path(sys.argv[2]), sys.argv[3], Path(sys.argv[4]), sys.argv[5],
-        Path(sys.argv[6]), sys.argv[7], Path(os.environ['BBR_VISUAL_CONTROL']), os.environ['BBR_VISUAL_REQUEST_SHA256'])
+        Path(sys.argv[6]), sys.argv[7], Path(os.environ['BBR_VISUAL_CONTROL']), os.environ['BBR_VISUAL_REQUEST_SHA256'],
+        sys.argv[8] if len(sys.argv) == 9 else None)
     print(json.dumps(result, sort_keys=True))
 except BaseException as error:
     print(f'transport incomplete: {type(error).__name__}: {error}', file=sys.stderr)
     raise SystemExit(2)
-"#]).arg(repo.join("scripts/visual")).arg(share).arg(&digest).arg(repo).arg(suite.id()).arg(workspace).arg(&vm),
+"#]).arg(repo.join("scripts/visual")).arg(share).arg(&digest).arg(repo).arg(suite.id()).arg(workspace).arg(&vm).args(selected.iter().map(|r| r.digest())),
         &control, &digest, &vm_supervision::Policy::default(), cancelled,
         |request| vm_cleanup::verify(repo, &vm_cleanup::Expected { artifacts: &artifacts, vm: &vm,
             request_sha256: request, payload_sha256: &digest }).map(|_| ()))?;
@@ -247,13 +301,22 @@ except BaseException as error:
             && payload::source_snapshot(repo, &config, cancelled)? == staged.sources,
         "source/payload changed during transport"
     );
+    if let Some(request) = &selected {
+        ensure!(
+            bound_bytes(workspace, selected_request::PATH, request.digest())? == request.bytes(),
+            "host selected request changed during transport"
+        );
+    }
     validate_return(
         &output.stdout,
         workspace,
-        suite,
-        staged,
-        &digest,
-        host,
+        ExpectedReturn {
+            suite,
+            staged,
+            digest: &digest,
+            host,
+            selected: selected.as_ref(),
+        },
         cancelled,
     )
 }

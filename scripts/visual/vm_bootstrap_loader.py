@@ -13,7 +13,7 @@ from pathlib import Path
 import stat
 import sys
 
-MODULES = ("vm_install", "vm_observe", "vm_transfer", "vm_guest", "vm_bootstrap_guest")
+MODULES = ("vm_install", "vm_observe", "vm_transfer", "vm_selection", "vm_guest", "vm_bootstrap_guest")
 LIMIT = 1024 * 1024
 
 
@@ -32,7 +32,10 @@ def read(path, limit):
 
 
 def run(binding):
-    if set(binding) != {"share", "payload_sha256", "repo", "suite", "work", "modules"}:
+    required = {"share", "payload_sha256", "repo", "suite", "work", "modules"}
+    if (set(binding) not in (required, required | {"selected", "selected_sha256"})
+            or ("selected" in binding and (not isinstance(binding["selected"], str)
+                or not isinstance(binding["selected_sha256"], str)))):
         raise ValueError("invalid bootstrap binding")
     share = Path(binding["share"])
     if not os.statvfs(share).f_flag & os.ST_RDONLY:
@@ -63,8 +66,9 @@ def run(binding):
     sys.meta_path.insert(0, finder)
     try:
         import vm_bootstrap_guest
+        extra = [binding["selected"], binding["selected_sha256"]] if "selected" in binding else []
         vm_bootstrap_guest.run(share, binding["payload_sha256"], Path(binding["repo"]),
-                               binding["suite"], Path(binding["work"]))
+                               binding["suite"], Path(binding["work"]), *extra)
     finally:
         sys.meta_path.remove(finder)
 

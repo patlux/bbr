@@ -297,6 +297,20 @@ Host refusal and ordinary capture guards stay unchanged. Host-to-guest request
 transport, real config activation and real VM selection evidence remain later
 requirements; no boot or native producer runs in this portable slice.
 
+### Bounded selected-request transport slice
+
+Retain an immutable host-side selected request, source-bound configured catalog
+and independent schedule before transport. Convey exact request bytes and its
+independently retained hash through the fixed bootstrap, never an arbitrary guest
+path/command or a child-redefined expectation. The guest writes only the fresh
+fixed request path and invokes the existing selected Rust action. On return,
+require the exact expected selection receipt from hash-verified bounded bytes;
+missing/swapped receipts and unexpected selection on a full run must fail before
+any seal. Keep selected scope explicit in the returned typed capture. Reuse
+existing supervision, cancellation and cleanup; test with portable synthetic
+transport/producer fixtures and no SSH/Tart/native execution. No real catalog
+activation, ordinary guard removal, baseline acceptance or parity claim.
+
 ## Iteration policy
 
 Run targeted contracts first, diagnose failures before changing code, and

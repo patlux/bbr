@@ -112,10 +112,13 @@ fn returned_bytes_receipt_and_host_build_bind_without_claiming_pixels_or_coverag
     let captured = vm_transport::validate_return(
         &serde_json::to_vec(&evidence).unwrap(),
         &root,
-        Suite::Gallery,
-        &payload,
-        &"d".repeat(64),
-        &host,
+        vm_transport::ExpectedReturn {
+            suite: Suite::Gallery,
+            staged: &payload,
+            digest: &"d".repeat(64),
+            host: &host,
+            selected: None,
+        },
         &AtomicBool::new(false),
     )
     .unwrap();
@@ -166,10 +169,13 @@ fn changed_missing_extra_linked_or_swapped_return_evidence_fails_closed() {
             vm_transport::validate_return(
                 &serde_json::to_vec(&evidence).unwrap(),
                 &root,
-                Suite::Gallery,
-                &payload,
-                &"d".repeat(64),
-                &host,
+                vm_transport::ExpectedReturn {
+                    suite: Suite::Gallery,
+                    staged: &payload,
+                    digest: &"d".repeat(64),
+                    host: &host,
+                    selected: None
+                },
                 &AtomicBool::new(mode == "cancelled")
             )
             .is_err(),

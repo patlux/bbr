@@ -1,7 +1,7 @@
 //! Full Rust supervisor -> Python transport -> return/receipt path, with only
 //! runtime, lifecycle/resource and SSH boundaries replaced by inert local fixtures.
 use bbr_visual::{payload, vm_environment::HostBuild, vm_transport, Suite};
-use cargo_gpui_visual::{config::Config, gate::Options, process};
+use cargo_gpui_visual::{config::Config, gate::Options, process, selection::Selection};
 use serde_json::{json, Value};
 use std::{
     fs, os::unix::fs::PermissionsExt, path::Path, process::Command, sync::atomic::AtomicBool,
@@ -20,6 +20,7 @@ fn fixture_scripts(repo: &Path, mode: &str) {
         "vm_evidence.py",
         "vm_install.py",
         "vm_transfer.py",
+        "vm_selection.py",
     ] {
         fs::write(scripts.join(name), source(name)).unwrap();
     }
@@ -79,7 +80,7 @@ def recheck(vm,artifacts,ip,pid):
         (root/'host-observed').write_text('observed under both locks')
         if {reject}: raise RuntimeError('injected host resource rejection')
 "#,
-            reject = if mode == "host-reject" {
+            reject = if ["host-reject", "selected-host-reject"].contains(&mode) {
                 "True"
             } else {
                 "False"
@@ -92,6 +93,7 @@ def recheck(vm,artifacts,ip,pid):
 # Isolated test boundary only. The production module has no injection flags.
 def _exchange(session,script,workspace):
     if {failed}: raise TransportError('injected SSH operation failure')
+    if {cancelled}: raise vm_lifecycle.Cancelled('injected selected cancellation')
     share=workspace.parent/'share'
     p=json.loads((share/'payload.json').read_text())
     digest=hashlib.sha256((share/'payload.json').read_bytes()).hexdigest()
@@ -104,14 +106,42 @@ def _exchange(session,script,workspace):
     raw.mkdir()
     (raw/'guest-receipt.json').write_text(json.dumps(receipt))
     (raw/'fixture--light.png').write_bytes(b'fixture bytes, NOT PNG')
+    request_path=workspace/'selected-request.json'
+    if request_path.exists():
+        selected=json.loads(request_path.read_text())['selection']
+        if {selection_swap}: selected['stories'][0]['label']='swapped'
+        if not {selection_missing}:
+            (raw/'selection.json').write_text(json.dumps(selected,separators=(',',':'),ensure_ascii=False))
+        if {request_swap}:
+            request_path.chmod(0o600)
+            request_path.write_text('{{}}')
+    if {unexpected}: (raw/'selection.json').write_text('{{}}')
     vm_transfer.pack(raw,workspace/'return.tar',digest)
-"#,failed=if mode=="failed" {"True"} else {"False"},swapped=if mode=="swapped-receipt" {"True"} else {"False"}));
+"#,failed=if ["failed", "selected-failed"].contains(&mode) {"True"} else {"False"},swapped=if mode=="swapped-receipt" {"True"} else {"False"},
+cancelled=if mode=="selected-cancelled" {"True"} else {"False"},
+selection_swap=if mode=="selected-swapped" {"True"} else {"False"},
+selection_missing=if mode=="selected-missing" {"True"} else {"False"},
+request_swap=if mode=="selected-request-swap" {"True"} else {"False"},
+unexpected=if mode=="unexpected-selection" {"True"} else {"False"}));
     fs::write(scripts.join("vm_transport.py"), transport).unwrap();
 }
 
 #[test]
 fn supervised_transport_checks_both_leases_and_binds_return_before_success() {
-    for mode in ["success", "failed", "host-reject", "swapped-receipt"] {
+    for mode in [
+        "success",
+        "failed",
+        "host-reject",
+        "swapped-receipt",
+        "selected-success",
+        "selected-missing",
+        "selected-swapped",
+        "selected-request-swap",
+        "selected-failed",
+        "selected-cancelled",
+        "selected-host-reject",
+        "unexpected-selection",
+    ] {
         let temp = tempfile::tempdir().unwrap();
         let root = temp.path().canonicalize().unwrap();
         let repo = root.join("repo");
@@ -130,12 +160,20 @@ capture=["never-executed"]
 baselines="baselines"
 report="report"
 runs="runs"
+story_catalog="scripts/visual/catalogs/stories.json"
 [source_policy]
 scopes=["fixture.rs","scripts/visual","visual-gallery.toml"]
 suffixes=[".rs",".py",".json",".toml"]
 "#;
         fs::write(repo.join("visual-gallery.toml"), config_text).unwrap();
         let config = Config::from_toml(config_text).unwrap();
+        let catalogs = repo.join("scripts/visual/catalogs");
+        fs::create_dir(&catalogs).unwrap();
+        fs::write(catalogs.join("stories.json"), json!({"schema":1,"stories":[{"id":"gallery-00","label":"Fixture","cases":["gallery-00-state-00-standard-normal-page-00"]}]}).to_string()).unwrap();
+        fs::write(catalogs.join("gallery-plan.json"), json!({"schema":1,"cases":[{"base":"gallery-00-state-00-standard-normal","label":"Fixture","state":"Default","group":"Fixture","ranges":[[0,1]]}]}).to_string()).unwrap();
+        let selection = mode
+            .starts_with("selected-")
+            .then(|| Selection::resolve(&repo, &config, &["gallery-00".into()]).unwrap());
         let mut artifacts = Vec::new();
         for (name, relative) in [
             ("bbr-gallery", "target/release/bbr-gallery"),
@@ -191,16 +229,51 @@ suffixes=[".rs",".py",".json",".toml"]
                 staged: &staged,
                 host: &host,
                 workspace: &workspace,
+                selection: selection.as_ref(),
             },
             &options,
             &cancelled,
         );
-        assert_eq!(result.is_ok(), mode == "success", "{mode}: {result:?}");
+        assert_eq!(
+            result.is_ok(),
+            ["success", "selected-success"].contains(&mode),
+            "{mode}: {result:?}"
+        );
+        if let Ok(captured) = result.as_ref() {
+            assert_eq!(captured.selection, selection);
+        }
+        if [
+            "selected-missing",
+            "selected-swapped",
+            "unexpected-selection",
+        ]
+        .contains(&mode)
+        {
+            assert!(
+                result
+                    .as_ref()
+                    .unwrap_err()
+                    .to_string()
+                    .contains("returned selection"),
+                "{mode}: {result:?}"
+            );
+        }
         assert!(root.join("host-observed").exists(), "{mode}: {result:?}");
         let gate: Value = serde_json::from_slice(&fs::read(&options.path).unwrap()).unwrap();
-        assert_eq!(gate["active"], mode == "host-reject", "{mode}");
+        assert_eq!(
+            gate["active"],
+            ["host-reject", "selected-host-reject"].contains(&mode),
+            "{mode}"
+        );
         assert!(!workspace.join("raw/capture.json").exists());
-        if mode == "failed" {
+        if [
+            "failed",
+            "selected-failed",
+            "selected-cancelled",
+            "selected-request-swap",
+        ]
+        .contains(&mode)
+        {
             assert!(!workspace.join("raw").exists());
         }
     }

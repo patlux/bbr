@@ -10,12 +10,13 @@ import shlex
 
 import vm_install
 import vm_runtime
+import vm_selection
 
 REPO = Path("/Users/patwoz/dev/Personal/macos/bbr")
 MOUNT = Path("/Users/admin/bbr-visual-payload-mount")
 SHARE = MOUNT / "visual"
 WORK = Path("/Users/admin/bbr-visual-work")
-MODULES = ("vm_install", "vm_observe", "vm_transfer", "vm_guest", "vm_bootstrap_guest")
+MODULES = ("vm_install", "vm_observe", "vm_transfer", "vm_selection", "vm_guest", "vm_bootstrap_guest")
 NIX = "/nix/var/nix/profiles/default/bin/nix"
 DELIMITER = "BBR_VISUAL_BOOTSTRAP"
 ENV = "/usr/bin/env -i HOME=/Users/admin USER=admin LOGNAME=admin PATH=/usr/bin:/bin:/usr/sbin:/sbin TMPDIR=/private/tmp TZ=UTC LANG=C LC_ALL=C SEED=0"
@@ -38,10 +39,12 @@ def _source(share, payload, name):
     return raw, expected
 
 
-def plan(share: Path, digest: str, repo: Path, suite: str) -> str:
+def plan(share: Path, digest: str, repo: Path, suite: str,
+         selected: str | None = None, selected_sha256: str | None = None) -> str:
     """Pure/read-only: render shell only for the actual compiled checkout path."""
     if repo != REPO:
         raise BootstrapError("bootstrap compiled repository differs")
+    vm_selection.decode(selected, selected_sha256, digest, suite)
     payload = vm_install.inspect(share, digest, repo, suite)
     lock_raw, _ = _source(share, payload, "guest-runtime.json")
     lock = vm_runtime.validate(vm_runtime._json(lock_raw))
@@ -59,6 +62,8 @@ def plan(share: Path, digest: str, repo: Path, suite: str) -> str:
             modules[name] = expected
     binding = {"share": str(SHARE), "payload_sha256": digest, "repo": str(repo),
                "suite": suite, "work": str(WORK), "modules": modules}
+    if selected is not None:
+        binding.update(selected=selected, selected_sha256=selected_sha256)
     q = shlex.quote
     # Only literal fixed commands and validated/quoted source-bound values. No
     # interactive profiles, Xcode python3 placeholder, arbitrary argv or fallback.
@@ -84,4 +89,7 @@ def plan(share: Path, digest: str, repo: Path, suite: str) -> str:
         raise BootstrapError("bootstrap source collides with shell delimiter")
     if vm_install.inspect(share, digest, repo, suite) != payload:
         raise BootstrapError("bootstrap payload changed")
-    return f"exec {ENV} /bin/zsh -f <<'{DELIMITER}'\n" + body + "\n" + DELIMITER + "\n"
+    script = f"exec {ENV} /bin/zsh -f <<'{DELIMITER}'\n" + body + "\n" + DELIMITER + "\n"
+    if len(script.encode()) > 256 * 1024:
+        raise BootstrapError("bootstrap input exceeds transport bound")
+    return script

@@ -311,10 +311,11 @@ They prove scheduling data and protocol boundaries, not native pre-render behavi
 
 No production story catalog is enabled by this bridge and no current Gallery
 page counts are invented. The internal guest route described below now consumes
-it; host request transport and the real approved pilot remain required. Ordinary
-capture remains blocked; these tests do not satisfy visual or framing acceptance.
+it; the internal host transport is connected as described below, but the real
+approved pilot remains required. Ordinary capture remains blocked; these tests
+do not satisfy visual or framing acceptance.
 
-### Selected guest execution (transport caller still pending)
+### Selected guest execution (ordinary capture still blocked)
 
 The existing guest-only entrypoint accepts `capture-selected` only for Gallery
 and only with an independently supplied hash for the fixed
@@ -335,10 +336,36 @@ raw files move unchanged and the exact selection receipt is published last.
 
 Portable command-boundary tests inject synthetic outputs, never native rendering.
 They prove ordering, invalid-request/pre-cancelled no-invocation behavior, registry
-mismatch and output/source/cancellation failures. The host transport does not yet
-create or convey selected requests, and host validation of the returned selected
-receipt still needs integration. Thus no end-to-end VM/native selection, complete
-coverage or acceptance evidence is claimed.
+mismatch and output/source/cancellation failures. No end-to-end VM/native selection,
+complete coverage or acceptance evidence is claimed.
+
+### Selected request transport and return binding
+
+The internal Rust transport retains an immutable request with the original
+Selection, payload digest and source-bound independent schedule. The same request
+validator is reused by the guest action. Exact UTF-8 request bytes (at most 64KiB)
+and their independent SHA-256 pass through the fixed, source-frozen bootstrap;
+no arbitrary request path or guest command is accepted. The bootstrap remains
+bounded at 256KiB and rejects oversized quoted input before boot. Normal configs
+do not activate real story selection, and normal capture still has no caller.
+
+The guest writes only a fresh fixed request file, invokes `capture-selected` with
+the expected hash, and rechecks it before return. Original source/install/guest
+observations, native process ownership, cancellation and cleanup remain unchanged.
+After independent host cleanup and byte verification, Rust requires the exact
+serialized selection receipt retained by the host, not a new expectation inferred
+from returned files. Missing/swapped selection, an unexpected receipt on a full
+run, request drift or source drift cannot produce a successful typed capture.
+The typed result explicitly retains selected scope; this transport does not seal,
+rename images, prove coverage or authorize full-suite Collection/acceptance use.
+
+Seven new Python contracts, two Rust request contracts and extended real local
+supervisor/transport-chain fixtures exercise these paths. Known-clean failure or
+cancellation releases both leases; rejected host cleanup retains active gate
+evidence. Returned fixture bytes are explicitly not native PNG evidence. Host
+raw diagnostics may remain after a receipt rejection, but no seal is published.
+Actual guest runtime/SSH/capture/teardown, current catalog activation, host raw
+preparation into upstream sealing and the approved real pilot remain required.
 
 ### Current Gallery source-audit boundary
 

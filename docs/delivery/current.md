@@ -910,6 +910,68 @@ integration and remaining coverage audit are runnable here; no additional lane
 is authorized. Migration acceptance, real pilot/full repeat and approvals remain
 open; implementation/review wall time was not instrumented.
 
+### Selected host-request transport checkpoint
+
+Preflight: clean `main@d2988015`, no Git index lock, visual/Tart capture process
+or observed capture-lock holder. ROADMAP and all of this delivery document were
+re-read. Sole visual writer and scope remain unchanged; no workflow/subagent,
+foreign worktree access or extra product lane is authorized. Local request/return
+integration is runnable; VM/network and Checkbox asset approvals remain pending.
+
+The internal host transport now retains an immutable source/config/plan-bound
+selected request and its exact bytes/hash. Guest and host reuse one Rust request
+validator. Only the fixed request path travels through the existing source-frozen
+bootstrap; Python verifies bounded bytes/hash/payload but never owns coverage or
+selection resolution. The guest invokes only the existing selected action with
+the independent hash. The host rechecks its original request after transport and
+requires the exact serialized selection receipt from bounded, transport-hashed
+bytes. Missing/swapped receipts and unexpected selection on a full run fail;
+the typed capture retains selected scope instead of implying full-suite evidence.
+No seal, image rewrite, normal CLI caller or real catalog is enabled.
+
+Evidence: two new Rust request contracts, seven Python transport/bootstrap/guest
+contracts and extended cross-language supervisor/return fixtures. They cover
+source/config/payload/hash binding, request bounds/links, exact quoted forwarding,
+frozen-loader arguments, no separate full capture, request mutation, missing or
+swapped selection, full-run injection, cancellation and cleanup rejection. Both
+leases remain held during child/host cleanup observations. Proven-clean failures
+release them; rejected cleanup retains active evidence. Actual changed-request
+fixture permissions are deliberately made writable before mutation so the test
+proves hash rejection rather than only a permission error. The frozen loader also
+rejects a null selected binding rather than silently treating it as full capture.
+
+Initial red was the missing Rust module (`/tmp/bbr-visual-selected-transport-red.log`).
+Initial focused fixtures then exposed a missing mandatory config source policy
+and an incorrect Python test module reference; the fixtures were corrected without
+relaxing production checks. Focused logs:
+`/tmp/bbr-visual-selected-transport-focused3.log`,
+`/tmp/bbr-visual-selected-transport-python2.log` and
+`/tmp/bbr-visual-selected-transport-python-all.log` (105 VM-helper tests, 1.220s).
+Full candidate `just visual-test` passes **151 Python discovery tests** (one extra
+integration skipped and then separately passed), unchanged upstream and **65 Rust
+consumer tests** plus signal fixtures. Full gate:
+`/tmp/bbr-visual-selected-transport-visual-test.log`; final post-review recheck:
+`/tmp/bbr-visual-selected-transport-final-visual-test.log`. Strict consumer
+all-target Clippy/fmt, roadmap and whitespace are checked before commit. The
+cross-language 12-mode chain took 5.53s in the candidate full gate; these timings
+are tooling evidence, not product performance. Implementation/review elapsed
+time was not instrumented.
+
+Self-review checked unchanged guest/native identity boundaries, source-frozen
+helper membership, bounded shell input, original host expectation retention,
+exact return receipt checks and unchanged cleanup semantics. Product/renderers,
+immutable upstream, configs, baseline files and GPUI pin are untouched. No key,
+SSH, Tart, native producer, actual image/report review, GUI gate or performance
+run occurred. Diagnostic raw staging may remain after receipt rejection, never a
+capture seal. All source edits require fresh future preparation/captures.
+
+Parallelism audit: only local raw-return preparation into upstream selected/full
+sealing and the remaining applicability/framing audit are next runnable work;
+no other lane is authorized. Real runtime availability, network/Checkbox approval,
+current catalog activation, approved pilot, independent complete repeats, actual
+PNG/HTML review and current functional Tart gates remain open. Migration and
+baseline acceptance are not complete; retained Python entrypoints stay preserved.
+
 ## Status vocabulary
 
 | Status | Meaning |
