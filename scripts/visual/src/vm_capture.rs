@@ -154,17 +154,11 @@ fn capture_with(
         host: input.host,
         selected: selected.as_ref(),
     };
-    let plan_path = "scripts/visual/catalogs/gallery-plan.json";
-    let plan: Option<gallery::Plan> = if input.suite == Suite::Gallery && selected.is_none() {
-        Some(serde_json::from_slice(&bound_bytes(
+    let plan = if input.suite == Suite::Gallery && selected.is_none() {
+        Some(crate::gallery_selection::static_plan(
             input.repo,
-            plan_path,
-            input
-                .staged
-                .sources
-                .get(plan_path)
-                .context("unbound independent Gallery plan")?,
-        )?)?)
+            &input.staged.sources,
+        )?)
     } else {
         None
     };

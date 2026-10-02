@@ -264,6 +264,9 @@ fn command(
     }
     match suite {
         Suite::Gallery => {
+            if action_name == "capture" {
+                crate::gallery_selection::static_plan(repo, &payload.sources)?;
+            }
             let mut command = Command::new(repo.join("target/release/bbr-gallery"));
             if action_name == "inventory" {
                 command.arg("--capture-inventory");

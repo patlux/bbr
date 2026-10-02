@@ -1427,6 +1427,69 @@ specific VM/network and asset approvals, guest runtime availability and measured
 input/paint/framing evidence. No acceptance boxes are checked, and neither goal
 completion nor a global blocked stop follows from publishing this contract.
 
+### Portable Checkbox endpoint requirements checkpoint
+
+Preflight base: clean `main@5359741d75fc8bed2dcea0ef0c37c3a76ce0382c`, with
+only this writer's pilot-contract/test changes afterward. ROADMAP and all 2,162
+lines of the prior delivery document were read in bounded chunks. No Git index
+lock or matching Tart/visual process was observed; ordinary app/build processes
+and foreign worktrees remain untouched. Sole local visual writer, no workflow,
+subagent, new lane, network/VM/asset operation or publication.
+
+The consumer now has one shared independent `Plan::validate` authority for static
+and optional typed schema-2 endpoint requirements. A Checkbox story-16/State-00
+static case is preserved, followed by the exact ordered initial-unchecked,
+checked-after-click and unchecked-after-second-click triple. Endpoint metadata
+and per-appearance child ranges must match its static case. Unknown/orphan/
+missing/extra/duplicate/reordered identities, invalid schemas/metadata/ranges,
+noncanonical numbers and incomplete selected pages fail. Upstream selection and
+original source hashes still bind the entire authored story schedule. No State
+selector is invented, and still identities do not imply a timeline or input proof.
+
+`require_static_capture` blocks endpoint-bearing request creation, raw validation,
+stored review, fresh full capture, direct transport and guest command construction.
+Self-review found and guarded the latter two lower-level entrypoints rather than
+relying only on the normal CLI's existing host refusal. Correctly named complete
+synthetic RGBA8 output and valid synthetic upstream image seals cannot substitute
+for unwired semantic evidence. No sidecar or new seal/process authority is added.
+Static-only schema-2 selection remains usable and inherits unchanged upstream
+partial/nonacceptance behavior. Real plan/catalog/config, product crates, GPUI pin,
+upstream export, assets and baselines remain unchanged: 630 static cases / 936
+historical pairs and 31 withheld requirements are preserved.
+
+Evidence:
+- Initial focused red is the absent endpoint field/API, exit 101:
+  `/tmp/bbr-visual-endpoints-red.log`. Seven added endpoint integration contracts
+  plus one fresh-capture tripwire pass. Existing direct guest and cross-language
+  transport tests now include endpoint refusal; the latter exercises 14 modes.
+- The first expanded consumer run exposed an old command-only fixture lacking
+  the newly mandatory independent plan. The fixture was source-bound, not the
+  guard weakened: `/tmp/bbr-visual-endpoints-consumer.log`, then passing
+  `/tmp/bbr-visual-endpoints-consumer2.log`.
+- Final `just visual-test` passes 152 Python discovery tests (151 pass, one
+  integration skip separately passed), unchanged upstream tests and **90 consumer
+  tests** plus signal fixtures: `/tmp/bbr-visual-endpoints-visual-test.log`.
+  Endpoint integration group 0.34s, consumer unit group 6.33s, transport chain
+  6.19s measured. These are tooling timings, not product performance.
+- Strict consumer all-target Clippy and fmt pass:
+  `/tmp/bbr-visual-endpoints-final-clippy.log`. Roadmap, index-roadmap and whitespace
+  checks are recorded in `/tmp/bbr-visual-endpoints-roadmap.log` and
+  `/tmp/bbr-visual-endpoints-index.log`. Protected-input Git diff is empty.
+
+No native producer, VM, key/SSH operation, actual migration image/report review,
+current functional GUI gate or baseline/environment adoption occurred. This is
+an intermediate portable tooling slice, not stable-migration handoff or completion
+of the pilot acceptance boxes. Product `just verify` and native gates from earlier
+checkpoints are historical evidence, not rerun claims for this increment.
+Implementation/review elapsed time was not instrumented.
+
+Scheduling audit: only the bounded pilot's capture-only target/input/readiness
+seams and portable rejection contracts are next locally runnable; no other product
+queue item or parallel lane is authorized. Specific network/asset approvals,
+actual guest runtime, legitimate input/paint/framing, fresh repeated captures,
+visual review and stable Tart functional gates remain open. Source edits require
+fresh future preparation/captures. No goal completion or global pause is justified.
+
 ## Status vocabulary
 
 | Status | Meaning |

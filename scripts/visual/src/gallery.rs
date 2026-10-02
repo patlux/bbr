@@ -1,31 +1,14 @@
 //! Structural validation against an independent, source-controlled page plan.
 use anyhow::{ensure, Context, Result};
 use cargo_gpui_visual::store;
-use serde::Deserialize;
+#[path = "gallery_plan.rs"]
+mod plan;
+pub use plan::{Case, Endpoint, Plan};
 use std::{
     collections::{BTreeMap, BTreeSet},
     fs,
     path::Path,
 };
-
-#[derive(Clone, Debug, Deserialize, PartialEq, Eq)]
-#[serde(deny_unknown_fields)]
-pub struct Plan {
-    pub schema: u32,
-    pub cases: Vec<Case>,
-}
-#[derive(Clone, Debug, Deserialize, PartialEq, Eq)]
-#[serde(deny_unknown_fields)]
-pub struct Case {
-    pub base: String,
-    pub label: String,
-    pub state: String,
-    pub group: String,
-    pub ranges: Vec<[usize; 2]>,
-    /// Production Elevation has one fewer shadow row in Dark appearance.
-    #[serde(default)]
-    pub dark_ranges: Option<Vec<[usize; 2]>>,
-}
 
 pub fn canonical_id(raw: &str) -> Result<String> {
     let (case, index) = raw.rsplit_once("-page-").context("missing page identity")?;
@@ -45,37 +28,18 @@ pub(crate) fn validate_raw(
     plan: &Plan,
     inventory: &str,
 ) -> Result<Vec<(String, String)>> {
-    ensure!(
-        plan.schema == 1 && !plan.cases.is_empty(),
-        "invalid required Gallery plan"
-    );
+    plan.require_static_capture()?;
     let mut expected = BTreeMap::new();
     let mut rows = Vec::new();
     let mut ids = Vec::new();
     for case in &plan.cases {
-        ensure!(
-            !case.group.is_empty() && !case.ranges.is_empty(),
-            "empty case metadata"
-        );
         for mode in ["light", "dark"] {
             let ranges = if mode == "dark" {
                 case.dark_ranges.as_ref().unwrap_or(&case.ranges)
             } else {
                 &case.ranges
             };
-            ensure!(
-                ranges.len() == case.ranges.len(),
-                "appearance page pairing differs"
-            );
             let total = ranges.last().context("pages")?[1];
-            let mut next = 0;
-            for range in ranges {
-                ensure!(
-                    range[0] == next && next < range[1] && range[1] <= total,
-                    "invalid independent range plan"
-                );
-                next = range[1];
-            }
             let id = format!("{}--{mode}", case.base);
             ensure!(
                 expected

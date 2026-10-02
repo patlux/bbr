@@ -26,7 +26,7 @@ Paths in the table are repository-relative identifiers under
 | Independent required coverage and visible invalid siblings | Historical 936 required Gallery page pairs plus 31 additive withheld rows; eight-image browser validator; Collection contracts reject omitted/extra/duplicate output | Historical Gallery plan covers 49 of 53 stories; supported effective states and page/framing requirements are not fully authored or verified |
 | Supported / inapplicable / open state classification | Six linked source audits cover registry IDs 0–52; actual predicates and fixture gaps recorded | This is source-level classification, not an executable complete supported-state contract. Do not promote recorder callbacks, labels or canvas preferences into interaction/effective-state proof |
 | Nested content and shadow framing | Current measured outer pagination and existing semantic menu-height tests | Nested scroll windows, aliases, clipped descendants/shadows and complete content remain unproven; source formulas are not measurements |
-| Tokens / real Checkbox / multipage Sidebar Light/Dark pilot | Existing production capture seams and portable selected pipeline | No fresh real pilot. Checkbox/initial Radio need legitimate asset-source approval; checked animation readiness, pointer transitions and framing require real evidence |
+| Tokens / real Checkbox / multipage Sidebar Light/Dark pilot | Existing production capture seams, portable selected pipeline and typed schema-2 Checkbox still requirements; endpoint-bearing execution/review fails closed | No fresh real pilot. Checkbox/initial Radio need legitimate asset-source approval; checked animation readiness, pointer transitions and framing require real evidence |
 | All eight browser images | Shared `browser_output.rs` validates exact names, markers, RGBA8 and 2160×2814 / 608×2814 sizes | Current VM capture of all eight is absent; pre-Paper references are not newly approved |
 | Actual guest capture only | `runner::require_vm_execution` refuses normal capture; `guest-execute` requires admin/VirtualMac, fixed actions and source/executable binding | No public VM capture route activated and no real guest execution in this migration |
 | Exact source/build identity | `payload.rs`, `prepare.rs`, source snapshots, Cargo executable hashes, installation checks; historical host-only preparations verified | Prior payloads are stale diagnostics. Prepare again on the exact approved capture tree; verify actual guest installed/executed bytes |
@@ -87,9 +87,11 @@ these current migration gates. Later source changes require new capture seals.
 
 1. The [bounded pilot packet](../roadmap/tasks/gallery-visual-pilot.md) now defines
    the required input journey, two-clock endpoint boundary and default Sidebar
-   nested/paint observations. Next local work is its source-bound endpoint
-   identity/rejection contract, before changing fixtures or declaring a real
-   story catalog usable. Keep the 936 historical
+   nested/paint observations. The source-bound endpoint identity/rejection contract
+   is implemented without activating a real plan/catalog or native execution.
+   Next local work is the smallest capture-only target/input/readiness seam and
+   its portable negative contracts; real input/paint still needs the approved guest.
+   Keep the 936 historical
    pairs and 31 blockers until replacement evidence is actually proven. No product
    renderer change or guessed page count is authorized by this audit.
 2. Execution boundary: obtain approval for the disposable clone's private NAT,

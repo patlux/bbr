@@ -141,6 +141,8 @@ fn supervised_transport_checks_both_leases_and_binds_return_before_success() {
         "selected-cancelled",
         "selected-host-reject",
         "unexpected-selection",
+        "endpoint-full",
+        "selected-endpoint",
     ] {
         let temp = tempfile::tempdir().unwrap();
         let root = temp.path().canonicalize().unwrap();
@@ -171,9 +173,53 @@ suffixes=[".rs",".py",".json",".toml"]
         fs::create_dir(&catalogs).unwrap();
         fs::write(catalogs.join("stories.json"), json!({"schema":1,"stories":[{"id":"gallery-00","label":"Fixture","cases":["gallery-00-state-00-standard-normal-page-00"]}]}).to_string()).unwrap();
         fs::write(catalogs.join("gallery-plan.json"), json!({"schema":1,"cases":[{"base":"gallery-00-state-00-standard-normal","label":"Fixture","state":"Default","group":"Fixture","ranges":[[0,1]]}]}).to_string()).unwrap();
-        let selection = mode
-            .starts_with("selected-")
-            .then(|| Selection::resolve(&repo, &config, &["gallery-00".into()]).unwrap());
+        let endpoints = mode.contains("endpoint");
+        if endpoints {
+            let rest = json!({"base":"gallery-16-state-00-standard-normal","label":"Checkbox",
+                "state":"default","group":"Core controls","ranges":[[0,5]]});
+            let mut cases = vec![rest.clone()];
+            for endpoint in [
+                "initial-unchecked",
+                "checked-after-click",
+                "unchecked-after-second-click",
+            ] {
+                let mut case = rest.clone();
+                case["base"] = json!(format!(
+                    "gallery-16-state-00-standard-normal-endpoint-{endpoint}"
+                ));
+                case["endpoint"] = json!(endpoint);
+                cases.push(case);
+            }
+            let pages: Vec<_> = cases
+                .iter()
+                .map(|c| format!("{}-page-00", c["base"].as_str().unwrap()))
+                .collect();
+            cargo_gpui_visual::store::write_json(
+                &catalogs.join("gallery-plan.json"),
+                &json!({"schema":2,"cases":cases}),
+            )
+            .unwrap();
+            cargo_gpui_visual::store::write_json(
+                &catalogs.join("stories.json"),
+                &json!({"schema":1,"stories":[{
+                    "id":"gallery-16","label":"Checkbox","cases":pages
+                }]}),
+            )
+            .unwrap();
+        }
+        let selection = mode.starts_with("selected-").then(|| {
+            Selection::resolve(
+                &repo,
+                &config,
+                &[if endpoints {
+                    "gallery-16"
+                } else {
+                    "gallery-00"
+                }
+                .into()],
+            )
+            .unwrap()
+        });
         let mut artifacts = Vec::new();
         for (name, relative) in [
             ("bbr-gallery", "target/release/bbr-gallery"),
@@ -257,6 +303,21 @@ suffixes=[".rs",".py",".json",".toml"]
                     .contains("returned selection"),
                 "{mode}: {result:?}"
             );
+        }
+        if endpoints {
+            let error = result.unwrap_err();
+            assert!(
+                error
+                    .to_string()
+                    .contains("endpoint execution/evidence is not wired"),
+                "{mode}: {error:#}"
+            );
+            assert!(
+                !workspace.exists()
+                    && !options.path.exists()
+                    && !root.join("host-observed").exists()
+            );
+            continue;
         }
         assert!(root.join("host-observed").exists(), "{mode}: {result:?}");
         let gate: Value = serde_json::from_slice(&fs::read(&options.path).unwrap()).unwrap();

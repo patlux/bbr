@@ -156,8 +156,12 @@ pub fn compare(repo: &Path, request: &Request, cancelled: &AtomicBool) -> Result
                     &manifest.sources,
                     "scripts/visual/catalogs/gallery-plan.json",
                     selection,
-                )?;
+                )?
+                .plan()
+                .require_static_capture()?;
                 selected = true;
+            } else if suite == Suite::Gallery {
+                crate::gallery_selection::static_plan(repo, &manifest.sources)?;
             }
         }
         suites.push(CollectionSuite {

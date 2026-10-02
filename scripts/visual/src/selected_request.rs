@@ -64,6 +64,7 @@ impl Request {
         );
         Self::configured(payload, &wire.selection)?;
         let schedule = Schedule::resolve(&payload.repo, &payload.sources, PLAN, &wire.selection)?;
+        schedule.plan().require_static_capture()?;
         Ok(Self {
             digest: format!("{:x}", Sha256::digest(&bytes)),
             wire,

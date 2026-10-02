@@ -8,6 +8,9 @@ use cargo_gpui_visual::{compare, selection::Selection};
 use serde_json::json;
 use std::{path::PathBuf, process::Command};
 
+#[path = "vm_capture_endpoint_tests.rs"]
+mod endpoints;
+
 struct Fixture {
     _temp: tempfile::TempDir,
     root: PathBuf,

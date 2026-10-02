@@ -279,7 +279,10 @@ fn upstream_seals_selected_gallery_as_partial_and_rejects_acceptance_and_collect
     use cargo_gpui_visual::{accept, capture, collection, compare};
     use std::sync::atomic::AtomicBool;
     // Even explicitly selecting every story stays partial/non-accepting.
-    let f = Fixture::new(&["gallery-44", "gallery-00"]);
+    let mut f = Fixture::new(&["gallery-44", "gallery-00"]);
+    // A static-only selection also works under plan schema 2, while upstream
+    // partial sealing/nonacceptance remain unchanged. No endpoint is executed.
+    f.mutate_plan(|p| p["schema"] = json!(2));
     let schedule = f.schedule().unwrap();
     let mut config = f.config.clone();
     config.selection = Some(f.selection.clone());

@@ -20,6 +20,7 @@ fn fixture() -> (tempfile::TempDir, Plan, String) {
             group: "Foundations".into(),
             ranges: vec![[0, 1]],
             dark_ranges: None,
+            endpoint: None,
         }],
     };
     let mut rows = Vec::new();

@@ -9,7 +9,7 @@ use cargo_gpui_visual::{
 use serde::de::DeserializeOwned;
 use sha2::{Digest, Sha256};
 use std::{
-    collections::{BTreeMap, BTreeSet},
+    collections::BTreeMap,
     fs,
     io::Read,
     os::unix::fs::{MetadataExt, OpenOptionsExt},
@@ -27,9 +27,20 @@ pub struct Schedule {
     plan: Plan,
 }
 
+/// Full-suite execution/review preflight; callers with a selection use Schedule.
+/// The plan must be an original sealed source, not a producer-supplied inventory.
+pub(crate) fn static_plan(repo: &Path, sources: &store::Hashes) -> Result<Plan> {
+    let path = "scripts/visual/catalogs/gallery-plan.json";
+    let hash = sources
+        .get(path)
+        .context("unbound independent Gallery plan")?;
+    let plan: Plan = bound_json(repo, path, hash)?;
+    plan.require_static_capture()?;
+    Ok(plan)
+}
+
 struct StoryPlan {
     label: String,
-    group: String,
     pages: Vec<String>,
 }
 
@@ -79,71 +90,15 @@ fn number(raw: &str) -> Result<u64> {
     ensure!(raw == format!("{value:02}"), "noncanonical Gallery number");
     Ok(value)
 }
-fn identity(base: &str) -> Result<(u64, String)> {
-    let parts: Vec<_> = base.split('-').collect();
-    ensure!(
-        parts.len() == 6
-            && parts[0] == "gallery"
-            && parts[2] == "state"
-            && ["standard", "increased"].contains(&parts[4])
-            && ["small", "normal", "extralarge"].contains(&parts[5]),
-        "invalid Gallery case identity"
-    );
-    number(parts[3])?;
-    let id = number(parts[1])?;
-    Ok((id, format!("gallery-{id:02}")))
-}
-fn metadata(value: &str) -> bool {
-    !value.trim().is_empty() && !value.chars().any(char::is_control)
-}
 fn requirements(plan: &Plan) -> Result<BTreeMap<String, StoryPlan>> {
-    ensure!(
-        plan.schema == 1 && !plan.cases.is_empty(),
-        "empty/invalid independent plan"
-    );
+    plan.validate()?;
     let mut stories = BTreeMap::<String, StoryPlan>::new();
-    let mut bases = BTreeSet::new();
-    let mut previous = String::new();
     for case in &plan.cases {
-        let (_, id) = identity(&case.base)?;
-        ensure!(
-            bases.insert(&case.base)
-                && metadata(&case.label)
-                && metadata(&case.state)
-                && metadata(&case.group),
-            "duplicate case/invalid Gallery metadata"
-        );
-        ensure!(
-            previous == id || !stories.contains_key(&id),
-            "noncontiguous Gallery story plan"
-        );
-        previous = id.clone();
+        let id = format!("gallery-{:02}", case.story_number()?);
         let story = stories.entry(id).or_insert_with(|| StoryPlan {
             label: case.label.clone(),
-            group: case.group.clone(),
             pages: Vec::new(),
         });
-        ensure!(
-            story.label == case.label && story.group == case.group,
-            "story label/group differs within plan"
-        );
-        for ranges in [
-            &case.ranges,
-            case.dark_ranges.as_ref().unwrap_or(&case.ranges),
-        ] {
-            ensure!(
-                !ranges.is_empty() && ranges.len() == case.ranges.len(),
-                "incomplete appearance page pairing"
-            );
-            let mut next = 0;
-            for [start, end] in ranges {
-                ensure!(
-                    *start == next && start < end,
-                    "nonconsecutive independent child ranges"
-                );
-                next = *end;
-            }
-        }
         for page in 0..case.ranges.len() {
             let canonical = gallery::canonical_id(&format!("{}--light-page-{page:02}", case.base))?;
             story
@@ -197,7 +152,7 @@ impl Schedule {
             )?;
             ids.push(id);
             for case in &plan.cases {
-                if identity(&case.base)?.0 == id {
+                if case.story_number()? == id {
                     cases.push(case.clone());
                 }
             }
@@ -207,7 +162,10 @@ impl Schedule {
             plan_path: plan_path.into(),
             plan_hash: plan_hash.clone(),
             ids,
-            plan: Plan { schema: 1, cases },
+            plan: Plan {
+                schema: plan.schema,
+                cases,
+            },
         })
     }
 
@@ -244,6 +202,7 @@ impl Schedule {
         inventory: &str,
     ) -> Result<Vec<String>> {
         self.check_sources(repo, sources)?;
+        self.plan.require_static_capture()?;
         store::no_symlinks(output)?;
         ensure!(output.is_dir(), "selected raw directory required");
         for entry in fs::read_dir(output)? {

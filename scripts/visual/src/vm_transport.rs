@@ -259,6 +259,9 @@ pub fn run(input: Input<'_>, options: &gate::Options, cancelled: &AtomicBool) ->
         payload::source_snapshot(repo, &config, cancelled)? == staged.sources,
         "stale transport source"
     );
+    if suite == Suite::Gallery && selection.is_none() {
+        crate::gallery_selection::static_plan(repo, &staged.sources)?;
+    }
     vm_runtime::verify(repo, suite, share, staged, cancelled)?;
     host.validate()?;
     ensure!(

@@ -28,7 +28,15 @@ fn arguments(command: &Command) -> Vec<String> {
 fn only_fixed_native_commands_are_constructed_without_execution() {
     let temp = tempfile::tempdir().unwrap();
     let root = temp.path().canonicalize().unwrap();
-    let payload = fixture(&root);
+    let mut payload = fixture(&root);
+    let plan = "scripts/visual/catalogs/gallery-plan.json";
+    fs::create_dir_all(root.join("scripts/visual/catalogs")).unwrap();
+    store::write_json(&root.join(plan), &serde_json::json!({"schema":1,"cases":[{
+        "base":"gallery-16-state-00-standard-normal","label":"Checkbox","state":"default","group":"Core controls","ranges":[[0,5]]
+    }]})).unwrap();
+    payload
+        .sources
+        .insert(plan.into(), store::digest(&root.join(plan)).unwrap());
     let gallery = command(&payload, Suite::Gallery, "capture", &root).unwrap();
     assert_eq!(
         gallery.get_program(),
@@ -55,6 +63,32 @@ fn only_fixed_native_commands_are_constructed_without_execution() {
     assert!(command(&payload, Suite::Browser, "inventory", &root).is_err());
     assert!(command(&payload, Suite::Gallery, "capture-selected", &root).is_err());
     assert!(action(Suite::Browser, "capture-selected").is_err());
+    let mut requirements: serde_json::Value = store::read_json(&root.join(plan)).unwrap();
+    requirements["schema"] = serde_json::json!(2);
+    for endpoint in [
+        "initial-unchecked",
+        "checked-after-click",
+        "unchecked-after-second-click",
+    ] {
+        let mut case = requirements["cases"][0].clone();
+        case["base"] = serde_json::json!(format!(
+            "gallery-16-state-00-standard-normal-endpoint-{endpoint}"
+        ));
+        case["endpoint"] = serde_json::json!(endpoint);
+        requirements["cases"].as_array_mut().unwrap().push(case);
+    }
+    store::write_json(&root.join(plan), &requirements).unwrap();
+    payload
+        .sources
+        .insert(plan.into(), store::digest(&root.join(plan)).unwrap());
+    let error = command(&payload, Suite::Gallery, "capture", &root).unwrap_err();
+    assert!(
+        error
+            .to_string()
+            .contains("endpoint execution/evidence is not wired"),
+        "{error:#}"
+    );
+    assert!(!root.join("raw").exists());
     fs::create_dir(root.join("raw")).unwrap();
     assert!(command(&payload, Suite::Gallery, "capture", &root).is_err());
     fs::write(root.join("live-inventory.tsv"), "preserved").unwrap();

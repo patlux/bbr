@@ -101,9 +101,10 @@ All source paths below are under `/Users/patwoz/dev/Personal/macos/bbr`:
 The following are semantic requirements, not a producer-generated inventory.
 Before a sealed pilot, bind concrete ordered endpoint IDs and Light/Dark page
 ranges to the source-controlled plan/catalog and reject unsupported scope. The
-current consumer accepts static `gallery-…-state-…` identities only; it needs a
-bounded endpoint contract before it can carry Checkbox journey stills. Do not
-weaken `Schedule` completeness or attach an unsealed sidecar and call it proof.
+consumer can now plan typed schema-2 Checkbox endpoints, but deliberately refuses
+their execution, raw preparation and stored-run review until input/readiness
+validation exists. No real plan/catalog is activated. Do not weaken `Schedule`
+completeness or attach an unsealed sidecar and call it proof.
 A diagnostic measurement may inform authored page ranges; it is not its own
 coverage authority. After plan edits, prepare and capture again on unchanged
 requirements for the two independent repeats.
@@ -170,7 +171,46 @@ Sidebar and paint-framing requirements:
   not current native proof. Do not copy them into a newly active contract without
   fresh measured checks of child identities, ranges and nested layout.
 
+### Bounded portable endpoint-plan increment
+
+Extend only the consumer's independent plan with schema 2 and a typed optional
+endpoint on a case. Schema 1 remains byte-compatible and rejects endpoints.
+For each opted-in Checkbox static case, keep that original case and immediately
+follow it with exactly `initial-unchecked`, `checked-after-click`, and
+`unchecked-after-second-click` endpoint cases in that order. Each endpoint base
+is the original base plus `-endpoint-<name>`; metadata and per-appearance child
+ranges must equal the original case. Only story 16 / State 00 / `default` is
+eligible; these endpoints are not new State selector values. Retain all other
+static cases and require the upstream story selection to include every authored
+page of both the static case and its entire endpoint triple.
+
+Resolve these requirements before any producer call and bind them to the original
+plan/catalog hashes. Exercise portable positive/negative contracts for identity,
+ordering, completeness, ranges, unsupported schemas, source drift and selection
+nonacceptance. This increment does not implement input execution or invent a
+semantic receipt. Until actual input/clock/framing evidence validation is wired,
+reject endpoint-bearing plans at request creation, raw preparation, stored-run
+review and full-capture preflight (including direct transport and guest command
+construction), before any producer/VM call or seal/report publication. Static
+selections from a schema-2 plan may still use the unchanged
+static path. Do not activate a real schema-2 plan/catalog or modify production
+Gallery code, assets, upstream or baselines in this portable increment.
+
 ## Evidence
+
+The portable increment is implemented in
+`/Users/patwoz/dev/Personal/macos/bbr/scripts/visual/src/gallery_plan.rs` and
+`/Users/patwoz/dev/Personal/macos/bbr/scripts/visual/tests/gallery_endpoints.rs`.
+`Plan::validate` owns schema/identity/metadata/appearance-range checks;
+`Schedule::resolve` retains source-hash binding and exact upstream selection
+completeness. The consumer plan schema is independent of upstream capture schema.
+`require_static_capture` refuses all valid endpoint-bearing plans until semantic
+validation exists. A complete set of correctly named synthetic RGBA8 PNGs does
+not bypass that guard. Static schema-2 selections retain upstream `TEILLAUF`
+nonacceptance. Tests also exercise the direct transport/guest and fresh-capture
+boundaries. Current real plan remains schema 1, 630 cases / 936 page pairs;
+31 withheld catalog rows remain unchanged. These are portable requirements and
+refusal evidence, not completed input, framing or native-capture acceptance.
 
 ### Unit and contract
 

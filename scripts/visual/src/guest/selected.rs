@@ -162,7 +162,7 @@ pub(super) fn execute(
             .arg(id.to_string()))?;
         std::io::stderr().write_all(&stdout)?;
         let plan = gallery::Plan {
-            schema: 1,
+            schema: schedule.plan().schema,
             cases: schedule
                 .plan()
                 .cases
