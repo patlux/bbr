@@ -135,7 +135,7 @@ fn authored_catalogs_cover_required_pairs_and_keep_unproven_coverage_visible() {
             .iter()
             .filter(|s| s.state == State::Withheld)
             .count(),
-        26
+        31
     );
     let browser: Catalog =
         store::read_json(&repo.join("scripts/visual/catalogs/browser.json")).unwrap();
@@ -321,6 +321,50 @@ fn surface_audit_gaps_cannot_be_reported_as_captured_or_inapplicable() {
             .iter()
             .find(|s| s.base == base)
             .unwrap_or_else(|| panic!("missing concrete source-audit blocker: {base}"));
+        assert_eq!(entry.state, State::Withheld);
+        for reason in reasons {
+            assert!(
+                entry.reason.as_deref().unwrap().contains(reason),
+                "{base}: {reason}"
+            );
+        }
+        assert!(entry.page.is_none() && entry.sequence.is_none() && entry.moment.is_none());
+    }
+}
+
+#[test]
+fn composition_source_gaps_remain_withheld_without_replacing_historical_pages() {
+    let repo = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let gallery: Catalog =
+        store::read_json(&repo.join("scripts/visual/catalogs/gallery.json")).unwrap();
+    gallery.validate().unwrap();
+    for (base, reasons) in [
+        (
+            "gallery-44-sidebar-production-branches",
+            ["closed", "status_visible", "floating"],
+        ),
+        (
+            "gallery-45-command-edit-row-gaps",
+            ["end_of", "url=None", "glide"],
+        ),
+        (
+            "gallery-46-space-empty-name-gap",
+            ["empty", "Space name", "recorder"],
+        ),
+        (
+            "gallery-47-tab-menu-state-gaps",
+            ["Unpin Tab", "Remove Bookmark", "Close Tab"],
+        ),
+        (
+            "gallery-48-page-menu-geometry",
+            ["148", "padding", "bookmark"],
+        ),
+    ] {
+        let entry = gallery
+            .snapshots
+            .iter()
+            .find(|s| s.base == base)
+            .unwrap_or_else(|| panic!("missing concrete composition source-audit blocker: {base}"));
         assert_eq!(entry.state, State::Withheld);
         for reason in reasons {
             assert!(

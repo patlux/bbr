@@ -1243,6 +1243,62 @@ network/asset approvals, legitimate input/endpoints/framing, pilot/full repeats,
 current functional Tart gates and final requirement-to-artifact audit remain
 open; neither goal completion nor global pause is justified.
 
+### Sidebar / Command / Space configuration / Menu source-audit checkpoint
+
+Preflight: clean `main@eca54f31`, no Git index lock, visual/Tart process or
+observed capture-lock holder. ROADMAP and the complete 1,978-line delivery ledger
+were read without truncation. Sole local visual writer; no workflow/subagent,
+foreign worktree access, new lane, asset or VM/network operation. Ordinary user
+BBR and unrelated builds remain untouched. Queue audit selected the remaining
+44–48 source slice; the registry, not the continuation shorthand, identifies
+46 as Space configuration and 47 as the combined Tab / Favorite menu.
+
+The [composition audit](../visual/gallery-compositions-audit.md) traces the actual
+production branches and records five concrete withheld gaps. Sidebar never shows
+closed rows/tiles/members, status, floating/grain/tint or drag-proxy/destination
+branches; its dense model supplies only the first 64 of 500 regular rows inside
+a 700pt wrapper. Command uses end-of-text without selection/IME, no URL fields,
+no Saved Page/History or actions-chip/shortcut sample, and no entrance/glide model.
+Space configuration omits the actual empty-name placeholder. Tab / Favorite menu
+omits unfocused, Unpin, Remove Bookmark and disabled Close representations. Page
+menu inherits the shared 148pt fixed-card versus app geometry mismatch. Source
+arithmetic is not measured clipping, recorder dispatch is not model mutation,
+and app-owned Portal/controller behavior remains a narrow exclusion.
+
+Self-review preserves stronger existing mechanisms: Sidebar actually supplies
+zoom, focused folder counts, production Plus-menu and strip; its Reduced Motion
+skips the Plus fade. Command already waits Motion::fine for its overlay. Tab-menu
+fixture height is calculated and tested against natural production layout, not
+left at the old 240pt constant. The new audit does not erase those facts or claim
+native verification from them. The canonical packet was extended before catalog
+implementation. All 936 required page pairs and 26 old withheld rows are unchanged
+as JSON values; five additive rows bring the withheld count to 31, with no invented
+pages/sequences/moments. No product, fixture, renderer, vendor, asset, config,
+independent plan or baseline diff.
+
+Evidence: the new regression fails for the intended missing blocker before
+catalog changes (exit 101, `/tmp/bbr-visual-compositions-audit-red.log`). Thirteen
+catalog/validator and four read-only discovery contracts then pass (0.74s / 0.62s,
+`/tmp/bbr-visual-compositions-audit-focused.log`). Full `just visual-test` passes
+151 Python discovery tests (one additional integration skip, separately passed),
+unchanged upstream and **74 consumer tests** plus signal fixtures:
+`/tmp/bbr-visual-compositions-audit-visual-test.log`. Strict consumer all-target
+Clippy and fmt pass (`/tmp/bbr-visual-compositions-audit-clippy.log`), as do source-
+reference existence, structured prior-row preservation and whitespace checks.
+Roadmap verification is recorded in `/tmp/bbr-visual-compositions-audit-roadmap.log`.
+Timings are tooling measurements; audit/review elapsed time was not instrumented.
+No product-performance, native/VM run, actual PNG/HTML review, functional GUI gate,
+baseline/environment adoption or push is claimed.
+
+Final queue audit: source continuations now touch all registered IDs 0–52, but the
+supported-state contract is not complete. Local work remains on translating the
+explicit gaps into bounded effective-state/fixture contracts and checking the
+remaining consumer cutover requirements without enabling native execution. No
+other lane is authorized. Required VM/network and asset approvals, actual guest
+runtime, legitimate input/endpoints/framing, fresh pilot/full repeats, current
+functional Tart gates and final requirement-to-artifact audit remain open. This
+source checkpoint is neither migration completion nor a global blocked stop.
+
 ## Status vocabulary
 
 | Status | Meaning |

@@ -13356,6 +13356,56 @@
       "reason": "Every four- or five-row family uses a fixed 148pt card, whereas app placement derives height from actual row count, label size and padding. Production rows use label text plus py(sp2), not density.row; semantic-test targeting still uses density.row. Static selected values and hover/press recordings do not mutate selection or dismiss the menu. Current row/last-control/shadow framing and geometry parity require measurement, without recreating WebKit-owned menus or guessing pages."
     },
     {
+      "base": "gallery-44-sidebar-production-branches",
+      "label": "Sidebar: static rail omits current production branches",
+      "group": "Unproven coverage",
+      "sequence": null,
+      "moment": null,
+      "page": null,
+      "state": "withheld",
+      "reason": "All Sidebar fixture rows/tiles/members are closed=false with no image; status_visible=false, media=None, floating=false, grain=false and tint_fade=None omit actual production branches. Drag proxy/destination and targeted pin offer are absent. The 700pt wrapper and first 64 regular rows of the 500-tab model do not prove descendant visibility or scrolling; recorder events do not mutate the selected fixture. App-owned child placeholders remain narrow exclusions, not production surface evidence. Existing page pairs stay unchanged pending legitimate input/framing and current guest captures."
+    },
+    {
+      "base": "gallery-45-command-edit-row-gaps",
+      "label": "Command: edit, result and moment branches absent from static families",
+      "group": "Unproven coverage",
+      "sequence": null,
+      "moment": null,
+      "page": null,
+      "state": "withheld",
+      "reason": "Command fixtures always use EditState::end_of, line_sink=None, url=None, entrance=None and glide=None. They omit selection/marked input, URL-derived badges/details, Saved Page/History rows and actions-mode shortcut samples. Current app mapping supplies these component fields; Portal placement/activation remain app-owned. The existing story-45 Motion::fine endpoint wait is retained, not claimed absent or proven by source. The fixed 600x420 card in a 460pt wrapper still needs nested text/shadow and guest endpoint evidence; no fabricated callback or page/moment requirement."
+    },
+    {
+      "base": "gallery-46-space-empty-name-gap",
+      "label": "Space configuration: empty-name branch missing from four static drafts",
+      "group": "Unproven coverage",
+      "sequence": null,
+      "moment": null,
+      "page": null,
+      "state": "withheld",
+      "reason": "All four Space configuration models have nonempty names, omitting the production empty-name Space name placeholder and faint-ink branch. Actual curated theme/identity options, all three paper intensities and grain on/off do render; do not invent their absence. Callbacks update only the recorder, not the draft/selection, and focused booleans do not establish actual focus/input. The 320pt wrapping surface needs descendant/action framing evidence; app persistence, keyboard editing and outside dismissal remain app-owned."
+    },
+    {
+      "base": "gallery-47-tab-menu-state-gaps",
+      "label": "Tab / Favorite menu: current row and focus branches lack fixtures",
+      "group": "Unproven coverage",
+      "sequence": null,
+      "moment": null,
+      "page": null,
+      "state": "withheld",
+      "reason": "Five Tab / Favorite menu models are always focused, always say Pin Tab and never Remove Bookmark; Close Tab is always enabled. Current app rows support Unpin Tab, Remove Bookmark and closed-source disabled Close Tab, and the UI supports an unfocused edge. Separate Folder/Space submenu samples do not include both placement groups together. Preserve the existing natural-row-height regression; it does not prove submenu descendants, shadows, edge flipping, recorder-driven transitions or current guest framing. No fake controller/Portal or guessed capture pages."
+    },
+    {
+      "base": "gallery-48-page-menu-geometry",
+      "label": "Page menu: bookmark composition inherits fixed-height geometry gap",
+      "group": "Unproven coverage",
+      "sequence": null,
+      "moment": null,
+      "page": null,
+      "state": "withheld",
+      "reason": "Page-menu composition uses shared matrix indexes 0,3,4,5 and the same 148pt card in a 260x180 wrapper as story 43. It legitimately represents bookmark omitted/save/remove but inherits the mismatch against app row-count/label-size/padding geometry. Shared recorder callbacks do not apply bookmark changes or dismissal. Actual last-row/text/shadow framing needs measurement; neither a source arithmetic mismatch nor positive parent bounds prove clipping or full coverage."
+    },
+    {
       "base": "gallery-locked-session",
       "label": "Locked-session execution",
       "group": "Unproven coverage",

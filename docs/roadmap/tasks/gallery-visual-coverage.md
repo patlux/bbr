@@ -198,6 +198,22 @@ renderer, fixture, asset, baseline or VM changes. IDs 44–48 and actual guest/i
 framing evidence remain subsequent work. Source evidence lives in the
 [Downloads / Find / Error / Auth / Context-menu audit](../../visual/gallery-surfaces-audit.md).
 
+### Bounded Sidebar / Command / Space configuration / Menu composition audit
+
+Inspect the actual registry IDs 44–48: Sidebar, Command palette / overlay,
+Space configuration, combined Tab / Favorite menu, and Page menu. Check current
+production branches, static fixture defaults, recorder-only mutations, fixed or
+natural nested geometry, and endpoint handling. Preserve legitimate app-owned
+Portal/controller exclusions without treating missing component branches as
+inapplicable. Record concrete source gaps as additive withheld catalog rows,
+with no guessed pages/moments and every prior requirement/blocker unchanged.
+Verify portable catalog/discovery contracts and source references only; no
+product, renderer, fixture, asset, baseline, VM or network change. The
+[composition source audit](../../visual/gallery-compositions-audit.md) records
+five additive withheld gaps while retaining existing natural menu-height and
+Command endpoint mechanisms. Actual input, framing, two current complete captures
+and image/report review remain open.
+
 ## Iteration policy
 
 Begin with audited inventory and the smallest native capture path. Diagnose

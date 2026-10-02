@@ -8,7 +8,9 @@ continuation](gallery-foundations-audit.md) audits IDs 0–20 at `4a5fedf9`;
 the [Status / Tab Row / Library continuation](gallery-library-audit.md) audits
 IDs 21–30 at `7cc720cc`; the [Address / Sidebar components continuation](gallery-sidebar-components-audit.md)
 audits IDs 31–37 at `83109086`; the [Downloads / Find / Error / Auth / Context-menu
-continuation](gallery-surfaces-audit.md) audits IDs 38–43 at `f9b80c9c`.
+continuation](gallery-surfaces-audit.md) audits IDs 38–43 at `f9b80c9c`; the
+[Sidebar / Command / Space configuration / Menu continuation](gallery-compositions-audit.md)
+audits IDs 44–48 at `eca54f31`.
 No product or Gallery renderer changes accompany these inspections.
 
 ## Registry and historical-plan mismatch
@@ -107,9 +109,11 @@ ranges remain historical diagnostics until fresh current-source evidence.
 
 ## Next bounded steps and stop boundaries
 
-1. Audit remaining IDs 44–48 story/matrix families and effective-state
-   applicability from their source authorities. Preserve an explicit open item
-   where interaction, framing or production identity is not proven.
+1. Source continuations now inspect all registered IDs 0–52, but do not complete
+   the supported-state contract. Resolve the explicit withheld fixture/effective-
+   state and composition gaps through bounded authorized work; preserve open
+   interaction, framing and production-identity requirements. Do not activate
+   the historical plan as current coverage or infer pages from emitted output.
 2. Verify the now internally composed upstream-selection → guest-request →
    existing producer filtering → upstream-seal path with real approved guest
    tests. Selected reports remain explicitly partial and non-accepting; complete
