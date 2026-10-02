@@ -131,7 +131,7 @@ def _manifest(raw: bytes, expected_repo: Path, suite: str) -> dict:
     if not isinstance(value, dict) or set(value) != {"schema", "suite", "repo", "sources", "files"}:
         raise InstallError("invalid payload fields")
     if (type(value["schema"]) is not int or value["schema"] != 1 or value["suite"] != suite
-            or suite not in {"gallery", "browser"} or value["repo"] != str(expected_repo)):
+            or suite not in {"gallery", "browser", "gallery-semantic"} or value["repo"] != str(expected_repo)):
         raise InstallError("payload schema/suite/compiled repository differs")
     sources, files = value["sources"], value["files"]
     if (not isinstance(sources, dict) or not sources or not isinstance(files, list)
@@ -173,12 +173,16 @@ def _manifest(raw: bytes, expected_repo: Path, suite: str) -> dict:
                 role = "browser"
             elif re.fullmatch(r"target/release/deps/e2e_visual_shell_capture-[a-zA-Z0-9]+", relative):
                 role = "capture-test"
+            elif re.fullmatch(r"target/release/deps/bbr_gallery-[a-zA-Z0-9]+", relative):
+                role = "gallery-test"
             else:
                 raise InstallError("unknown executable role")
             if role in roles:
                 raise InstallError("duplicate executable role")
             roles.add(role)
-    required = {"gallery", "consumer"} if suite == "gallery" else {"browser", "capture-test", "consumer"}
+    required = {"gallery": {"gallery", "consumer"},
+                "browser": {"browser", "capture-test", "consumer"},
+                "gallery-semantic": {"gallery-test", "consumer"}}[suite]
     if mapped != sources or roles != required:
         raise InstallError("incomplete source/executable inventory")
     # APFS may be case-insensitive and normalization-insensitive. Reject aliases

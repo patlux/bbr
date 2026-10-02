@@ -1,13 +1,16 @@
 //! Source-allowlisted Tart transfer payload, not a capture seal or VM launcher.
 //! Guest destinations preserve compile-time paths; host mbx target links are
 //! resolved only for the exact Cargo-reported executables, never whole targets.
-use crate::{process, Suite};
+use crate::process;
+#[path = "payload_purpose.rs"]
+mod purpose;
 use anyhow::{ensure, Context, Result};
 use cargo_gpui_visual::{
     config::Config,
     inventory,
     store::{self, Hashes},
 };
+pub use purpose::Purpose;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use sha2::{Digest, Sha256};
@@ -139,7 +142,7 @@ pub fn stage(
     config: &Config,
     before_build: &Hashes,
     artifacts: &[Value],
-    suite: Suite,
+    purpose: impl Into<Purpose>,
     destination: &Path,
     cancelled: &AtomicBool,
 ) -> Result<Payload> {
@@ -157,14 +160,8 @@ pub fn stage(
         &source_snapshot(repo, config, cancelled)? == before_build,
         "source changed during build; rebuild before transfer"
     );
-    let required: &[(&str, bool)] = match suite {
-        Suite::Gallery => &[("bbr-gallery", false), ("bbr-visual", false)],
-        Suite::Browser => &[
-            ("bbr", false),
-            ("e2e_visual_shell_capture", true),
-            ("bbr-visual", false),
-        ],
-    };
+    let purpose = purpose.into();
+    let required = purpose.required();
     let mut files = Vec::new();
     for (name, digest) in before_build {
         relative(name)?;
@@ -183,7 +180,16 @@ pub fn stage(
         ));
     }
     for (index, (name, test)) in required.iter().enumerate() {
+        purpose.check_artifact(artifacts, name, *test)?;
         let guest = process::executable(artifacts, name, *test)?;
+        let role_path = guest
+            .strip_prefix(repo)
+            .context("artifact outside compiled repository")?;
+        let role = purpose::role(role_path.to_str().context("UTF-8 artifact role path")?)?;
+        ensure!(
+            purpose.roles()[index] == role,
+            "artifact role differs from payload purpose"
+        );
         let target_root = if *name == "bbr-visual" {
             repo.join("scripts/visual/target")
         } else {
@@ -273,7 +279,7 @@ pub fn stage(
     );
     let payload = Payload {
         schema: 1,
-        suite: suite.id().into(),
+        suite: purpose.id().into(),
         repo: repo.into(),
         sources: before_build.clone(),
         files: files.into_iter().map(|(_, entry)| entry).collect(),
@@ -317,7 +323,7 @@ fn verify_files(
         payload.schema == 1 && !payload.sources.is_empty(),
         "invalid payload schema/sources"
     );
-    let suite = Suite::parse(&payload.suite)?;
+    let purpose = Purpose::parse(&payload.suite)?;
     ensure!(
         payload.repo.is_absolute() && store::absolute(&payload.repo)? == payload.repo,
         "canonical absolute guest repo required"
@@ -361,20 +367,7 @@ fn verify_files(
                         || guest == "scripts/visual/target/release/bbr-visual"),
                 "invalid executable mapping"
             );
-            let role = match guest {
-                "target/release/bbr-gallery" => "gallery",
-                "scripts/visual/target/release/bbr-visual" => "consumer",
-                "target/release/bbr" => "browser",
-                path if path
-                    .strip_prefix("target/release/deps/e2e_visual_shell_capture-")
-                    .is_some_and(|suffix| {
-                        !suffix.is_empty() && suffix.bytes().all(|b| b.is_ascii_alphanumeric())
-                    }) =>
-                {
-                    "capture-test"
-                }
-                _ => anyhow::bail!("unknown executable role"),
-            };
+            let role = purpose::role(guest)?;
             ensure!(executables.insert(role), "duplicate executable role");
         }
         ensure!(
@@ -397,12 +390,7 @@ fn verify_files(
         sources == payload.sources,
         "payload does not contain exactly sealed source inputs"
     );
-    let required: BTreeSet<_> = match suite {
-        Suite::Gallery => ["gallery", "consumer"].into_iter().collect(),
-        Suite::Browser => ["browser", "capture-test", "consumer"]
-            .into_iter()
-            .collect(),
-    };
+    let required: BTreeSet<_> = purpose.roles().iter().copied().collect();
     ensure!(executables == required, "payload executable suite differs");
     let mut actual = BTreeSet::new();
     let mut queue = vec![root.to_path_buf()];

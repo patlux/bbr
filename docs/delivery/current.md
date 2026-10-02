@@ -1490,6 +1490,176 @@ actual guest runtime, legitimate input/paint/framing, fresh repeated captures,
 visual review and stable Tart functional gates remain open. Source edits require
 fresh future preparation/captures. No goal completion or global pause is justified.
 
+### Checkbox target-observation candidate — guest verification pending
+
+Base remains `main@635bb3652886a7176b4b8570141f8d87843641f2`. This writer's
+uncommitted candidate is confined to Gallery capture support, its tests, the
+feature-enabled Gallery recipe and this documentation. At restoration, HEAD and
+ownership match; no index lock or matching visual/Tart/build process was observed.
+ROADMAP and all 2,226 lines of the preceding delivery document were read in bounded
+chunks. Ordinary app/build processes and isolated worktrees remain untouched.
+No workflow, subagent, new lane, VM/network/asset operation or publication.
+
+The pilot packet now defines the bounded observer before its implementation.
+`capture_target::Target` records exactly one current-draw sole-child rectangle
+and active rectangular content-mask intersection. Missing/stale/unarmed/duplicate,
+multiple/empty-child, nonfinite/nonpositive, clipped or out-of-frame observations
+fail without clamping; a later good callback cannot repair that draw. Page reset
+preserves/increments the generation so an old callback cannot become current.
+The existing Checkbox container gains only a capture-feature prepaint observer;
+its production child, layout, input callbacks, recorder and assets are unchanged.
+The existing runner arms after draining pending work and validates each explicit
+page draw, requiring absence on other pages and stories. No endpoint guard is
+lifted, no event is dispatched, and no output schema/catalog/baseline changes.
+
+The ignored feature scenario compiles for all twelve Checkbox appearance cases.
+It checks repeated draw tokens, full/control-only pages, equality to the existing
+semantic wrapper, pagination/switch-away absence and unchanged semantic snapshot.
+It is **not executed**. A new `e2e-gallery-capture` recipe declares the feature-on,
+serial ignored-suite plan; a host-only parser test proves the existing VM planner
+selects those exact args. This does not validate or authorize that runner's boot:
+its default preparation realizes guest Nix dependencies and does not use the
+visual clone-hardening policy. Do not run it unchanged under this goal. A bounded
+no-install, hardened guest execution path remains to be wired/verified before
+these scenarios can run; no generic-runner rewrite or runtime fallback is inferred.
+
+Evidence:
+- Missing implementation red: `/tmp/bbr-visual-target-red.log` (exit 101, absent
+  Target/PageState field). Guest recipe regression also fails for the intended
+  absent plan before the recipe: `/tmp/bbr-visual-target-recipe-red.log`.
+- Feature-on tests **164 passed / 49 ignored**, including four pure target tests
+  and the plan-parser contract; `/tmp/bbr-visual-target-gallery-final.log`, 0.44s.
+  Feature-off tests **153 passed / 48 ignored**;
+  `/tmp/bbr-visual-target-normal-tests.log`, 0.48s. None of the ignored GUI
+  scenarios ran on the host or in a guest.
+- Strict Gallery all-target Clippy passes with and without the feature:
+  `/tmp/bbr-visual-target-feature-clippy-final.log` and
+  `/tmp/bbr-visual-target-normal-clippy-final.log`. Workspace fmt/whitespace pass;
+  existing `block v0.1.6` future-incompatibility warning remains unsuppressed.
+- `/tmp/bbr-visual-target-visual-test.log`: full `just visual-test` passes 152
+  Python discoveries (151 pass / one integration skip subsequently run and passed),
+  unchanged upstream and **90 consumer tests** plus signal fixtures. Consumer
+  endpoint execution/review refusal remains exercised and unchanged.
+- `/tmp/bbr-visual-target-verify.log`: full non-GUI `just verify` order passes,
+  including 49 shared script tests (15.141s). The inspected temporary recipe
+  `/tmp/bbr-visual-target-verify-8qpnwopf.just` substitutes only compiler-invoking
+  Cargo calls with mbx; `/tmp/bbr-visual-target-verify-plan.log` records the plan.
+  No GUI recipe, assertion, deadline or target-directory override was introduced.
+
+Self-review checked callback scope against pinned GPUI Div prepaint/content-mask
+and window-layout APIs, fresh-token capture after notify/refresh, and screenshot
+readback of the existing rendered scene (not an implicit draw). Review expanded
+absence checking to all stories and added the explicit feature recipe, so normal
+Gallery tests cannot silently stand in for the new scenario. Bounds are not the
+inner Checkbox hitbox, painted glyph/shadow extent, ancestor identities or input
+proof. No synthetic fixture is advertised as callback/runtime/pixel evidence.
+
+The candidate stays **uncommitted**, as required by the pilot packet, until its
+affected guest gate passes. No PNG/HTML review, actual guest runtime/cleanup,
+functional GUI aggregate, input/two-clock readiness, baseline adoption or product
+performance is proven. Source changes require fresh future preparation/captures;
+all GPUI/vendor/product-Cargo/baseline/config/catalog inputs remain unchanged.
+Tooling timings above are measured; implementation/self-review wall time was not.
+
+Scheduling audit: only this local pilot writer is authorized. The next defensible
+local prerequisite is a narrowly bounded guest-semantic execution plan using the
+existing hardened/no-install transport rather than layering more unverified input
+wiring on this observer. Actual boot still needs Patrick's acknowledgement of
+private NAT, dynamic guest TCP 22 from host/allowed NAT peers, run-specific
+key-only SSH, no public/bridge/forwarded listeners, and listener/auth/access plus
+clone/key cleanup audits. The legitimate Check SVG asset-source change separately
+needs permission; report-specific baseline adoption remains later. Other product
+lanes and post-migration compositions/sequences remain outside current activation.
+Goal completion and global pause are not claimed; one concrete local execution
+prerequisite remains, while the affected runtime path is blocked by approval.
+
+### Gallery semantic payload preparation checkpoint
+
+Continuation base remains `main@635bb3652886a7176b4b8570141f8d87843641f2`;
+the observer candidate above is still owned locally and uncommitted. ROADMAP and
+all 2,308 delivery lines were read in bounded chunks. No staged changes/index lock
+or observed capture-lock holder; an unrelated mbx process belonged to another
+project and was left untouched. No subagent, workflow, foreign worktree, asset,
+VM/network operation or publication was authorized or performed.
+
+The pilot packet was extended before this bounded prerequisite. The existing
+host-only prepare path accepts `gallery-semantic`, separate from the two image
+suites. It uses fixed release `mbx test --no-run` with `visual-capture` and the
+Gallery binary selector, verifies Cargo's test/bin/features metadata, then stages
+exactly that hashed test executable plus the standalone consumer. Source snapshots,
+compiled paths, copy/hash/mode limits, host evidence and offline runtime verification
+reuse existing authorities. The Rust/Python installers agree on the distinct
+`gallery-test` role; wrong/missing/duplicate/feature-off artifacts and capture-role
+substitution fail. No harness execution, including listing, is part of preparation.
+
+Semantic payloads explicitly fail bootstrap and guest composition before runtime
+probes, installation or producer calls. Existing `Suite` parsing, capture guards,
+receipts and endpoint refusal remain unchanged. This increment does not pretend
+that source/build preparation implements the semantic guest action or a successful
+test result. The subsequent fixed-action/result-validation bridge must reuse the
+existing source-frozen supervised transport and cleanup, not the generic E2E runner.
+
+Evidence:
+- Negative-first missing-purpose/build-command regressions:
+  `/tmp/bbr-visual-semantic-payload-red.log` and
+  `/tmp/bbr-visual-semantic-build-red.log` (exit 101). Explicit unwired-route
+  regressions fail before guards in `/tmp/bbr-visual-semantic-bootstrap-red.log`
+  and `/tmp/bbr-visual-semantic-guest-red.log`.
+- Full `just visual-test`: `/tmp/bbr-visual-semantic-visual-test.log`, **155 Python
+  discoveries** (154 pass / one integration skip, separately passed), unchanged
+  upstream and **92 consumer tests** plus signal fixtures. Python discovery 6.315s,
+  consumer unit group 6.31s, cross-language transport chain 6.19s measured.
+  The complete gate passes again after self-review in
+  `/tmp/bbr-visual-semantic-visual-test-final.log`. Consumer/workspace fmt,
+  whitespace, protected-input diff and roadmap pass; roadmap log:
+  `/tmp/bbr-visual-semantic-roadmap.log`.
+- Strict consumer all-target Clippy passes after moving the test module below
+  production items (no lint suppression):
+  `/tmp/bbr-visual-semantic-clippy-final.log`. Post-review focused build contract
+  and nine integration tests pass in `/tmp/bbr-visual-semantic-focused-final.log`
+  and `/tmp/bbr-visual-semantic-integrations-final.log`; the first command's name
+  filter selected only the unit contract, so the integrations were rerun unfiltered.
+- Actual host-only `just visual-prepare gallery-semantic` succeeds at
+  `/private/tmp/bbr-visual-semantic-prepare.br7ZPY`: **1,502 sources / 1,504 files /
+  41,201,765 bytes**; manifest SHA-256
+  `4fa7db98899ebeb381805c4348a950067dd6c8c5cef295df74dee15336e008f3`.
+  Source inventory includes all four currently untracked implementation files.
+  Gallery test SHA-256
+  `3c0ef7ad9813e3128eeac9f473d530e792aaf3783d9f4b85d100fe3e8ed935c8`;
+  consumer `192cbdd826eef110037e4ebadd7038fc0731ccf9ca9d9f5d361e5d32e8876a1f`.
+  Exact compiled paths/host observations are in that directory's `host-build.json`;
+  `prepare.log` records release Gallery build 52.64s and consumer 3.84s. Independent
+  Python read-only inspection rechecks all payload bytes against those host hashes;
+  actual bootstrap generation refuses the semantic purpose. No installation or
+  executable launch follows. Documentation edits afterward make this preparation
+  historical diagnostics, not current guest inputs or any capture seal.
+- Self-review also guarded direct bootstrap-tail entry before parent creation;
+  `/tmp/bbr-visual-semantic-tail-red.log` retains the regression. Full contracts
+  pass afterward in `/tmp/bbr-visual-semantic-reviewed-visual-test.log`.
+  A fresh host-only preparation at `/private/tmp/bbr-visual-semantic-final.xCwtYP`
+  passes with the same two executable hashes, 1,502 sources / 1,504 files /
+  41,202,603 bytes and manifest
+  `059057fee9798675f7292b6b627e7245c40d322e1a911de216a98ea4311753cf`.
+  Its `inspection.json` records independent byte/hash checks and bootstrap refusal;
+  cached build times are 1.11s Gallery / 0.08s consumer. The following ledger update
+  again requires fresh source staging for future guest execution, not resealing.
+
+Self-review checked disjoint purpose/role mapping, exact pre-copy artifact roles,
+feature/test/bin metadata, same bounded upstream build executor, both interpreter
+validators and source-inventory inclusion. Existing `block v0.1.6` warning remains
+unsuppressed. No product Cargo/vendor/GPUI/baseline/config/catalog changes. Earlier
+Gallery/verify evidence belongs to the observer checkpoint; no new functional GUI
+or product-performance claim. Measured times are tooling only; implementation and
+review elapsed time were not instrumented.
+
+Scheduling audit: only this local visual writer is authorized. Fixed semantic
+guest execution, exact successful-suite evidence and returned-result validation
+remain concrete local work; no new input wiring or other product lane is started.
+Actual callback validation still requires the specific network approval and an
+already available guest runtime, with no realization/repair fallback. Asset and
+baseline approvals remain separate. The observer stays uncommitted pending its
+affected guest gate. No completion or global blocked-stop claim is made.
+
 ## Status vocabulary
 
 | Status | Meaning |

@@ -57,6 +57,25 @@ class InstallationContracts(unittest.TestCase):
         with self.assertRaisesRegex(vm_install.InstallError, "fresh compiled repo"):
             self.install()
 
+    def test_semantic_roles_are_disjoint_from_capture_roles(self):
+        value = copy.deepcopy(self.value)
+        value["suite"] = "gallery-semantic"
+        value["files"][1]["guest"] = str(self.repo / "target/release/deps/bbr_gallery-fixture")
+        parsed = vm_install._manifest(json.dumps(value).encode(), self.repo, "gallery-semantic")
+        self.assertEqual(parsed, value)
+        for mutation in ("producer", "browser-test", "malformed-path", "capture-purpose", "duplicate-role"):
+            altered = copy.deepcopy(value)
+            if mutation == "producer": altered["files"][1]["guest"] = str(self.repo / "target/release/bbr-gallery")
+            if mutation == "browser-test": altered["files"][1]["guest"] = str(self.repo / "target/release/deps/e2e_visual_shell_capture-fixture")
+            if mutation == "malformed-path": altered["files"][1]["guest"] += ".d"
+            if mutation == "capture-purpose": altered["suite"] = "gallery"
+            if mutation == "duplicate-role":
+                altered["files"].append({**altered["files"][1], "payload": "executables/2",
+                                         "guest": str(self.repo / "target/release/deps/bbr_gallery-other")})
+            with self.subTest(mutation=mutation), self.assertRaises(vm_install.InstallError):
+                vm_install._manifest(json.dumps(altered).encode(), self.repo, altered["suite"])
+        self.assertFalse(self.repo.exists())
+
     def test_malformed_manifest_mappings_fail_before_any_installation(self):
         for mutation in ["schema", "suite", "repo", "source", "duplicate", "guest", "role", "namespace",
                          "traversal", "sensitive", "size", "executable", "unknown", "digest", "case-alias", "parent-file"]:

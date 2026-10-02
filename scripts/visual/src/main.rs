@@ -43,11 +43,11 @@ fn run() -> Result<u8> {
         "prepare" => {
             ensure!(
                 args.len() == 3,
-                "prepare requires suite and fresh absolute payload directory"
+                "prepare requires payload purpose and fresh absolute payload directory"
             );
             let host = bbr_visual::prepare::prepare(
                 &repo,
-                Suite::parse(&args[1])?,
+                bbr_visual::payload::Purpose::parse(&args[1])?,
                 &PathBuf::from(&args[2]),
                 &cancelled,
             )?;

@@ -44,6 +44,10 @@ def plan(share: Path, digest: str, repo: Path, suite: str,
     """Pure/read-only: render shell only for the actual compiled checkout path."""
     if repo != REPO:
         raise BootstrapError("bootstrap compiled repository differs")
+    if suite == "gallery-semantic":
+        raise BootstrapError("semantic guest execution is not wired")
+    if suite not in {"gallery", "browser"}:
+        raise BootstrapError("unsupported bootstrap suite")
     vm_selection.decode(selected, selected_sha256, digest, suite)
     payload = vm_install.inspect(share, digest, repo, suite)
     lock_raw, _ = _source(share, payload, "guest-runtime.json")

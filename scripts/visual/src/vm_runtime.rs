@@ -1,7 +1,7 @@
 //! Host-only runtime preflight. Python owns Nix/Mach-O observation, while the
 //! Rust caller binds it to the original staged sources/artifacts and cancellation.
 //! This is not a rendering environment, VM launcher or capture seal.
-use crate::{payload, Suite};
+use crate::payload;
 use anyhow::{ensure, Context, Result};
 use cargo_gpui_visual::{process, store};
 use serde::{Deserialize, Serialize};
@@ -107,14 +107,15 @@ pub fn validate(raw: &[u8], share: &Path, staged: &payload::Payload) -> Result<E
 
 pub fn verify(
     repo: &Path,
-    suite: Suite,
+    purpose: impl Into<payload::Purpose>,
     share: &Path,
     staged: &payload::Payload,
     cancelled: &AtomicBool,
 ) -> Result<Evidence> {
+    let purpose = purpose.into();
     payload::verify(share, staged, cancelled)?;
     ensure!(
-        staged.repo == repo && staged.suite == suite.id(),
+        staged.repo == repo && staged.suite == purpose.id(),
         "runtime payload origin differs"
     );
     ensure!(
@@ -140,7 +141,7 @@ print(json.dumps(vm_runtime.verify(Path(sys.argv[2]), sys.argv[3], Path(sys.argv
             .arg(share)
             .arg(&digest)
             .arg(repo)
-            .arg(suite.id()),
+            .arg(purpose.id()),
         &process::Limits {
             timeout: Duration::from_secs(240),
             max_output_bytes: 65536,

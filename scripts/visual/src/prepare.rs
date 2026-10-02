@@ -41,7 +41,7 @@ pub fn host_build(probe: &Value, payload: &payload::Payload) -> Result<HostBuild
 
 pub fn prepare(
     repo: &Path,
-    suite: Suite,
+    purpose: impl Into<payload::Purpose>,
     destination: &Path,
     cancelled: &AtomicBool,
 ) -> Result<HostBuild> {
@@ -56,6 +56,8 @@ pub fn prepare(
         "fresh payload below an existing directory required"
     );
     provenance::verify(repo)?;
+    let purpose = purpose.into();
+    let suite = purpose.source_suite();
     let config = Config::load(&repo.join(suite.config()))?;
     let before = payload::source_snapshot(repo, &config, cancelled)?;
     let host_before = environment::probe(repo, suite, cancelled)?;
@@ -72,7 +74,11 @@ pub fn prepare(
             "e2e_visual_shell_capture",
         ],
     };
-    let mut artifacts = process::build(repo, arguments, cancelled)?;
+    let mut artifacts = if purpose == payload::Purpose::GallerySemantic {
+        process::build_gallery_semantic(repo, cancelled)?
+    } else {
+        process::build(repo, arguments, cancelled)?
+    };
     artifacts.extend(process::build(
         repo,
         &[
@@ -92,12 +98,12 @@ pub fn prepare(
         &config,
         &before,
         &artifacts,
-        suite,
+        purpose,
         destination,
         cancelled,
     )?;
     let host = host_build(&host_before, &staged)?;
-    vm_runtime::verify(repo, suite, destination, &staged, cancelled)?;
+    vm_runtime::verify(repo, purpose, destination, &staged, cancelled)?;
     ensure!(
         payload::source_snapshot(repo, &config, cancelled)? == before,
         "source changed during runtime preflight; rebuild before transfer"

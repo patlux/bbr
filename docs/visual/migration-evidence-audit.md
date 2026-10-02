@@ -89,9 +89,18 @@ these current migration gates. Later source changes require new capture seals.
    the required input journey, two-clock endpoint boundary and default Sidebar
    nested/paint observations. The source-bound endpoint identity/rejection contract
    is implemented without activating a real plan/catalog or native execution.
-   Next local work is the smallest capture-only target/input/readiness seam and
-   its portable negative contracts; real input/paint still needs the approved guest.
-   Keep the 936 historical
+   A bounded capture-only target observer is now an uncommitted candidate with
+   portable rejection tests and a compiled, ignored guest scenario; its current
+   evidence and exact files remain in Current delivery. Pure tests do not verify
+   the callback. Host-only `prepare gallery-semantic` now reuses source-bound
+   staging/runtime checks for an exact feature-enabled release test harness and
+   standalone consumer; it executes neither. Its distinct payload purpose is
+   rejected by capture/bootstrap until fixed guest execution/result validation is
+   wired. The next local prerequisite is that bounded action through the existing
+   hardened/no-install transport: the generic E2E runner attempts dependency
+   realization and must not run unchanged under this goal. Real callback/input/paint
+   still needs the approved guest, and further input
+   wiring must not conceal that missing gate. Keep the 936 historical
    pairs and 31 blockers until replacement evidence is actually proven. No product
    renderer change or guessed page count is authorized by this audit.
 2. Execution boundary: obtain approval for the disposable clone's private NAT,

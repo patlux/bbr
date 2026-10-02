@@ -1,5 +1,8 @@
 //! Transfer contracts use tiny executable fixtures, never a VM or native renderer.
-use bbr_visual::{payload, Suite};
+use bbr_visual::{
+    payload::{self, Purpose},
+    Suite,
+};
 use cargo_gpui_visual::{config::Config, store};
 use serde_json::{json, Value};
 use std::{
@@ -43,6 +46,7 @@ impl Fixture {
         let mut artifacts = Vec::new();
         for (name, test) in [
             ("bbr-gallery", false),
+            ("bbr-gallery", true),
             ("bbr-visual", false),
             ("bbr", false),
             ("e2e_visual_shell_capture", true),
@@ -56,13 +60,13 @@ impl Fixture {
                 repo.join("target")
             };
             let relative = if test {
-                format!("release/deps/{name}-fixture")
+                format!("release/deps/{}-fixture", name.replace('-', "_"))
             } else {
                 format!("release/{name}")
             };
             fs::write(target.join(&relative), "#!/bin/sh\nexit 98\n").unwrap();
             fs::set_permissions(target.join(&relative), fs::Permissions::from_mode(0o700)).unwrap();
-            artifacts.push(json!({"reason":"compiler-artifact","target":{"name":name},"profile":{"test":test},"executable":artifact_target.join(relative)}));
+            artifacts.push(json!({"reason":"compiler-artifact","target":{"name":name,"kind":["bin"]},"profile":{"test":test},"features":["visual-capture"],"executable":artifact_target.join(relative)}));
         }
         let config = Config::from_toml(
             r#"schema=1
@@ -128,6 +132,62 @@ fn copies_only_sealed_sources_and_exact_suite_artifacts_at_compiled_paths() {
             &AtomicBool::new(false)
         )
         .is_err());
+    }
+}
+
+#[test]
+fn semantic_payload_requires_exact_feature_enabled_test_artifact() {
+    for mutation in [
+        "valid",
+        "missing",
+        "duplicate",
+        "feature-off",
+        "wrong-kind",
+        "normal-path",
+        "missing-consumer",
+    ] {
+        let mut f = Fixture::new();
+        match mutation {
+            "missing" => {
+                f.artifacts.remove(1);
+            }
+            "duplicate" => f.artifacts.push(f.artifacts[1].clone()),
+            "feature-off" => f.artifacts[1]["features"] = json!([]),
+            "wrong-kind" => f.artifacts[1]["target"]["kind"] = json!(["lib"]),
+            "normal-path" => f.artifacts[1]["executable"] = f.artifacts[0]["executable"].clone(),
+            "missing-consumer" => {
+                f.artifacts.remove(2);
+            }
+            _ => {}
+        }
+        let destination = f.root.join("semantic");
+        let result = payload::stage(
+            &f.repo,
+            &f.config,
+            &f.sources(),
+            &f.artifacts,
+            Purpose::GallerySemantic,
+            &destination,
+            &AtomicBool::new(false),
+        );
+        if mutation == "valid" {
+            let manifest = result.unwrap();
+            assert_eq!(manifest.suite, "gallery-semantic");
+            let executables: Vec<_> = manifest.files.iter().filter(|e| e.executable).collect();
+            assert_eq!(executables.len(), 2);
+            assert_eq!(
+                executables[0].guest,
+                f.repo.join("target/release/deps/bbr_gallery-fixture")
+            );
+            payload::verify(&destination, &manifest, &AtomicBool::new(false)).unwrap();
+            let mut forged = manifest.clone();
+            forged.suite = "gallery".into();
+            store::write_json(&destination.join("payload.json"), &forged).unwrap();
+            assert!(payload::verify(&destination, &forged, &AtomicBool::new(false)).is_err());
+        } else {
+            assert!(result.is_err(), "{mutation}");
+            assert!(!destination.exists(), "{mutation}");
+        }
     }
 }
 

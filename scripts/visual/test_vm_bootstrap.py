@@ -83,6 +83,24 @@ class BootstrapContracts(unittest.TestCase):
         result = subprocess.run(["/bin/zsh", "-n"], input=script, text=True, capture_output=True, timeout=5)
         self.assertEqual(result.returncode, 0, result.stderr)
 
+    def test_semantic_payload_cannot_fall_through_to_unwired_capture(self):
+        with patch.object(vm_bootstrap, "REPO", self.fixture.repo), \
+                patch.object(vm_bootstrap.vm_install, "inspect") as inspect:
+            with self.assertRaisesRegex(vm_bootstrap.BootstrapError, "semantic guest execution is not wired"):
+                vm_bootstrap.plan(self.fixture.share, self.digest, self.fixture.repo, "gallery-semantic")
+            inspect.assert_not_called()
+        with patch.object(vm_bootstrap_guest, "identity") as identity, \
+                patch.object(vm_bootstrap_guest.vm_install, "inspect") as inspect, \
+                patch.object(vm_bootstrap_guest, "prepare_parent") as parent:
+            with self.assertRaisesRegex(Exception, "semantic guest execution is not wired"):
+                vm_bootstrap_guest.run(self.fixture.share, self.digest, self.fixture.repo,
+                                       "gallery-semantic", self.fixture.work)
+            identity.assert_not_called()
+            inspect.assert_not_called()
+            parent.assert_not_called()
+        self.assertFalse(self.fixture.repo.exists())
+        self.assertFalse(self.fixture.work.exists())
+
     def test_heredoc_collision_is_rejected_not_interpreted_as_shell(self):
         with patch.object(vm_bootstrap, "DELIMITER", "set -euo pipefail"), self.assertRaisesRegex(vm_bootstrap.BootstrapError, "delimiter"):
             self.plan()

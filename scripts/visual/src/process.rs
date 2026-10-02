@@ -24,7 +24,7 @@ pub fn output(command: &mut Command, cancelled: &AtomicBool) -> Result<String> {
 }
 
 pub fn build(repo: &Path, arguments: &[&str], cancelled: &AtomicBool) -> Result<Vec<Value>> {
-    let result = process::run(
+    build_output(
         Command::new("mbx")
             .current_dir(repo)
             .args([
@@ -37,6 +37,38 @@ pub fn build(repo: &Path, arguments: &[&str], cancelled: &AtomicBool) -> Result<
                 "--message-format=json-render-diagnostics",
             ])
             .args(arguments),
+        cancelled,
+    )
+}
+
+fn gallery_semantic_command(repo: &Path) -> Command {
+    let mut command = Command::new("mbx");
+    command.current_dir(repo).args([
+        "test",
+        "--no-run",
+        "--locked",
+        "--offline",
+        "--release",
+        "--config",
+        "profile.release.build-override.strip=false",
+        "--message-format=json-render-diagnostics",
+        "-p",
+        "bbr-gallery",
+        "--features",
+        "visual-capture",
+        "--bin",
+        "bbr-gallery",
+    ]);
+    command
+}
+
+pub fn build_gallery_semantic(repo: &Path, cancelled: &AtomicBool) -> Result<Vec<Value>> {
+    build_output(&mut gallery_semantic_command(repo), cancelled)
+}
+
+fn build_output(command: &mut Command, cancelled: &AtomicBool) -> Result<Vec<Value>> {
+    let result = process::run(
+        command,
         &Limits {
             timeout: Duration::from_secs(900),
             max_output_bytes: 64 * 1024 * 1024,
@@ -70,4 +102,37 @@ pub fn executable(artifacts: &[Value], name: &str, test: bool) -> Result<PathBuf
         path.display()
     );
     Ok(path)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn semantic_build_is_feature_enabled_release_no_run_only() {
+        let command = gallery_semantic_command(Path::new("/compiled/repo"));
+        assert_eq!(command.get_program(), "mbx");
+        assert_eq!(command.get_current_dir(), Some(Path::new("/compiled/repo")));
+        let args: Vec<_> = command.get_args().map(|a| a.to_str().unwrap()).collect();
+        assert_eq!(
+            args,
+            [
+                "test",
+                "--no-run",
+                "--locked",
+                "--offline",
+                "--release",
+                "--config",
+                "profile.release.build-override.strip=false",
+                "--message-format=json-render-diagnostics",
+                "-p",
+                "bbr-gallery",
+                "--features",
+                "visual-capture",
+                "--bin",
+                "bbr-gallery"
+            ]
+        );
+        assert_eq!(command.get_envs().count(), 0);
+    }
 }

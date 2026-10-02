@@ -75,6 +75,10 @@ def _check_observation(value: dict) -> None:
 
 def run(share: Path, payload_hash: str, repo: Path, suite: str, work: Path,
         selected: str | None = None, selected_sha256: str | None = None) -> dict:
+    if suite == "gallery-semantic":
+        raise GuestError("semantic guest execution is not wired")
+    if suite not in {"gallery", "browser"}:
+        raise GuestError("unsupported guest suite")
     # Observe before writes/installation. A fabricated environment variable is
     # insufficient; the observer probes the guest console, hardware and fonts.
     before = vm_observe.observe()

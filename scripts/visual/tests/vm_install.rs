@@ -1,6 +1,9 @@
 //! Cross-language transport using actual Rust staging and synthetic executables.
 //! The Python installer runs only on fresh temp paths; no Tart/native launch.
-use bbr_visual::{payload, Suite};
+use bbr_visual::{
+    payload::{self, Purpose},
+    Suite,
+};
 use cargo_gpui_visual::{config::Config, process, store};
 use serde_json::json;
 use std::{
@@ -10,7 +13,11 @@ use std::{
 #[test]
 fn rust_staged_suites_install_byte_exactly_at_compiled_paths() {
     let cancelled = AtomicBool::new(false);
-    for suite in [Suite::Gallery, Suite::Browser] {
+    for purpose in [
+        Purpose::Capture(Suite::Gallery),
+        Purpose::Capture(Suite::Browser),
+        Purpose::GallerySemantic,
+    ] {
         let temp = tempfile::tempdir().unwrap();
         let root = temp.path().canonicalize().unwrap();
         let repo = root.join("compiled-repo");
@@ -26,12 +33,13 @@ fn rust_staged_suites_install_byte_exactly_at_compiled_paths() {
         let mut artifacts = Vec::new();
         for (name, test) in [
             ("bbr-gallery", false),
+            ("bbr-gallery", true),
             ("bbr-visual", false),
             ("bbr", false),
             ("e2e_visual_shell_capture", true),
         ] {
             let path = repo.join(if test {
-                format!("target/release/deps/{name}-fixture")
+                format!("target/release/deps/{}-fixture", name.replace('-', "_"))
             } else if name == "bbr-visual" {
                 "scripts/visual/target/release/bbr-visual".into()
             } else {
@@ -41,7 +49,7 @@ fn rust_staged_suites_install_byte_exactly_at_compiled_paths() {
             fs::write(&path, "synthetic artifact, must never execute\n").unwrap();
             fs::set_permissions(&path, fs::Permissions::from_mode(0o500)).unwrap();
             artifacts
-                .push(json!({"target":{"name":name},"profile":{"test":test},"executable":path}));
+                .push(json!({"target":{"name":name,"kind":["bin"]},"profile":{"test":test},"features":["visual-capture"],"executable":path}));
         }
         let config = Config::from_toml(
             r#"schema=1
@@ -58,7 +66,7 @@ suffixes=[".rs"]
         let sources = payload::source_snapshot(&repo, &config, &cancelled).unwrap();
         let share = root.join("share");
         let payload = payload::stage(
-            &repo, &config, &sources, &artifacts, suite, &share, &cancelled,
+            &repo, &config, &sources, &artifacts, purpose, &share, &cancelled,
         )
         .unwrap();
         payload::verify(&share, &payload, &cancelled).unwrap();
@@ -86,7 +94,7 @@ print(json.dumps(installed))
                 .arg(&share)
                 .arg(store::digest(&share.join("payload.json")).unwrap())
                 .arg(&repo)
-                .arg(suite.id()),
+                .arg(purpose.id()),
             &process::Limits::default(),
             &cancelled,
             true,

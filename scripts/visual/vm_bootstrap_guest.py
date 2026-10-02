@@ -44,6 +44,10 @@ def prepare_parent(repo):
 
 
 def run(share, digest, repo, suite, work, selected=None, selected_sha256=None):
+    if suite == "gallery-semantic":
+        raise vm_guest.GuestError("semantic guest execution is not wired")
+    if suite not in {"gallery", "browser"}:
+        raise vm_guest.GuestError("unsupported bootstrap suite")
     identity()  # Must precede source probes, sudo and writes.
     if repo != REPO:
         raise vm_guest.GuestError("bootstrap compiled repository differs")

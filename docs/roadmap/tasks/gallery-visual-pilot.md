@@ -196,6 +196,63 @@ selections from a schema-2 plan may still use the unchanged
 static path. Do not activate a real schema-2 plan/catalog or modify production
 Gallery code, assets, upstream or baselines in this portable increment.
 
+### Bounded Checkbox target-observation increment
+
+Before dispatching input, add a feature-gated per-draw Checkbox target observer
+on the existing hug-child container. Observe its sole production child and the
+active GPUI content-mask intersection, not the page wrapper or a hard-coded
+rectangle. A monotonically increasing draw token invalidates previous/missing
+observations; callbacks retain their own token, and late callbacks, repeated
+observations, multiple children, nonfinite/nonpositive bounds and clipping fail.
+Page resets also invalidate old tokens. Existing static Checkbox capture checks
+this target only on the page containing its control child, and requires absence
+on other pages and stories. The observer changes no layout, input listeners,
+state or assets.
+
+Portable tests prove recorder/token/geometry rejection only. Add a feature-gated,
+ignored Gallery scenario comparing the observed child with the existing semantic
+control bounds in Light/Dark, repeated draws, a control-only page, absence when
+paginated out and after switching stories, and unchanged semantic state. Add a
+bounded feature-enabled Gallery E2E recipe so the guest plan cannot silently omit
+this scenario; the normal Gallery recipe has the feature disabled. Compile and
+inspect the plan on the host; execute it only in the approved Tart guest, with
+no runtime download/repair fallback. The ordinary E2E runner's dependency
+realization and default clone policy are not this hardened/no-install route;
+recipe discoverability alone does not authorize execution. Do not infer painted
+extent, inner Checkbox hitbox, pointer delivery, ancestor identities or shadow
+framing from this rectangular content-mask intersection. Do not lift the consumer's
+endpoint guard. Input dispatch, two-clock readiness and semantic artifact validation
+remain subsequent work. Preserve this candidate uncommitted if its affected guest
+E2E gate cannot yet run; pure tests alone do not verify the GPUI callback wiring.
+
+### Bounded semantic-gate preparation increment
+
+Reuse the existing host build, source snapshot, payload staging and offline runtime
+verification to prepare the feature-enabled Gallery test harness, without running
+it. Give this payload the explicit `gallery-semantic` purpose, distinct from the
+`gallery` image suite. Require exactly the Cargo-reported release test executable
+for the `bbr-gallery` binary with `visual-capture`, plus the standalone consumer;
+never substitute the normal Gallery producer, a feature-off harness or a guessed
+artifact glob. Preserve compiled paths and all existing byte/mode/source checks.
+The fixed host build is `mbx test --no-run --locked --offline --release` with the
+existing release build override, package/bin selectors and `visual-capture`.
+
+Add negative-first contracts for wrong/missing/duplicate test artifacts, feature
+identity, exact Rust-to-Python payload roles and refusal at capture/bootstrap
+boundaries. A host-only prepare command may build/stage/verify prerequisites but
+must not execute the harness (even `--list`), boot Tart, install a runtime or emit
+capture/acceptance evidence. Keep this bounded increment separate from subsequent
+fixed guest action/result validation: until that route is tested, semantic payloads
+must explicitly fail bootstrap/capture rather than fall through to image capture.
+Use the existing source-frozen bootstrap, supervision, cleanup and return transport
+for that subsequent route; no second VM pipeline or generic-runner rewrite.
+
+This prerequisite is complete only after focused portable tests, strict consumer
+Clippy/fmt, visual contracts and a real host-only preparation pass. Actual GPUI
+callback evidence and the observer commit still require the approved guest gate.
+Missing guest runtime must fail without realization/installation/repair. Network,
+asset and report-specific adoption approvals remain unchanged.
+
 ## Evidence
 
 The portable increment is implemented in

@@ -83,6 +83,18 @@ class GuestContracts(unittest.TestCase):
         self.assertFalse((returned / "capture.json").exists())
         self.assertTrue((returned / "live-inventory.tsv").exists())
 
+    def test_semantic_preparation_never_activates_guest_capture(self):
+        with patch.object(vm_guest.vm_observe, "observe") as observe, \
+                patch.object(vm_guest.vm_install, "install") as install, \
+                patch.object(vm_guest, "_producer") as producer:
+            with self.assertRaisesRegex(vm_guest.GuestError, "semantic guest execution is not wired"):
+                vm_guest.run(self.share, "a" * 64, self.repo, "gallery-semantic", self.work)
+            observe.assert_not_called()
+            install.assert_not_called()
+            producer.assert_not_called()
+        self.assertFalse(self.repo.exists())
+        self.assertFalse(self.work.exists())
+
     def test_browser_uses_fixed_capture_only_and_preserves_transport_bytes(self):
         digest = self.payload("browser")
         with patch.object(vm_guest.vm_observe, "observe", return_value=self.environment), \

@@ -1,5 +1,5 @@
 //! Host preparation rejects bad destinations before probes, builds or output.
-use bbr_visual::{prepare, Suite};
+use bbr_visual::{payload::Purpose, prepare, Suite};
 use std::{
     path::{Path, PathBuf},
     sync::atomic::AtomicBool,
@@ -20,14 +20,16 @@ fn invalid_payload_destinations_fail_before_host_preparation() {
         root.join("missing-parent/payload"),
         root.join("../traversal"),
     ] {
-        assert!(
-            prepare::prepare(&repo, Suite::Gallery, &destination, &AtomicBool::new(false)).is_err()
-        );
+        for purpose in [Purpose::Capture(Suite::Gallery), Purpose::GallerySemantic] {
+            assert!(
+                prepare::prepare(&repo, purpose, &destination, &AtomicBool::new(false)).is_err()
+            );
+        }
     }
     assert!(!root.join("missing-parent").exists());
     assert!(prepare::prepare(
         &repo,
-        Suite::Gallery,
+        Purpose::GallerySemantic,
         &root.join("cancelled"),
         &AtomicBool::new(true)
     )
