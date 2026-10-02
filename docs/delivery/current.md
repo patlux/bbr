@@ -1355,6 +1355,37 @@ approval, guest runtime, legitimate input/framing, pilot/full repeats, current
 functional Tart gates and concrete baseline review remain open. No other lane is
 authorized; no migration completion or global pause is claimed.
 
+### Current portable verification and requirement audit
+
+On clean `main@36eea50e6d54f041127ba641b4dedfbecc10955d`, the full current
+non-GUI `just verify` sequence passes, with only compiler-invoking Cargo calls
+substituted by mbx in `/tmp/bbr-visual-verify-hza9sd_c.just`. No assertion,
+recipe order, budget, target directory or GUI behavior changed. Evidence:
+`/tmp/bbr-visual-migration-verify.log`, including 49 shared script tests (14.606s).
+Strict testkit all-target, browser visual-capture test and Gallery capture-feature
+all-target Clippy also pass. Gallery feature units: **159 passed, 48 ignored**;
+those ignored GUI tests were not executed on the host. Evidence:
+`/tmp/bbr-visual-migration-feature-gates.log`. Existing `block` warning remains.
+No VM/network/native producer was launched; no current functional GUI pass follows.
+
+The [requirement-to-artifact audit](../visual/migration-evidence-audit.md) maps the
+entire goal to source/contracts and explicit missing proof. It confirms unchanged
+product Cargo graph/pin/crates/gpui-component/baselines since activation, separates
+portable protocols from actual guest availability/teardown/pixels, and records
+that public capture, real catalog/pilot, complete framing, exact full repeats,
+visual approval and Python cutover remain incomplete. Additional compositions and
+sequences remain sequenced after stable migration. This is not a completion audit
+pass and no milestone boxes are checked.
+
+Scheduling audit: same sole local owner, clean base above, no matching visual/Tart
+process or new lane authorization. Locally runnable next work is the bounded
+pilot/effective-state/framing contract derived from concrete source findings,
+not repeating the completed source audits. Network and legitimate Check asset
+approvals remain external boundaries; actual guest closure presence is unknown.
+No workflow, foreign worktree, host GUI, push or performance execution. Tooling
+check durations are measured where recorded, not product timings; requirement-
+audit elapsed time was not instrumented. Goal remains active and incomplete.
+
 ## Status vocabulary
 
 | Status | Meaning |

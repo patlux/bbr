@@ -74,6 +74,11 @@ never secrets, personal browser data, generated reports or baseline images.
 
 ## Evidence
 
+The [requirement-to-artifact audit](../../visual/migration-evidence-audit.md)
+maps every active migration requirement to existing evidence and explicit missing
+runtime/approval gates. It is an incomplete-milestone audit, not acceptance; the
+current portable green gates do not prove actual guest captures or Python parity.
+
 ### Unit and contract
 
 - [x] Upstream comparator/acceptance contracts pass unchanged.
