@@ -56,6 +56,27 @@ all four Favorites are now pinned by the existing product invariant. Correct the
 fixture assertion to require all four pinned Favorites, without altering product
 behavior, deleting assertions or accepting changed baseline pixels.
 
+### Approved references versus incomplete coverage (2026-10-02)
+
+Patrick approved the exact 28-image `app-surfaces-20261002-c` report and its Tart
+rendering environment, then requested fixing the acceptance refusal with screenshot
+evidence. The refusal is technical: upstream currently blocks every reference in a
+suite with any withheld requirement. Preserve `remaining-app-surfaces` and the red
+coverage verdict. Implement only an explicit exact withheld-ID acknowledgement in
+the standalone authority first; default acceptance and all integrity/missing-required
+checks remain strict. No portable vendor fork or unreviewed single-suite route.
+
+After upstream regression tests/Clippy/fmt and local commit, the verified CLI may
+accept that exact still-valid historical report with all 28 explicit case IDs,
+explicit browser environment adoption and acknowledgement of the withheld row.
+Then import the complete immutable export with provenance and freshly stage/capture
+the same production app in supervised Tart. Verify every image against the accepted
+references, independently recheck sources/cleanup, and inspect actual PNGs plus
+managed-Chrome report screenshots. A fresh exact image match must still show failed
+coverage. New or changed images require separate approval. Preserve old failed
+attempts and source seals; never reseal. Commit independently verified upstream,
+reference-adoption and consumer-import slices, without push or migration closeout.
+
 ## Non-goals
 
 - No browser appearance or behavior changes, portal capture, native WKWebView

@@ -2347,6 +2347,57 @@ was not instrumented. The broader input/framing/parity work remains open; furthe
 capture-affecting source changes require fresh staging rather than stale resealing.
 No push/publication or additional writer accompanies this checkpoint.
 
+### Acceptance/coverage correction activated (2026-10-02)
+
+Clean starting checkpoints: BBR `f26335b4a290d7d0ff1c7e08c2bcd2a95ac25c9e`,
+standalone tool `c2723cac924b98b8a2c8c170d580bd2e434b674a`. Same sole local
+visual writer; complete queue reread, no agent/lane/worktree/publication activated.
+Current runnable work is the requested acceptance bug and screenshot proof;
+unrelated product work, broader Gallery pilot and Python cutover remain deferred.
+
+Patrick approved the exact `app-surfaces-20261002-c` 28 images and Tart environment.
+The official unchanged `accept-collection` refused `Cannot accept suite with invalid
+coverage/comparison: browser`; `/private/tmp/bbr-visual-app-acceptance` retains the
+selection, pre-state and JSON exit2. Baselines/report stayed unchanged, no attempt
+journal was created. The only collection error is the deliberately withheld
+`remaining-app-surfaces`; reviewed comparison errors are empty. This is not missing
+user consent and must not be solved by hiding coverage or bypassing the collection.
+
+The updated tooling packet bounds an upstream-first exact withheld acknowledgement,
+negative-first contracts and strict gates, acceptance of the still-valid approved
+report before changing source-bound tool inputs, immutable import, then fresh Tart
+captures and actual report screenshots. Defaults, all other rejection rules and
+red coverage remain intact. No new/changed image is implicitly approved. Existing
+benchmark failures and native/full-app exclusions remain open. Stop on real failed
+verification or integrity/runtime uncertainty with original attempts preserved.
+
+### Exact approved reference adoption verified
+
+Standalone `4743437699567ba16fdcabf8fc12010a367f9134` implements the bounded
+opt-in; 183 portable results, strict all-target Clippy and fmt pass. Before any
+consumer tool-source change, the retained verified CLI revalidated all 1,516 BBR
+sources, 28 original/report image pairs and 46 report-sealed files against the
+approved capture `746bedaf56c64dc010d09c8b73f305d6575f3f6d33c8a9d736117527f1a18014`
+and collection seal `938d87a3d63bdec919542f2b095582d11f00c2365a8fb0bb38e11384a03b8184`.
+The baseline pre-state still equals the failed attempt's retained pre-state.
+
+Official collection acceptance now succeeds (exit0, 1.693s tooling time) with all
+28 exact `browser:case` IDs, explicit `--adopt-suite browser` and only
+`--acknowledge-withheld browser:remaining-app-surfaces`. Its schema-2 journal is
+complete for browser; every accepted PNG is byte-identical to its approved original
+and the environment equals that capture exactly. Eight references replaced, twenty
+added; the upstream normal schema-2 writer deduplicates historical source maps.
+No image conversion, report mutation, manual copy or acceptance-time capture.
+
+Fresh stored-run comparison at
+`/Users/patwoz/dev/Personal/macos/bbr/reports/visual/app-surfaces-accepted-20261002-a/index.html`
+proves 28/28 exact, zero comparison errors and no environment mismatch. Overall
+coverage correctly remains FAIL with exactly the unchanged withheld row, exit1.
+This is a new comparison of the approved capture, **not a new guest capture**.
+Evidence: `/private/tmp/gpui-visual-withheld/bbr-{before,accept,post-adoption}.json`.
+Roadmap and whitespace checks pass. Actual fresh guest screenshots after the
+immutable import remain the next slice; no migration/full-app/performance pass.
+
 ## Status vocabulary
 
 | Status | Meaning |
