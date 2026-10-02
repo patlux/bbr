@@ -278,6 +278,25 @@ rendering/dependencies, boot a guest or claim pre-render native evidence. The
 existing host guard remains; guest request/producer integration and approved
 real selection tests are subsequent required steps.
 
+### Bounded selected guest-execution slice
+
+Extend only the internal guest entrypoint with an explicit hash-bound request
+at a fixed work-directory path. Bind it to the expected payload, configured
+source-controlled story catalog and independent plan before any producer call.
+Validate the selected subset of the existing non-rendering registry inventory
+before rendering. Invoke the existing numeric `--story` capture command once per
+selected story in authored order, through the same upstream executor and cleared
+guest environment; no new renderer or Gallery product changes. Verify exact
+per-story outputs, aggregate raw bytes without pixel edits, and validate the
+complete selected plan before publishing its receipt. Keep one overall capture
+deadline, cancellation and installed/shared source checks around every invocation.
+Failure must leave only unusable diagnostics, never a capture seal. Test through
+an internal execution seam with synthetic PNGs, pre-call argv/order assertions,
+invalid/drifted requests, ignored selection, extra/missing output and cancellation.
+Host refusal and ordinary capture guards stay unchanged. Host-to-guest request
+transport, real config activation and real VM selection evidence remain later
+requirements; no boot or native producer runs in this portable slice.
+
 ## Iteration policy
 
 Run targeted contracts first, diagnose failures before changing code, and

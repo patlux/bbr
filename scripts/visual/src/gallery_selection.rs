@@ -36,6 +36,12 @@ struct StoryPlan {
 /// Read the same bounded regular bytes whose independently expected hash binds
 /// the requirement. No arbitrary file, symlink, hardlink or implicit latest input.
 fn bound_json<T: DeserializeOwned>(repo: &Path, relative: &str, expected: &str) -> Result<T> {
+    Ok(serde_json::from_slice(&bound_bytes(
+        repo, relative, expected,
+    )?)?)
+}
+
+pub(crate) fn bound_bytes(repo: &Path, relative: &str, expected: &str) -> Result<Vec<u8>> {
     store::safe_relative(relative)?;
     ensure!(
         Path::new(relative)
@@ -65,7 +71,7 @@ fn bound_json<T: DeserializeOwned>(repo: &Path, relative: &str, expected: &str) 
         raw.len() as u64 == meta.len() && format!("{:x}", Sha256::digest(&raw)) == expected,
         "source requirement changed"
     );
-    Ok(serde_json::from_slice(&raw)?)
+    Ok(raw)
 }
 
 fn number(raw: &str) -> Result<u64> {

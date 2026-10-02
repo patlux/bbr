@@ -19,6 +19,16 @@ fn unwired_native_entrypoints_fail_before_artifacts_or_builds() {
         vec!["produce", "gallery"],
         vec!["produce", "browser"],
         vec!["guest-execute", "gallery", "capture"],
+        vec![
+            "guest-execute",
+            "gallery",
+            "capture-selected",
+            "/not-read",
+            "/not-read",
+            "a",
+            "/not-written",
+            "b",
+        ],
     ] {
         let result = cargo_gpui_visual::process::run(
             Command::new(env!("CARGO_BIN_EXE_bbr-visual"))

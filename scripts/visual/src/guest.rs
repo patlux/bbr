@@ -11,6 +11,8 @@ use std::{
     time::Duration,
 };
 
+mod selected;
+
 #[cfg(test)]
 #[path = "guest_tests.rs"]
 mod tests;
@@ -37,7 +39,8 @@ fn require_guest(cancelled: &AtomicBool) -> Result<()> {
 }
 fn action(suite: Suite, action: &str) -> Result<()> {
     ensure!(
-        action == "capture" || (suite == Suite::Gallery && action == "inventory"),
+        action == "capture"
+            || (suite == Suite::Gallery && ["inventory", "capture-selected"].contains(&action)),
         "unsupported guest suite action"
     );
     Ok(())
@@ -51,11 +54,15 @@ pub fn dispatch(args: &[String], cancelled: &AtomicBool) -> Result<bool> {
     }
     require_guest(cancelled)?;
     ensure!(
-        args.len() == 7,
-        "guest-execute requires suite, action, repo, share, digest and work"
+        args.len() == 7 || args.len() == 8,
+        "guest-execute requires suite, action, repo, share, digest, work and selected request hash only for capture-selected"
     );
     let suite = Suite::parse(&args[1])?;
     action(suite, &args[2])?;
+    ensure!(
+        (args[2] == "capture-selected") == (args.len() == 8),
+        "capture-selected requires an explicit request hash; other actions forbid one"
+    );
     let repo = PathBuf::from(&args[3]);
     let share = PathBuf::from(&args[4]);
     let work = PathBuf::from(&args[6]);
@@ -86,19 +93,34 @@ pub fn dispatch(args: &[String], cancelled: &AtomicBool) -> Result<bool> {
         "installed guest consumer path differs"
     );
     verify_installed(&payload, cancelled)?;
+    if args[2] == "capture-selected" {
+        let request = selected::load(&payload, &work, &args[5], &args[7])?;
+        selected::execute(&payload, &work, &request, cancelled, |command, limits| {
+            let started = std::time::Instant::now();
+            verify_installed(&payload, cancelled)?;
+            payload::verify(&share, &payload, cancelled)?;
+            read_manifest(&manifest, &args[5], cancelled)?;
+            let limits = Limits {
+                timeout: limits
+                    .timeout
+                    .checked_sub(started.elapsed())
+                    .context("selected guest deadline during source preflight")?,
+                ..limits.clone()
+            };
+            let output = cargo_gpui_visual::process::run(command, &limits, cancelled, true)?;
+            verify_installed(&payload, cancelled)?;
+            payload::verify(&share, &payload, cancelled)?;
+            read_manifest(&manifest, &args[5], cancelled)?;
+            Ok(output)
+        })?;
+        verify_installed(&payload, cancelled)?;
+        payload::verify(&share, &payload, cancelled)?;
+        read_manifest(&manifest, &args[5], cancelled)?;
+        selected::load(&payload, &work, &args[5], &args[7])?;
+        return Ok(true);
+    }
     let mut command = command(&payload, suite, &args[2], &work)?;
-    command
-        .current_dir(&repo)
-        .env_clear()
-        .env("HOME", "/Users/admin")
-        .env("USER", "admin")
-        .env("LOGNAME", "admin")
-        .env("PATH", "/usr/bin:/bin:/usr/sbin:/sbin")
-        .env("TMPDIR", "/private/tmp")
-        .env("TZ", "UTC")
-        .env("LANG", "C")
-        .env("LC_ALL", "C")
-        .env("SEED", "0");
+    environment(&mut command, &repo);
     if suite == Suite::Browser {
         command
             .env("BBR_VISUAL_CAPTURE_BIN", repo.join("target/release/bbr"))
@@ -143,6 +165,21 @@ pub fn dispatch(args: &[String], cancelled: &AtomicBool) -> Result<bool> {
             .write_all(text.as_bytes())?;
     }
     Ok(true)
+}
+
+fn environment(command: &mut Command, repo: &Path) {
+    command
+        .current_dir(repo)
+        .env_clear()
+        .env("HOME", "/Users/admin")
+        .env("USER", "admin")
+        .env("LOGNAME", "admin")
+        .env("PATH", "/usr/bin:/bin:/usr/sbin:/sbin")
+        .env("TMPDIR", "/private/tmp")
+        .env("TZ", "UTC")
+        .env("LANG", "C")
+        .env("LC_ALL", "C")
+        .env("SEED", "0");
 }
 
 fn read_manifest(path: &Path, expected: &str, cancelled: &AtomicBool) -> Result<payload::Payload> {
@@ -208,6 +245,10 @@ fn command(
     work: &Path,
 ) -> Result<Command> {
     action(suite, action_name)?;
+    ensure!(
+        action_name != "capture-selected",
+        "selected command requires a validated request/schedule"
+    );
     let repo = &payload.repo;
     let raw = work.join("raw");
     store::no_symlinks(&raw)?;

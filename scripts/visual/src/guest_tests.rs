@@ -53,6 +53,8 @@ fn only_fixed_native_commands_are_constructed_without_execution() {
         assert!(command(&payload, suite, "arbitrary-shell", &root).is_err());
     }
     assert!(command(&payload, Suite::Browser, "inventory", &root).is_err());
+    assert!(command(&payload, Suite::Gallery, "capture-selected", &root).is_err());
+    assert!(action(Suite::Browser, "capture-selected").is_err());
     fs::create_dir(root.join("raw")).unwrap();
     assert!(command(&payload, Suite::Gallery, "capture", &root).is_err());
     fs::write(root.join("live-inventory.tsv"), "preserved").unwrap();

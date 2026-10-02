@@ -38,7 +38,13 @@ pub fn canonical_id(raw: &str) -> Result<String> {
     Ok(id)
 }
 
-pub fn validate_and_prepare(output: &Path, plan: &Plan, inventory: &str) -> Result<Vec<String>> {
+/// Validate all raw files without renaming or publishing completion metadata.
+/// Selected guest captures use this same validator before combining story runs.
+pub(crate) fn validate_raw(
+    output: &Path,
+    plan: &Plan,
+    inventory: &str,
+) -> Result<Vec<(String, String)>> {
     ensure!(
         plan.schema == 1 && !plan.cases.is_empty(),
         "invalid required Gallery plan"
@@ -125,6 +131,11 @@ pub fn validate_and_prepare(output: &Path, plan: &Plan, inventory: &str) -> Resu
     for (raw, _) in &ids {
         png(&output.join(format!("{raw}.png")), (2400, 2000))?;
     }
+    Ok(ids)
+}
+
+pub fn validate_and_prepare(output: &Path, plan: &Plan, inventory: &str) -> Result<Vec<String>> {
+    let ids = validate_raw(output, plan, inventory)?;
     for (raw, canonical) in &ids {
         fs::rename(
             output.join(format!("{raw}.png")),

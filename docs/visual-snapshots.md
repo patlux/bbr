@@ -309,10 +309,36 @@ including when all catalog stories were explicitly selected. Portable fixtures
 exercise those APIs and the actual consumer update router with synthetic PNGs.
 They prove scheduling data and protocol boundaries, not native pre-render behavior.
 
-No production story catalog is enabled by this bridge, no current Gallery page
-counts are invented, and no guest/producer caller is connected yet. Actual
-request binding/filtering and the real approved pilot remain required. Ordinary
+No production story catalog is enabled by this bridge and no current Gallery
+page counts are invented. The internal guest route described below now consumes
+it; host request transport and the real approved pilot remain required. Ordinary
 capture remains blocked; these tests do not satisfy visual or framing acceptance.
+
+### Selected guest execution (transport caller still pending)
+
+The existing guest-only entrypoint accepts `capture-selected` only for Gallery
+and only with an independently supplied hash for the fixed
+`/Users/admin/bbr-visual-work/selected-request.json`. The request binds the payload
+and upstream Selection; the installed, source-hashed config must explicitly name
+its story catalog. Normal configs still do not enable selection. Actual guest
+identity, installed executable/source checks and the host refusal remain intact.
+
+Before rendering, the existing non-rendering inventory command must match every
+selected state/appearance from the independent plan; extra selected-story states
+are rejected. Then one fixed `--capture-gallery … --story <numeric-id>` command
+runs per selected story in authored order, with the cleared guest environment,
+upstream process ownership and one overall 600s deadline. This reuses the Gallery
+filter which precedes renderer-context creation, without changing Gallery code.
+Per-story and aggregated raw outputs pass the same existing image/range validator.
+No images are filtered after rendering, decoded into replacements or transformed;
+raw files move unchanged and the exact selection receipt is published last.
+
+Portable command-boundary tests inject synthetic outputs, never native rendering.
+They prove ordering, invalid-request/pre-cancelled no-invocation behavior, registry
+mismatch and output/source/cancellation failures. The host transport does not yet
+create or convey selected requests, and host validation of the returned selected
+receipt still needs integration. Thus no end-to-end VM/native selection, complete
+coverage or acceptance evidence is claimed.
 
 ### Current Gallery source-audit boundary
 

@@ -854,6 +854,62 @@ network/Checkbox approvals, real pilot, two complete independent captures,
 image/report review and current functional Tart gates remain required. These
 prerequisites do not complete any migration milestone or authorize acceptance.
 
+### Selected guest execution checkpoint
+
+Preflight: clean `main@9182cef4`, no Git lock, visual/Tart process or capture-lock
+holder. ROADMAP and the complete delivery queue re-read. This session remains
+the only authorized local visual writer; no agents, new lanes or foreign worktree
+access. Request/producer integration is runnable locally, while VM/network and
+Checkbox asset approvals still remain external boundaries.
+
+The internal guest entrypoint now accepts Gallery-only `capture-selected` with
+an explicit independent hash for fixed `selected-request.json`. It binds that
+request to the verified payload and source-hashed config's explicit story catalog,
+then resolves the independent page schedule before invoking a producer. Existing
+actual admin/VirtualMac identity and installed/shared bytes checks remain before
+this path; no host bypass or real config activation. The non-rendering inventory
+must match all selected-story states/appearances before the first capture. One
+fixed numeric `--story` command follows per selected story, in authored order,
+with the same cleared environment and immutable upstream executor. The existing
+Gallery filter already precedes renderer-context creation and is unchanged.
+
+The overall 600s deadline spans all calls; preflight time reduces the remaining
+native timeout. Installed/shared bytes are checked around each call and again
+before returning. Per-story and aggregate validation reuse the extracted,
+behavior-preserving raw phase of the existing Gallery validator. Complete raw
+PNG bytes move without rewriting/resampling; selected receipt follows validation
+and source checks, never a capture seal. Partial output remains diagnostics only.
+Host transport does not yet convey selected requests, nor validate the returned
+selection receipt against an independently retained host request. Those are the
+next integration requirements, not capabilities claimed by this checkpoint.
+
+Evidence: five new injected-command contracts (eight guest unit contracts total)
+cover ordered explicit argv before synthetic output, no unselected rendering call,
+unchanged PNG hashes, payload/config/request identity, unsupported/oversized/linked
+requests, pre-cancelled/stale/preexisting-output no-invocation, extra selected state,
+duplicate inventory, ignored selection, missing/extra/hardlinked/wrong-size output,
+nonzero producer status and cancellation/source drift before and after capture.
+Actual host CLI refusal is extended to the selected action. Initial red was the
+missing module, `/tmp/bbr-visual-selected-guest-red.log`. Final focused and strict
+Clippy logs: `/tmp/bbr-visual-selected-guest-focused-final.log`,
+`/tmp/bbr-visual-selected-guest-clippy-final.log`. `just visual-test` passes 144
+Python discovery tests (one further integration skipped, then separately passed),
+unchanged upstream and **63 consumer tests** plus signal fixtures;
+`/tmp/bbr-visual-selected-guest-final-visual-test.log`. Formatting, roadmap and
+whitespace checks pass (`/tmp/bbr-visual-selected-guest-final-roadmap.log`).
+Focused guest tests run in 0.76s in the full gate; timing is tooling evidence only.
+
+Self-review tightened extra-state rejection (not merely matching known rows),
+post-capture source/cancellation boundaries, no direct selected command without a
+validated schedule, hardlink/extra output rejection and deadline subtraction for
+source preflight. No Gallery/product/upstream/baseline edits, VM/SSH/native process,
+actual image/report review, functional GUI gate or product-performance run. The
+host capture guard stays unconditional and source edits require fresh future
+payloads/captures. Parallelism audit: only local selected-request transport/return
+integration and remaining coverage audit are runnable here; no additional lane
+is authorized. Migration acceptance, real pilot/full repeat and approvals remain
+open; implementation/review wall time was not instrumented.
+
 ## Status vocabulary
 
 | Status | Meaning |
