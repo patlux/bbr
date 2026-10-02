@@ -34,6 +34,22 @@ def terminate_group(process: subprocess.Popen, grace: float) -> None:
             os.killpg(process.pid, 0)
         except ProcessLookupError:
             break
+        except PermissionError:
+            # Darwin may report EPERM while a terminated group contains only
+            # zombies. This is not absence. Reap our direct child and observe
+            # until ESRCH within the original deadline; never signal this now
+            # uncertain numeric group again or accept persistent EPERM.
+            while time.monotonic() < until:
+                process.poll()
+                try:
+                    os.killpg(process.pid, 0)
+                except ProcessLookupError:
+                    process.wait(timeout=max(0, until - time.monotonic()))
+                    return
+                except PermissionError:
+                    pass
+                time.sleep(min(0.05, max(0, until - time.monotonic())))
+            raise RuntimeError("process group cleanup remains unproven after permission ambiguity")
         time.sleep(min(0.05, max(0, until - time.monotonic())))
     try:
         os.killpg(process.pid, signal.SIGKILL)

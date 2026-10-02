@@ -755,6 +755,54 @@ execution, runtime installation or visual review. Test timings are logged; audit
 elapsed time was not measured. Next local work: remaining applicability audit
 and pre-render selection contracts; real pilot needs the recorded approvals.
 
+### Retained adapter cleanup regression checkpoint
+
+Preflight: selection contract work is owned locally on `main@dcd05f6c`; no Git
+lock, active visual/Tart process or other main writer. Full delivery queue read.
+No subagent, new lane, foreign worktree or native operation is authorized. The
+portable selection bridge remains a separate pending slice; native capture is
+still unconditionally guarded.
+
+The selected-plan full gate exposed the retained Python adapter failing during
+`test_timeout_kills_descendants`: after successful TERM, signal 0 returned Darwin
+EPERM. Three instrumented isolated repetitions reproduced it. A bounded owned
+process-group observation then showed only the zombie leader at EPERM, followed
+by ESRCH after reaping. No surviving live fixture process was found. The immutable
+Rust executor already documents this Darwin state; it is unchanged. Failure and
+diagnostic logs remain `/tmp/bbr-visual-selection-plan-visual-test-failed-cleanup.log`,
+`/tmp/bbr-visual-selection-plan-cleanup-diagnostic.log` and
+`/tmp/bbr-visual-selection-plan-group-observation.log`.
+
+The narrow Python repair treats EPERM as uncertainty, never absence: poll/reap the
+owned direct child and observe signal 0 within the original cleanup deadline.
+Success requires ESRCH and a reaped leader; persistent permission ambiguity fails
+cleanup, without sending another termination signal to the uncertain group. Four
+injected contracts cover transient/persistent EPERM, a still-present group and
+unreaped leader. Initial red contracts and the real failure are preserved. One
+first test correction fixed an exhausted mocked clock, not a cleanup predicate.
+Three real timeout/descendant repetitions plus the existing TERM-resistant
+lock-lifetime fixture pass (eight focused tests, 7.240s measured).
+
+Evidence: `/tmp/bbr-visual-legacy-cleanup-red.log`,
+`/tmp/bbr-visual-legacy-cleanup-focused-final.log` and
+`/tmp/bbr-visual-selection-plan-visual-test-repaired.log`. The combined candidate's
+`just visual-test` passes 144 Python discovery tests (one further integration
+skipped, then run separately and passed), unchanged upstream and 58 consumer
+tests plus signal fixtures. Strict consumer Clippy/fmt, 49 shared script tests,
+roadmap and whitespace pass. These combined-tree counts include the pending
+seven selected-plan contracts; they are not a claim that this cleanup-only commit
+contains the bridge. Additional logs: `/tmp/bbr-visual-selection-plan-clippy-repaired.log`,
+`/tmp/bbr-visual-selection-plan-script-tests.log`,
+`/tmp/bbr-visual-selection-plan-roadmap-repaired.log`.
+
+Self-review checked that only observation uncertainty is retried, with no deadline
+extension, swallowed persistent error or change to the descendant/lock assertions.
+No VM, SSH, native producer, product E2E/performance or baseline action occurred.
+The retained host producer remains prohibited. Parallelism audit: only the local
+selection/request integration and remaining coverage audit are runnable here;
+network and Checkbox approvals remain pending. Test timings are measured tooling
+evidence, not product performance; implementation/review timing was not recorded.
+
 ## Status vocabulary
 
 | Status | Meaning |
