@@ -168,6 +168,21 @@ records these source findings. IDs 31–48 remain a subsequent bounded source sl
 This audit does not complete applicability, interaction, endpoint, full-framing
 or visual acceptance gates.
 
+### Bounded Address / Sidebar components applicability audit
+
+Inspect IDs 31–37 against current production DTOs and render predicates, not
+historical matrix labels. Check address accessories/progress/device marks, staging
+selection/IME state, Favorite image/pop/geometry, Folder count/rename/drop branches,
+Footer keyboard focus and scroll framing, static profile chips and Plus-menu
+renderer identity. Keep recorder dispatch distinct from model mutation and narrow
+static exclusions distinct from absent production coverage. Add only concrete
+withheld requirements without invented pages or moments; preserve all historical
+rows and blockers. Verify portable catalog/discovery contracts and source references.
+No renderer, fixture, asset, product, baseline or VM change is authorized by this
+source slice. The [Address / Sidebar components audit](../../visual/gallery-sidebar-components-audit.md)
+records the inspected branches and six additive withheld gaps. IDs 38–48 and
+all actual framing/input/guest evidence remain open.
+
 ## Iteration policy
 
 Begin with audited inventory and the smallest native capture path. Diagnose

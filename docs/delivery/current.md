@@ -1140,6 +1140,58 @@ Required approvals, guest runtime, legitimate input/endpoints and framing, fresh
 pilot/full repeats, current functional Tart gates and final requirement-to-artifact
 completion audit remain open. No goal completion or pause is claimed.
 
+### Address / Sidebar components source-audit checkpoint
+
+Preflight: clean `main@83109086`, no Git index lock, visual/Tart process or
+observed capture-lock holder. ROADMAP and this complete delivery contract were
+re-read without truncation. Ordinary user BBR and unrelated builds remain
+untouched. Sole local visual writer, no workflow/subagent/new lane or foreign
+worktree access. Audit of runnable queue work selected IDs 31–37 as the next
+bounded slice; IDs 38–48 remain explicitly uninspected by this checkpoint.
+VM/network and asset permissions remain pending and no actual capture is enabled.
+
+The [source continuation](../visual/gallery-sidebar-components-audit.md) traces
+seven stories through current matrices, production render predicates and recorder
+seams. Address omits zoom/progress/device branches; staging always supplies end-of-
+text with no selection/IME range. Favorites omit images/pop and compute tile widths
+for a 300pt rail without constraining the story grid to it. Folder counts are
+always transparent, including the count-labeled family; drop/selected-rename/image
+branches are absent. Footer never supplies the Downloads focus ring and embeds a
+fixture strip, not production space chips. Plus-menu shares item data but draws
+its own accent-rail rows, unlike current production rounded cursor/elevation.
+Profile chip has a legitimate static, noninteractive boundary. Potential nested
+geometry/shadow concerns are not reported as measured clipping defects.
+
+Six additive withheld catalog rows expose these concrete gaps without inventing
+pages or moments. Structured comparison confirms every prior JSON row unchanged:
+936 required page pairs and fifteen old blockers preserved, now 21 withheld rows.
+The canonical packet was extended before implementation. No product, Gallery
+fixture/renderer, vendor, config, independent page plan or baseline change.
+
+Evidence: the new missing-blocker regression fails before catalog edits (exit 101,
+`/tmp/bbr-visual-sidebar-components-audit-red.log`). Eleven catalog/validator and
+four actual read-only discovery contracts then pass (0.76s / 0.81s measured,
+`/tmp/bbr-visual-sidebar-components-audit-focused.log`). Full `just visual-test`
+passes 151 Python discovery tests (one additional integration skip, then separately
+passed), unchanged upstream and **72 consumer tests** plus signal fixtures:
+`/tmp/bbr-visual-sidebar-components-audit-visual-test.log`. Strict consumer
+all-target Clippy passes (`/tmp/bbr-visual-sidebar-components-audit-clippy.log`).
+Consumer fmt, roadmap (161 tracked Markdown files;
+`/tmp/bbr-visual-sidebar-components-audit-roadmap.log`), whitespace and all new
+source-reference paths pass. Test timings are tooling evidence; audit/review wall
+time was not instrumented. No product-performance evidence is claimed.
+
+Self-review checked stale explanatory prose against render branches, real hover
+styling despite absent DTO fields, invisible counts despite positive geometry,
+fixture versus production strip/menu anatomy, unchanged old catalog rows and
+narrow static exclusions. The new tests prove blocker visibility, not fixed
+renderers or complete coverage. No native/VM execution, actual PNG/HTML review,
+functional GUI gate or baseline/environment adoption occurred. Final queue audit:
+IDs 38–48 remain runnable locally, no other lane authorized. Real guest runtime,
+network/asset approvals, legitimate input/endpoints/framing, fresh pilot/full
+repeats, current functional Tart gates and the final requirement-to-artifact
+completion audit remain open. Goal completion and global pause are not justified.
+
 ## Status vocabulary
 
 | Status | Meaning |

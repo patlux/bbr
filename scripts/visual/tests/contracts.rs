@@ -135,7 +135,7 @@ fn authored_catalogs_cover_required_pairs_and_keep_unproven_coverage_visible() {
             .iter()
             .filter(|s| s.state == State::Withheld)
             .count(),
-        15
+        21
     );
     let browser: Catalog =
         store::read_json(&repo.join("scripts/visual/catalogs/browser.json")).unwrap();
@@ -223,6 +223,54 @@ fn tab_and_library_source_gaps_remain_explicit_non_capture_requirements() {
             ["selected", "toolbar", "collection"],
         ),
         ("gallery-30-windowed-framing", ["24", "520", "scroll"]),
+    ] {
+        let entry = gallery
+            .snapshots
+            .iter()
+            .find(|s| s.base == base)
+            .unwrap_or_else(|| panic!("missing concrete source-audit blocker: {base}"));
+        assert_eq!(entry.state, State::Withheld);
+        for reason in reasons {
+            assert!(
+                entry.reason.as_deref().unwrap().contains(reason),
+                "{base}: {reason}"
+            );
+        }
+        assert!(entry.page.is_none() && entry.sequence.is_none() && entry.moment.is_none());
+    }
+}
+
+#[test]
+fn address_and_sidebar_component_gaps_remain_visible_without_invented_capture_cases() {
+    let repo = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let gallery: Catalog =
+        store::read_json(&repo.join("scripts/visual/catalogs/gallery.json")).unwrap();
+    gallery.validate().unwrap();
+    for (base, reasons) in [
+        (
+            "gallery-31-address-production-gaps",
+            ["zoom", "progress", "device"],
+        ),
+        (
+            "gallery-32-staging-edit-gaps",
+            ["selection", "marked", "end_of"],
+        ),
+        (
+            "gallery-33-favorite-image-pop-framing",
+            ["image", "pop", "300"],
+        ),
+        (
+            "gallery-34-folder-hidden-count-states",
+            ["reveal_count", "drop_target", "rename"],
+        ),
+        (
+            "gallery-35-footer-focus-strip-framing",
+            ["focus", "scroll", "fixture"],
+        ),
+        (
+            "gallery-37-plus-menu-renderer-drift",
+            ["border_l_2", "menu_cursor", "elev2"],
+        ),
     ] {
         let entry = gallery
             .snapshots

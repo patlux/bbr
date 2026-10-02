@@ -13246,6 +13246,66 @@
       "reason": "Large 1k supplies only rows 1-24 with scroll_offset zero inside a 520pt surface containing a nested scroll list. Outer pagination treats that entire surface as one child and never traverses its rows or scroll positions. Neither all 1000 records nor full visibility of the 24 supplied rows is proven; independently bounded viewport/framing requirements and guest review remain open."
     },
     {
+      "base": "gallery-31-address-production-gaps",
+      "label": "Address: current accessories, progress and site indicators are absent",
+      "group": "Unproven coverage",
+      "sequence": null,
+      "moment": null,
+      "page": null,
+      "state": "withheld",
+      "reason": "All ten address fixtures set zoom None, progress Idle and the site default, omitting production zoom, loading/finish and live/blocked camera/microphone device branches. History and Welcome identity marks are absent. Hover is a fixture boolean, not recorder-driven state; the invisible anchor is not app overlay geometry. Current applicability and guest framing remain unproven."
+    },
+    {
+      "base": "gallery-32-staging-edit-gaps",
+      "label": "Command staging: caret endpoints do not cover selection or composition",
+      "group": "Unproven coverage",
+      "sequence": null,
+      "moment": null,
+      "page": null,
+      "state": "withheld",
+      "reason": "All seven staging fixtures use EditState::end_of with selection and marked ranges absent and no line sink. Production edit_line paints selection, IME underline and an insertion caret with horizontal scrolling; focused labels and pointer-open recordings do not exercise editing, composition, input ownership or long-line framing. No sequence or page counts are inferred."
+    },
+    {
+      "base": "gallery-33-favorite-image-pop-framing",
+      "label": "Favorites: image and pop branches plus rail geometry remain uncovered",
+      "group": "Unproven coverage",
+      "sequence": null,
+      "moment": null,
+      "page": null,
+      "state": "withheld",
+      "reason": "Every fixture has image None and every tile call has pop None, omitting production image/decode-fallback and favorite-pop branches. Tile widths derive from a 300pt rail but the story grid is not constrained to that rail width; flex-wrap content and nominal four-column labels need actual descendant framing. Static drag offers and recorder activations do not prove drag, reopen or selection transitions."
+    },
+    {
+      "base": "gallery-34-folder-hidden-count-states",
+      "label": "Folders: count label hides the count and current render branches are absent",
+      "group": "Unproven coverage",
+      "sequence": null,
+      "moment": null,
+      "page": null,
+      "state": "withheld",
+      "reason": "Every row sets reveal_count false and drop_target false; even the count tnum family renders its count at zero opacity and the story hover callback is a no-op. The rename draft is never selected and member images are None. Production count reveal, selected rename, drop outline, image fallback and group-hover close need explicit coverage; parent bounds do not establish nested lift/rename halo framing."
+    },
+    {
+      "base": "gallery-35-footer-focus-strip-framing",
+      "label": "Footer: omitted keyboard ring and fixture strip are not production-strip coverage",
+      "group": "Unproven coverage",
+      "sequence": null,
+      "moment": null,
+      "page": null,
+      "state": "withheld",
+      "reason": "All eight footer calls pass downloads_focused false, so the production focus ring is absent. The fixture strip uses profile chips plus text, not the production space_chip/space_strip composition. Its horizontal scroll viewport has no authored scroll windows or descendant visibility evidence; overflow and active labels cannot prove production chip geometry, navigation or complete framing."
+    },
+    {
+      "base": "gallery-37-plus-menu-renderer-drift",
+      "label": "Plus menu: shared item identities do not establish production renderer parity",
+      "group": "Unproven coverage",
+      "sequence": null,
+      "moment": null,
+      "page": null,
+      "state": "withheld",
+      "reason": "The story uses production item/state data but builds its own card and selected border_l_2 rows. Current production plus_menu_surface uses rounded menu_cursor without that rail, all-side padding, elev2 shadow, focus and key/inside-press callbacks. Story pointer recording and pure selection-wrap tests are not production menu pixels or Enter/Escape transitions; renderer identity and framing remain open."
+    },
+    {
       "base": "gallery-locked-session",
       "label": "Locked-session execution",
       "group": "Unproven coverage",
