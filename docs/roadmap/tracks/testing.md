@@ -45,7 +45,9 @@ owns production-chrome Light/Dark captures, exact comparisons and reviewed
 baselines; native pixels and functional E2E remain separate evidence.
 The [Native Gallery coverage packet](../tasks/gallery-visual-coverage.md) owns
 registry/state completeness, full component framing and native Gallery captures;
-app compositions follow in separately activated slices.
+app compositions follow in separately activated slices. The first migration
+runtime increment is the [Tokens / Checkbox / Sidebar pilot](../tasks/gallery-visual-pilot.md),
+with its own input/endpoint/framing and partial-review contract.
 
 - [ ] Emit semantic window-resized events instead of snapshot polling.
 - [x] Emit `Quitting` before graceful shutdown, after the gateway writer has flushed the successful Quit response so process exit cannot race the client response.

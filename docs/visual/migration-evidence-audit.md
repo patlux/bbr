@@ -85,9 +85,11 @@ these current migration gates. Later source changes require new capture seals.
 
 ## Next bounded work and blocked boundaries
 
-1. Locally runnable: turn the source audit's specific pilot/effective-state and
-   nested-framing gaps into bounded executable requirements, before changing
-   fixtures or declaring a real story catalog usable. Keep the 936 historical
+1. The [bounded pilot packet](../roadmap/tasks/gallery-visual-pilot.md) now defines
+   the required input journey, two-clock endpoint boundary and default Sidebar
+   nested/paint observations. Next local work is its source-bound endpoint
+   identity/rejection contract, before changing fixtures or declaring a real
+   story catalog usable. Keep the 936 historical
    pairs and 31 blockers until replacement evidence is actually proven. No product
    renderer change or guessed page count is authorized by this audit.
 2. Execution boundary: obtain approval for the disposable clone's private NAT,

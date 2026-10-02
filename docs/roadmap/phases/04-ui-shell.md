@@ -116,7 +116,7 @@ keeps the Command Palette attached to its owning browser window across activatio
 
 ## Quality acceptance
 
-Visual regression tooling is owned by [Reusable visual snapshots](../tasks/visual-snapshot-tooling.md) and its [Native Gallery coverage extension](../tasks/gallery-visual-coverage.md) in the [Testing track](../tracks/testing.md); it supplements semantic real-app E2E.
+Visual regression tooling is owned by [Reusable visual snapshots](../tasks/visual-snapshot-tooling.md) and its [Native Gallery coverage extension](../tasks/gallery-visual-coverage.md) in the [Testing track](../tracks/testing.md); it supplements semantic real-app E2E. The first migration runtime gate is the bounded [Tokens / Checkbox / Sidebar pilot](../tasks/gallery-visual-pilot.md), not full-coverage or baseline acceptance.
 
 - [ ] Shell follows the [UI design-system track](../tracks/ui-design-system.md).
 - [ ] Keyboard and VoiceOver acceptance in [Accessibility track](../tracks/accessibility.md) is green.

@@ -1386,6 +1386,47 @@ No workflow, foreign worktree, host GUI, push or performance execution. Tooling
 check durations are measured where recorded, not product timings; requirement-
 audit elapsed time was not instrumented. Goal remains active and incomplete.
 
+### Bounded pilot contract checkpoint
+
+Preflight: clean `main@509e565b94d3ec2e29346f26731e46ceb1d47a86`, same visual
+session/sole writer, no Git index lock, matching visual/Tart process or observed
+capture-lock holder. ROADMAP and all 2,121 delivery lines were read in bounded
+chunks. No other queue item is authorized here; no subagent/workflow, foreign
+worktree, host GUI, VM/network, asset change or publication.
+
+The [pilot packet](../roadmap/tasks/gallery-visual-pilot.md) now owns concrete
+Tokens, Checkbox and Sidebar requirements, linked through roadmap/phase/track
+and the parent packets. Source inspection at the unchanged GPUI pin confirms:
+headless input must use public Window dispatch, not the VisualTestContext-only
+bounds helper; the existing hug-child wrapper can provide capture-only bounds;
+Checkbox has a 250ms scheduler timer plus a wall-clock animation; selecting a
+capture case does not reset its recorder. The contract requires fresh journey
+state, false/true/false snapshots around real GPUI down/up events, both clock
+boundaries, distinct still identities and legitimate Check SVG pixels. It does
+not claim OS input or an animation timeline.
+
+Sidebar outer pagination remains separate from nested/paint framing. The default
+family requires its actual descendants/clip ancestry; dense-500 remains a bounded
+window diagnostic, never full-list coverage. Existing complete selected-story
+scheduling, all 936 historical pairs and 31 withheld rows are unchanged. No
+catalog/config/producer is activated and no native result is claimed.
+
+Self-review traced the public input/clock seams against the exact GPUI checkout
+and current component/fixture sources. Verification for this documentation-only
+slice: `just roadmap` and index roadmap validation, source-reference existence,
+whitespace and unchanged protected inputs; command logs are
+`/tmp/bbr-visual-pilot-contract-roadmap.log` and
+`/tmp/bbr-visual-pilot-contract-index.log`. No Rust/Python behavior changed; prior
+portable test results are not advertised as fresh runtime evidence. Planning
+and review time were not instrumented; product performance remains unproven.
+
+Scheduling audit: the next useful local implementation is the bounded source-bound
+endpoint identity/rejection contract; it must preserve upstream authority and
+selected scope before any producer extension. Actual pilot still requires the
+specific VM/network and asset approvals, guest runtime availability and measured
+input/paint/framing evidence. No acceptance boxes are checked, and neither goal
+completion nor a global blocked stop follows from publishing this contract.
+
 ## Status vocabulary
 
 | Status | Meaning |

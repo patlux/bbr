@@ -214,6 +214,15 @@ five additive withheld gaps while retaining existing natural menu-height and
 Command endpoint mechanisms. Actual input, framing, two current complete captures
 and image/report review remain open.
 
+## Bounded migration pilot
+
+The [Tokens / Checkbox / Sidebar pilot](gallery-visual-pilot.md) owns the first
+runtime increment: production pointer-dispatched Checkbox endpoints, both clock
+boundaries, complete outer Sidebar pages and separately measured default-family
+nested/paint framing. It remains partial development evidence, preserving every
+historical requirement and withheld gap. Publication of that contract authorizes
+neither asset changes nor VM/network execution, and clears no full-Gallery gate.
+
 ## Iteration policy
 
 Begin with audited inventory and the smallest native capture path. Diagnose

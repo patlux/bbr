@@ -99,8 +99,8 @@ current portable green gates do not prove actual guest captures or Python parity
   producer output. Invalid suites remain visible beside valid siblings.
 - [ ] VM environment/build/source identity, output transfer, bounded cancellation,
   process/VM cleanup and stale/no-write acceptance paths have direct tests.
-- [ ] Tokens, actual Checkbox pointer transitions and multipage Sidebar pilot
-  pass with production assets, not test-only substitutes.
+- [ ] The [Tokens / Checkbox / Sidebar pilot](gallery-visual-pilot.md) passes
+  its production-input, endpoint, framing and exact-repeat gates.
 - [ ] Two independent complete VM captures match decoded RGBA8 exactly; actual
   images/reports are inspected and existing eight browser cases are retained.
 - [ ] Fresh current-tree functional gates pass; reviewed baseline approval remains
