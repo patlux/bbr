@@ -83,21 +83,56 @@ class BootstrapContracts(unittest.TestCase):
         result = subprocess.run(["/bin/zsh", "-n"], input=script, text=True, capture_output=True, timeout=5)
         self.assertEqual(result.returncode, 0, result.stderr)
 
-    def test_semantic_payload_cannot_fall_through_to_unwired_capture(self):
-        with patch.object(vm_bootstrap, "REPO", self.fixture.repo), \
-                patch.object(vm_bootstrap.vm_install, "inspect") as inspect:
-            with self.assertRaisesRegex(vm_bootstrap.BootstrapError, "semantic guest execution is not wired"):
-                vm_bootstrap.plan(self.fixture.share, self.digest, self.fixture.repo, "gallery-semantic")
-            inspect.assert_not_called()
-        with patch.object(vm_bootstrap_guest, "identity") as identity, \
-                patch.object(vm_bootstrap_guest.vm_install, "inspect") as inspect, \
-                patch.object(vm_bootstrap_guest, "prepare_parent") as parent:
-            with self.assertRaisesRegex(Exception, "semantic guest execution is not wired"):
-                vm_bootstrap_guest.run(self.fixture.share, self.digest, self.fixture.repo,
-                                       "gallery-semantic", self.fixture.work)
-            identity.assert_not_called()
+    def test_semantic_bootstrap_is_source_frozen_no_install_and_host_forbidden(self):
+        path = self.fixture.share / "payload.json"
+        payload = json.loads(path.read_text())
+        payload["suite"] = "gallery-semantic"
+        for entry in payload["files"]:
+            if entry["guest"].endswith("/target/release/bbr-gallery"):
+                entry["guest"] = str(self.fixture.repo / "target/release/deps/bbr_gallery-fixture")
+        raw = json.dumps(payload).encode()
+        path.write_bytes(raw)
+        digest = hashlib.sha256(raw).hexdigest()
+        with patch.object(vm_bootstrap, "REPO", self.fixture.repo):
+            script = vm_bootstrap.plan(self.fixture.share, digest, self.fixture.repo, "gallery-semantic")
+        self.assertIn('gallery-semantic', script)
+        self.assertIn('--offline', script)
+        self.assertIn('mount_virtiofs -r', script)
+        for forbidden in ('--realise', '--repair', 'curl ', 'chown -R', 'sys.path.insert'):
+            self.assertNotIn(forbidden, script)
+        syntax = subprocess.run(["/bin/zsh", "-n"], input=script, text=True, capture_output=True, timeout=5)
+        self.assertEqual(syntax.returncode, 0, syntax.stderr)
+        actual = subprocess.run(["/bin/zsh", "-f", "-s"], input=script, text=True, capture_output=True, timeout=5)
+        self.assertNotEqual(actual.returncode, 0)
+        self.assertIn('host forbidden', actual.stderr)
+        with patch.object(vm_bootstrap_guest.vm_install, 'inspect') as inspect, \
+                patch.object(vm_bootstrap_guest, 'prepare_parent') as parent:
+            with self.assertRaisesRegex(Exception, 'host forbidden'):
+                vm_bootstrap_guest.run(self.fixture.share, digest, self.fixture.repo,
+                                       'gallery-semantic', self.fixture.work)
             inspect.assert_not_called()
             parent.assert_not_called()
+        with patch.object(vm_bootstrap, 'REPO', self.fixture.repo):
+            with self.assertRaisesRegex(ValueError, 'selected request'):
+                vm_bootstrap.plan(self.fixture.share, digest, self.fixture.repo, 'gallery-semantic', '{}', 'a' * 64)
+        binding = self.binding()
+        binding.update(suite='gallery-semantic', payload_sha256=digest)
+        frozen = subprocess.run([sys.executable, '-I', '-B', '-c', self.loader_code(), json.dumps(binding)],
+                                text=True, capture_output=True, timeout=5)
+        self.assertNotEqual(frozen.returncode, 0)
+        self.assertIn('host forbidden', frozen.stderr)
+        self.assertNotIn('ModuleNotFoundError', frozen.stderr)
+        calls = []
+        with patch.object(vm_bootstrap_guest, 'REPO', self.fixture.repo), \
+                patch.object(vm_bootstrap_guest, 'identity', side_effect=lambda: calls.append('identity')), \
+                patch.object(vm_bootstrap_guest.vm_install, 'inspect', side_effect=lambda *a: calls.append('inspect')), \
+                patch.object(vm_bootstrap_guest, 'prepare_parent', side_effect=lambda *a: calls.append('parent')), \
+                patch.object(vm_bootstrap_guest.vm_guest, 'main', side_effect=lambda a: calls.append(a)):
+            vm_bootstrap_guest.run(self.fixture.share, digest, self.fixture.repo,
+                                   'gallery-semantic', self.fixture.work)
+        self.assertEqual(calls[:3], ['identity', 'inspect', 'parent'])
+        self.assertEqual(calls[3], ['vm_guest.py', str(self.fixture.share), digest, str(self.fixture.repo),
+                                   'gallery-semantic', str(self.fixture.work)])
         self.assertFalse(self.fixture.repo.exists())
         self.assertFalse(self.fixture.work.exists())
 

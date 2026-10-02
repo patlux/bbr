@@ -19,6 +19,7 @@ pub struct PageCapture(pub Rc<RefCell<PageState>>);
 #[derive(Default)]
 pub struct PageState {
     pub range: Option<Range<usize>>,
+    pub checkbox: crate::capture_target::Target,
     pub total: usize,
     pub bounds: Vec<Bounds<Pixels>>,
     pub first_prepaint: Option<Instant>,
@@ -42,8 +43,14 @@ impl PageState {
 
 impl PageCapture {
     pub fn reset(&self, range: Option<Range<usize>>) {
-        *self.0.borrow_mut() = PageState {
+        let mut state = self.0.borrow_mut();
+        // Preserve the monotonic generation across case/page changes. A reset
+        // must never let a callback from an old draw look current again.
+        let mut checkbox = std::mem::take(&mut state.checkbox);
+        checkbox.invalidate();
+        *state = PageState {
             range,
+            checkbox,
             ..Default::default()
         };
     }

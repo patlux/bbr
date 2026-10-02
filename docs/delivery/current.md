@@ -1660,6 +1660,514 @@ already available guest runtime, with no realization/repair fallback. Asset and
 baseline approvals remain separate. The observer stays uncommitted pending its
 affected guest gate. No completion or global blocked-stop claim is made.
 
+### Fixed Gallery semantic action checkpoint
+
+Base is `main@b4c0795379f88d8193b5cf9c33da9ecd15a81ba6`; the prior Gallery
+observer/recipe remains the only inherited dirty candidate and is not committed
+by this tooling increment. ROADMAP and the changed delivery checkpoint/queue were
+rechecked against the preceding full read. No staged changes/index lock; unrelated
+mbx process cwd was outside BBR and remained untouched. A transient holder of the
+existing GUI lock was observed during final checks; no signal, lock takeover or
+GUI operation was attempted. Only this local visual writer is authorized, with no
+new lane/workflow/subagent, foreign working-tree inspection or publication.
+
+The pilot packet now bounds one guest-only fixed `gallery-semantic semantic`
+action. An independently authored 49-name requirement includes the pending target
+scenario; listing must match before the first test runs. Fixed ignored/serial/
+pretty/no-color commands use the exact staged harness. Actual successful exit
+and exact ordered per-test `ok` lines plus one zero-failed/ignored/measured summary
+are required. Unknown output, missing/extra/duplicate names/results, zero tests,
+failed/ignored cases, overflow, cancellation and source drift fail closed.
+The typed result retains raw listing/run stdout and original payload, requirement
+and executable identities. Validation repeats completeness; no image seal,
+Collection input, baseline or native-paint proof is invented.
+
+Dispatch retains actual admin/VirtualMac, compiled-path, manifest/shared/installed
+byte guards. The existing upstream executor owns every child group. One 600s
+budget starts before guest identity/preflight, reduces command time by repeated
+byte checks, and is rechecked after final identity verification. No caller filter,
+arbitrary argv, host bypass, new dependency or runtime installation is added.
+Python bootstrap and guest-composition guards remain closed pending the next
+return integration. A result file alone is not terminal transport success.
+
+Evidence:
+- Missing-module/action reds: `/tmp/bbr-visual-semantic-action-red.log` and
+  `/tmp/bbr-visual-semantic-invoke-red.log`. The first source-inventory check
+  caught a mistyped Library test name; the authored name was corrected rather
+  than relaxing the check (`/tmp/bbr-visual-semantic-action-protocol.log`).
+- Five protocol/source contracts pass, including actual stable libtest listing
+  and serial execution of two inert consumer-only fixtures; no Gallery executable
+  is launched. Four injected guest-action tests cover exact argv/environment,
+  ordering, fresh output, cancelled/expired budgets, symlink/source drift,
+  failed status/cleanup and incomplete/invalid output. A further dispatcher test
+  rejects capture actions/filters on this purpose. Actual host CLI refusal is
+  extended to the full semantic argv.
+- Full `just visual-test` passes after self-review:
+  `/tmp/bbr-visual-semantic-action-reviewed.log`: **155 Python discoveries**
+  (154 pass / one integration skip separately passed), unchanged upstream and
+  **102 consumer tests** plus signal fixtures. Two inert fixture tests are ignored
+  by normal discovery and explicitly executed by the protocol contract.
+  Consumer unit group 6.75s; Python discovery 6.433s. These are tooling times.
+- Strict consumer all-target Clippy passes after a test-only `and_then`→`map`
+  lint correction: `/tmp/bbr-visual-semantic-action-clippy-reviewed.log`.
+  Workspace/consumer fmt, whitespace and protected-input checks pass. Roadmap:
+  `/tmp/bbr-visual-semantic-action-roadmap.log`. No assertion or deadline weakened.
+
+Self-review found an integration detail for the next slice: existing Gallery sweep
+scenarios write exactly two report-only files under the compiled
+`target/bbr-gallery-perf` directory. The current Python installed-tree verifier
+rightly rejects extra files. Before semantic transport activation, account for
+those specific outputs without changing tests or broadening the installed-file
+allowlist; preserve them as diagnostics, never product-performance acceptance.
+The 49-name requirement is not image coverage. It intentionally requires the
+currently uncommitted observer and cannot pass on a harness lacking that scenario.
+
+No real Gallery/VM/SSH/network, guest runtime proof, current GUI gate, visual review
+or baseline adoption occurred. The previous host preparations are stale; subsequent
+execution requires fresh source/build staging. Product Cargo/pin/vendor/baselines,
+image catalogs and endpoint execution guards are unchanged. Implementation/review
+elapsed time was not measured. The observer remains uncommitted pending its real
+guest gate; this portable consumer increment is not a stable-migration handoff.
+Final commit review found that its exact source-completeness regression depends
+on that observer candidate. Therefore this action/catalog increment also stays
+uncommitted: splitting it now would create a revision that fails its own source
+check. No assertion is weakened or dependency hidden to obtain a separate commit.
+Only this writer's staged paths are unstaged, preserving all working files.
+
+Scheduling audit: receipt/return validation and the exact report-output handling
+are the next concrete local prerequisite using existing transport. No more input
+wiring or other product queue item is activated. Actual boot still requires the
+specific private-NAT/key-only SSH approval; legitimate Check SVG and report-specific
+adoption require separate approval. Goal remains active and incomplete, not globally
+blocked while that bounded local integration remains defensible.
+
+### Semantic diagnostics / guest composition / host return checkpoint
+
+Continuation reverified `main@b4c0795379f88d8193b5cf9c33da9ecd15a81ba6`,
+empty index, no index lock, and this writer's preserved observer/action candidates.
+ROADMAP and all 2,476 then-current delivery lines were read in bounded chunks.
+No matching Tart/build process or holder of the two historical capture-lock files
+was observed; the ordinary user BBR process was left untouched. One local writer,
+no workflow, subagent, new lane or foreign worktree access. The pilot packet was
+extended before implementation; no other product queue item is authorized here.
+
+The fixed semantic action now requires a fresh sweep-output directory before
+listing and again before execution. After exact test success it preflights exactly
+the two existing report-only JSON files, rejects links/nonregular/oversized/invalid
+or extra output, and preserves their bytes in `semantic-every-story-renders.json`
+and `semantic-mode-state-switching.json`. Both destinations are fresh; copying,
+byte rechecks and removal stay within the action's cancellation/deadline checkpoints.
+Only the two known source files and their now-empty generated directory are removed.
+No installed-tree allowlist exception or test/budget change was made. Missing output
+is failure; diagnostics are neither image snapshots nor product-performance proof.
+
+Python guest composition invokes only the fixed semantic action for this purpose,
+then performs the unchanged exact installed-tree/shared-byte checks and repeated
+guest observation before receipt/archive creation. It requires the exact three raw
+semantic artifacts, and the existing bounded transfer metadata allowlist names
+only those new files. Filters and capture actions are rejected. No Python test
+coverage parser, second transport or capture authority was introduced.
+
+The new pure host validator reuses extracted unchanged returned-file/marker checks
+and host/guest receipt binding from the capture path. It requires the exact result,
+both diagnostics and receipt, checks hash-bound semantic stdout/requirements/build
+identity and report-only diagnostics, and returns a separate `Verified` type rather
+than `Captured`, an image suite or a rendering policy. Rechecks retain the original
+host payload/build/digest and transport evidence; rewriting the output marker cannot
+adopt changed bytes. Capture receipt binding rejects a semantic payload. This is
+pure integrity/completeness evidence, not proof that a guest process or VM ran.
+Bootstrap and the host execution route remain closed to this purpose pending the
+next supervised-chain integration; no public VM command is enabled.
+
+Evidence:
+- Missing diagnostic function red: `/tmp/bbr-visual-semantic-diagnostics-red.log`.
+  Behavioral reds show missing reports wrongly allowed success and absent diagnostic
+  return: `/tmp/bbr-visual-semantic-diagnostic-action-red.log`.
+- Guest-composition red: `/tmp/bbr-visual-semantic-composition-red.log`.
+  Green VM-helper group: `/tmp/bbr-visual-semantic-composition-green.log`,
+  111 tests / 1.345s. All native/environment/process calls are synthetic boundaries;
+  fixtures still use real strict installation/archive checks in disposable folders.
+- Host return missing-module red: `/tmp/bbr-visual-semantic-return-red.log`.
+  Three return contracts plus the six existing receipt/transport contracts pass:
+  `/tmp/bbr-visual-semantic-return-green.log`. Negative cases include missing/extra/
+  linked/changed output, rehashed invalid result/diagnostic data, source/build/guest
+  drift, cross-purpose image substitution, cancellation and rewritten manifests.
+- Final full `just visual-test`: `/tmp/bbr-visual-semantic-return-visual-test.log`:
+  **158 Python discoveries** (157 pass / one integration skip separately passed),
+  unchanged upstream and **108 top-level consumer tests** plus existing signal and
+  inert protocol fixtures. The count excludes echoed injected libtest transcripts.
+  Python discovery 6.445s; separate CLI fixture 0.601s, no real baseline mutation.
+- Strict consumer all-target Clippy: `/tmp/bbr-visual-semantic-return-clippy.log`,
+  1.65s cached. Earlier complete diagnostic/composition pass:
+  `/tmp/bbr-visual-semantic-composition-visual-test.log`; Clippy25.05s at
+  `/tmp/bbr-visual-semantic-composition-clippy.log`. Workspace/consumer formatting,
+  whitespace and protected-input checks pass; roadmap rechecked after documentation.
+
+Self-review kept the existing capture environment JSON unchanged while separating
+receipt validation from image-policy construction, and reused rather than duplicated
+the return-byte checker. Dedicated names avoid mislabeling timing reports as image
+snapshots. No actual Gallery, VM, SSH, network, guest runtime, current GUI gate,
+PNG/HTML review, cleanup or visual acceptance is proven. Prior preparations remain
+stale; fresh source/build staging is required. Tooling times are not product metrics;
+implementation/review elapsed time was not measured. All candidates remain
+uncommitted because the exact semantic inventory depends on the observer awaiting
+its actual guest gate. No staged changes or acceptance checkboxes are introduced.
+
+Scheduling audit: the next useful local step is source-frozen bootstrap and shared
+supervisor-to-semantic-return integration, retaining original identities and
+cleanup-before-publication ordering. Specific private-NAT/key-only SSH approval,
+available guest runtime without installation, Check SVG approval and later concrete
+baseline adoption remain required. No repeated source audit or extra product/input
+work is activated. The goal remains active and incomplete while this local step is
+still defensible.
+
+### Shared supervised semantic route checkpoint
+
+The same local candidate now connects semantic payloads through the existing host
+transport rather than a second pipeline. A private shared transfer input carries
+`Purpose`, while image callers retain their unchanged `Suite`/`Captured` API and
+semantic callers expose only `Verified`, with no selection field. Exact payload
+purpose/repository is checked before runtime/workspace creation. Only source/runtime
+policy uses the Gallery source suite. Supervision, original payload digest, gates,
+source rechecks and independent resource cleanup remain the same implementation.
+Semantic record/receipt validation follows successful supervisor return.
+
+Source-frozen bootstrap generation/tail now accept semantic purpose unchanged;
+actual admin/VirtualMac guards still precede runtime checks/mounts/parent writes.
+The pinned runtime must already exist and verify offline. No installation, repair,
+new command-line entrypoint, automatic boot or public exposure was added. The
+preparation recipe remains host-only and never even lists the Gallery harness.
+Historical checkpoints describing explicit semantic refusal remain provenance;
+this checkpoint supersedes only that internal capability, not approval boundaries.
+
+Evidence:
+- Missing internal route red: `/tmp/bbr-visual-semantic-chain-red.log`.
+  The existing cross-language supervisor test now exercises 21 modes, including
+  semantic success, operation failure, cancellation, host cleanup rejection,
+  swapped receipt, invalid exact result and current-source mutation. Native/SSH/
+  runtime/resource boundaries are inert fixtures; real supervisor/archive/receipt
+  logic is used. Both leases are checked inside child and independent host resource
+  observations. Failure with proven cleanup releases leases; rejected host cleanup
+  retains active evidence. Return-validation failures never become capture seals.
+  Focused pass: `/tmp/bbr-visual-semantic-chain-green.log`.
+- Bootstrap red: `/tmp/bbr-visual-semantic-bootstrap-integration-red.log`.
+  Semantic source-bound generated zsh passes syntax validation and an actual host
+  invocation refuses before runtime/mount/writes; direct guest-tail host refusal,
+  fixed tail ordering and no-install flags are checked. VM helper group passes in
+  `/tmp/bbr-visual-semantic-bootstrap-integration-green.log` (111 tests).
+- Full `just visual-test`: `/tmp/bbr-visual-semantic-chain-visual-test.log`:
+  **158 Python discoveries** (157 pass / one separately passed integration),
+  unchanged upstream and **109 top-level consumer tests** plus existing signal/
+  inert protocol fixtures. Python discovery6.559s, separate integration0.607s.
+  Strict all-target consumer Clippy passes in
+  `/tmp/bbr-visual-semantic-chain-clippy.log` (1.34s cached).
+- Self-review adds stale/wrong-purpose/pre-cancelled no-workspace/no-lease tripwires,
+  checks specific semantic/source/receipt rejection reasons and retains existing
+  full/selected image and endpoint-refusal coverage. No old assertion is removed.
+  Final follow-up also checks semantic frozen-loader host refusal and filter
+  rejection; its focused/full rechecks are recorded in the next verification log.
+
+No actual Gallery, VM, key/SSH/network or guest-runtime operation occurred, and no
+current callback, pixel, baseline, actual cleanup or product-performance claim
+follows. The ordinary user app, foreign worktrees and protected product/vendor/
+image inputs remain untouched. Candidates stay uncommitted with the unverified
+observer dependency; index is empty. This is not a stable-slice handoff or parity
+claim. Implementation/review elapsed time was not measured.
+
+Scheduling audit: same sole visual owner; no other lane or workflow authorized.
+Next useful local action is a fresh actual host-only preparation plus independent
+byte/feature/hash/bootstrap-plan inspection on these changed sources, without
+running any Gallery executable or starting a VM. Actual semantic execution then
+needs the specific recorded private-NAT/key-only SSH approval and a preavailable
+guest runtime; no host/installation fallback. Check SVG approval and later
+report-specific baseline adoption remain separate. No goal completion is claimed.
+
+### Semantic route preparation and approval-bound stop
+
+The fresh actual host-only preparation succeeds at
+`/private/tmp/bbr-visual-semantic-route-prepare.Mw6A35`. It builds but never lists
+or executes the feature-enabled Gallery harness. `host-build.json`, `prepare.log`,
+`inspection.json` and syntax-only `bootstrap.zsh` are retained there:
+- 1,511 sources / 1,513 payload files / 41,175,047 bytes;
+  manifest SHA-256 `8d35f10724def69bbe9af9539a9d402de3d40776bc59f1fcb0d26d9520493a03`.
+- Gallery harness `target/release/deps/bbr_gallery-cce0640bfb5ec5ef`:
+  `c1f8127b66a1c28422617bd19e7db211027eb94fb3ae4945a249fb77417b8d05`.
+  Standalone consumer: `560956264865694670c5f477ec912788d2905332737d618b875cb36f9269c7d5`.
+- The independent Python inspector rechecks every staged byte/role and equality
+  with host build hashes; the source-bound semantic plan contains49 cases.
+  Generated bootstrap18,076 bytes, SHA-256
+  `c484e9764d3f90b8e5a67c66c70c0ae5343baa568a4f4c10d753faabed0df50f`, passes `zsh -n`
+  and no-realization/repair/fallback checks. It was neither executed nor sent over
+  SSH. Release builds take2m16s Gallery /23.36s consumer (Cargo-reported).
+- Host macOS27.0/26A428, arm64, Rust1.97.1, Xcode27.0/27A5252f, SDK27.0.
+  These remain host observations, not guest runtime/rendering evidence. A following
+  Rust doc-comment correction and this ledger update make the payload historical;
+  prepare fresh again before any approved execution, never reseal it.
+
+Final verification:
+- `/tmp/bbr-visual-semantic-chain-reviewed.log`: complete `just visual-test` passes,
+  including the final frozen-loader/filter regressions:158 Python discoveries
+  (157 pass / one integration skip separately passed), unchanged upstream and109
+  top-level consumer tests plus signal/inert fixtures. Python6.661s; separate CLI
+  integration0.488s. Synthetic acceptance changes only disposable fixture stores.
+- `/tmp/bbr-visual-semantic-verify.log`: full non-GUI `just verify` sequence passes,
+  including49 shared script tests17.791s. The inspected
+  `/tmp/bbr-visual-semantic-verify-i2wm8g6k.just` substitutes only compiler Cargo
+  calls with mbx; its plan is `/tmp/bbr-visual-semantic-verify-plan.log`. No ignored
+  GUI tests, weakened checks, target override or host native capture is introduced.
+- `/tmp/bbr-visual-semantic-feature-gates.log`: strict testkit all-target Clippy,
+  browser visual-capture-target Clippy and Gallery capture-feature all-target
+  Clippy pass. Gallery feature units164 pass /49 ignored,0.50s. The ignored
+  semantic scenarios remain unexecuted. Existing `block v0.1.6` warning remains.
+- Consumer strict Clippy, workspace/consumer fmt and whitespace pass; separate
+  script suite49/49 in `/tmp/bbr-visual-semantic-route-script-tests.log`19.248s.
+  Roadmap: `/tmp/bbr-visual-semantic-route-roadmap.log`; rechecked after this ledger.
+  Root Cargo/GPUI/vendor/baseline/image-config/actual image catalog and plan diff is
+  empty. HEAD stays `b4c0795379f88d8193b5cf9c33da9ecd15a81ba6`; index stays empty.
+
+Current bounded-step audit: fixed-action requirements, exact stdout/status evidence,
+known diagnostic handling, strict installed-tree recheck, source-frozen bootstrap,
+shared supervision/cleanup protocol, host receipt/result validation and actual
+host-only preparation now have portable evidence. No actual guest test, callback,
+Metal/input, current PNG/HTML review, normal/timeout/cancelled VM teardown, full
+repeat or baseline adoption has occurred. The observer plus dependent49-case
+catalog/action/route therefore remain deliberately uncommitted. Local green gates
+cannot satisfy their required guest gate, and old native/Portal evidence is not
+reused as current proof.
+
+Scheduling/blocked-stop audit: this sole owner has no authorized parallel/product
+lane. Repeating source audits or pure builds would add no missing runtime proof.
+More input/readiness/framing code before the observer gate is explicitly deferred
+by the pilot packet. Full matrices/browser repeat/review and Python parity removal
+all depend on approved fresh guest execution. Later compositions/sequences are
+sequenced after stable migration; product performance remains deferred. No safe
+nonredundant local implementation step remains before that runtime boundary.
+
+Minimum next input: Patrick's explicit approval for the disposable headless Tart
+clone's private NAT and dynamic guest TCP22, reachable from the host/allowed NAT
+peers, authenticated only by a run-specific SSH key, no public/bridge/forwarded
+listener; clone-only listener/auth hardening, allowed/forbidden access audits and
+clone/key cleanup are part of the run. Pinned guest dependencies must already be
+available; actual absence or authentication failure stops without installation or
+host fallback. Legitimate Check SVG source wiring is a separate approval for the
+subsequent input/pixel pilot; concrete report/case baseline approval is later still.
+Preserve all current files and foreign worktrees. No push, commit, network/VM action
+or migration-completion claim accompanies this approval-bound stop.
+
+### Authorized semantic guest run (2026-10-02)
+
+Patrick explicitly instructed execution after the bounded private-NAT/key-only
+SSH route was explained. This supersedes the preceding network-approval stop for
+this semantic gate only: one disposable headless clone, run-specific SSH key,
+clone-only hardening and access audits, existing supervised transport and verified
+cleanup. No host GUI, guest dependency installation/repair, baseline adoption,
+Check SVG change, other lane, subagent or publication is authorized by this run.
+
+Continuation confirms the same session `01a0f8f4-1c46-71bf-9fae-3c394de53395`,
+`main@b4c0795379f88d8193b5cf9c33da9ecd15a81ba6`, empty index and preserved
+observer/semantic candidates. No index lock, Tart/build process or observed
+capture-lock holder; the shared host gate is idle. The ordinary BBR process and
+foreign worktrees remain untouched. The entire current delivery was reread in
+bounded chunks. Queue audit selects the actual 49-case semantic gate; no additional
+lane is authorized. Sources and binaries will be freshly prepared, then a small
+external caller will invoke the existing Rust `vm_semantic::run` API with normal
+host/compatibility gates. It adds no capture CLI, runner or acceptance authority.
+Actual runtime or authentication failure stops without a fallback; all attempts
+and resource-cleanup evidence will be recorded before any commit decision.
+
+### Actual semantic VM attempts and runtime blocker (2026-10-02)
+
+The network approval is now consumed by two real bounded attempts, not pending.
+Fresh host payload and external API-only caller evidence is retained under
+`/private/tmp/bbr-visual-semantic-approved.09DN2I`. The caller invokes only existing
+`vm_semantic::run` plus original-identity recheck, normal host/compatibility locks
+and signal cancellation; it adds no repository CLI or second execution pipeline.
+
+1. First payload: 1,511 sources / 1,513 files / 41,175,051 bytes, manifest
+   `456d43d1170a0606b7d309d51cd7a15c2eb90afa1f6acc1ed5da5b7c3fc33ec3`.
+   Clone `bbr-visual-96867-a9c1986687c0`, guest `192.168.66.23`. Offline clone-only
+   hardening and key-only SSH succeeded, but the authentication-output parser
+   rejected normal repeated `listenaddress` and `hostkey` fields before bootstrap.
+   The actual output is in `transport/vm/sshd-audit.log`; this is not a failed
+   authentication or permission bypass. The regression reproduces the parser error
+   in `sshd-parser-red.log` before the narrow repair.
+2. Repair permits distinct values only for those two OpenSSH list directives;
+   policy fields, unknown repeated fields, identical duplicates and malformed
+   lines remain rejected. Authentication config, listener/access requirements,
+   runtime policy and cleanup predicates are unchanged. The pilot packet records
+   this bounded remediation. Policy/lifecycle 18/18 pass (`sshd-parser-green.log`),
+   and the original recorded output now validates. Full `just visual-test` passes
+   (`sshd-parser-visual-test.log`):159 Python discoveries (158 pass, one separately
+   passing integration), unchanged upstream and109 consumer tests plus fixtures.
+3. Fresh retry under `retry-sshd`: 1,511 sources / 1,513 files / 41,176,366 bytes,
+   manifest `34c42f73f11358c5fd80817553bdc34ccc8f71396c617fc8b71ad5bf43f666f4`.
+   Clone `bbr-visual-64490-aa0dae8dae38`, guest `192.168.66.24`. Effective
+   authentication and listener audits pass; host probes reach TCP22 and reject
+   TCP88/5900. Fixed source-bound bootstrap then fails its offline pinned-runtime
+   check because `/nix/store/jspv3c5l2zx4kiwzhq0zgxcwp34cqifz-libiconv-115.100.1`
+   does not exist in the guest (`retry-sshd/transport/bootstrap.stderr`).
+   No dependency realization, download, repair, share mount, installation,
+   Gallery listing/test execution, image production or baseline change followed.
+
+Both attempts exited2 and completed owned cleanup: stop/delete exit0, owned Tart
+process reaped, key deleted, clone/disk absent and former SSH unreachable. Each
+supervised failure had a request-bound failed terminal and passed independent host
+resource recheck before the shared host/compatibility gates returned idle. Exact
+records are each run's `transport/vm/cleanup.log` and `cleanup-observed.json`.
+Golden Image and ordinary host BBR remain untouched. This proves two real
+failure-path teardowns and the retry's network policy, not successful semantic
+execution, normal capture, timeout/cancellation teardown, Metal or visual parity.
+
+The parser fix is committed independently as `5992f5af` (only the policy parser
+and its regression), runtime-verified through the second authentication/listener
+audit. Final roadmap/whitespace checks pass, and both cleanup records were
+independently rechecked again in `final-cleanup-recheck.json` under the run root.
+The observer and dependent semantic changes
+still lack their actual49-case gate and remain uncommitted. No acceptance box is
+checked. Scheduling audit: no other lane is authorized; further input/framing
+work still depends on that observer gate. The remaining blocker is concrete guest
+runtime absence, not further network permission. Do not retry unchanged or install
+against the no-install contract; a separately authorized compatible golden/runtime
+preparation is required before another fresh run. Test durations in logs are
+tooling measurements; total implementation/review time was not instrumented.
+
+### Offline runtime remediation resumed
+
+Patrick requested “fix alles” and then “continue” for the explained offline,
+byte-bound runtime transfer followed by the49-scenario guest gate. The earlier
+preinstalled-only precaution is superseded for this prerequisite. The bounded
+[pilot contract](../roadmap/tasks/gallery-visual-pilot.md#authorized-offline-runtime-provisioning)
+permits only already verified local closure export and a single offline import
+into the hardened disposable clone. No host/Golden Image write, download,
+substitution, repair, extra network route or baseline acceptance is involved.
+
+Continuation preserves `main@5992f5af`, the empty index and all observer/semantic
+candidates. Entire delivery document reread; no other lane or agent is authorized.
+Ordinary host BBR remains untouched. Queue audit selects the smallest real
+runtime-transfer → existing bootstrap → semantic execution path; downstream
+input/framing and full image coverage still depend on its evidence. Existing
+request-bound supervisor, authentication/listener audits and cleanup remain the
+only transport authority. The new transfer tests first failed for absent module/
+transport support, then passed after implementation; one intermediate test edit
+had a missing Python continuation slash and was corrected. Logs are under
+`/private/tmp/bbr-visual-runtime-fix`. Fresh staging and a real clone will now test
+the dependency boundary; no successful import or semantic test is yet claimed.
+
+### Verified semantic runtime checkpoint (2026-10-02)
+
+The bounded semantic prerequisite now passes actual guest execution. Evidence is
+under `/private/tmp/bbr-visual-runtime-fix`; this checkpoint supersedes the earlier
+runtime-absence and unexecuted-observer stops, not the overall migration gates.
+One local writer, preserved `main@5992f5af` candidates, empty pre-commit index;
+no agent, foreign worktree, baseline, product graph, vendor or host GUI change.
+
+Runtime remediation and measured attempts:
+- `attempt1`: exported51 already verified locked paths,1,492,282,464 archive bytes,
+  then imported once offline into the hardened clone. All original NAR/Python
+  checks passed. Console parser rejected macOS27's direct-root plist. Its exact
+  shape was reproduced with a read-only host `ioreg` query and a negative-first
+  test. One-element-array support and unlocked-admin requirements are preserved.
+- `attempt2`–`attempt4`: diagnostic-only progression identified an empty user
+  `HomeManager` directory plus the exact hidden version-marker link, not extra
+  fonts. A negative-first contract permits only those inert entries without
+  following the marker; populated directories and other links stay rejected.
+- `attempt5`/`attempt7`: system-font diagnostics identified only the stock Arial
+  Unicode alias. Exact destination and directly inventoried identical bytes are
+  required; arbitrary links/chains are still rejected. No font installed/deleted.
+- `attempt6`: enclosing command reported137 after the25m outer timeout. The
+  supervisor request was created late in the invocation; no runtime export or
+  bootstrap began. The recorded cancellation was cooperative: terminal cancelled,
+  clone/key/process/disk removed and SSH unreachable, independently rechecked.
+  No hard-kill teardown claim. The external API caller now bounds gate waiting
+  explicitly to30s; production gates and operation/cleanup budgets are unchanged.
+- `attempt8`:49/49 actual tests passed, including the new observer, and the exact
+  archive returned after cleanup. Host receipt validation correctly refused the
+  empty `system_profiler` display array. No weakened empty-array acceptance.
+- `attempt9`: a bounded pinned-Python CoreGraphics/Metal probe observes the actual
+  virtual display and device without AppKit/window/capture creation. Complete
+  original-payload/source/build binding, semantic result, report-only diagnostics,
+  before/after environment, installed bytes and cleanup now pass. API status is
+  `verified`, exit0,96.22s complete caller /5.08s tests (tooling timings only).
+
+First fully verified run identity:
+- Payload `2e3458ab9e9ce373851bce04333ce432e0a9f5243b7437cd13af26c2b740a6cc`;
+  Gallery harness `3c0ef7ad9813e3128eeac9f473d530e792aaf3783d9f4b85d100fe3e8ed935c8`;
+  consumer `79f00227aee6e2b247886d9f2d00e50cda64cfc347ae04efb442d066ebabae1b`.
+- Clone `bbr-visual-14773-b1df688e3ce8`, former IP192.168.66.33. Guest macOS27.0 /
+  26A5353q, VirtualMac2,1,3200×1800 logical /6400×3600 physical, Apple Paravirtual
+  Metal device,444 font hashes, unlocked admin session, UTC/C. Host compiler/SDK
+  facts remain separately recorded. The observed scale is not fabricated from
+  the Tart display argument. This is device availability, not native image proof.
+- Offline export SHA256 `7ac6ea3058ebb31f87b1e87733b8bd9a2da1ebb591f2e3d632f146608c4be9e4`;
+  exact51 import paths and original lock/payload hashes in runtime-transfer.json.
+  No substitution/builders/downloads, host store or Golden Image modification.
+- Authentication/listener/host-port audits passed on each executed transport;
+  request-bound terminal and independent cleanup preceded lease release.
+  `cleanup-recheck-1-9.json` repeats all nine resource-absence observations.
+  There are no retained visual clones/keys or active visual gate. Ordinary host
+  BBR and unrelated workloads remain untouched.
+
+Final portable evidence:
+- `final-visual-test.log`: full `just visual-test`,171 Python discoveries (170
+  pass / one integration skip separately passed), unchanged upstream and109
+  consumer tests plus existing signal/inert fixtures. Includes export/hash/type/
+  bound/host-refusal, exact SSH import path inventory, failure/cancel cleanup,
+  console/font/display negatives and21-mode supervised chain. No runtime flag
+  bypass or acceptance guard was added.
+- `final-consumer-clippy.log` and `final-feature-gates.log`: strict consumer,
+  testkit, browser-capture and Gallery capture-feature Clippy pass. Gallery
+  feature units164 pass /49 ignored on host; their49 actual executions are in
+  the guest result, never host GUI. Format/roadmap/whitespace pass; unchanged
+  `block v0.1.6` future-incompatibility warning remains.
+- Full mbx-equivalent `just verify` is **not green**. Two actual attempts fail
+  only at the unchanged Command benchmark with p95=67.988ms /93.215ms against
+  50ms. Logs: `final-verify.log`, `final-verify-recheck.log`. Observed host load
+  averages were286 then109; concurrent unrelated compiler/simulator workloads
+  were not stopped. The isolated unchanged benchmark passes p95=19.686ms,
+  max=21.208ms (`benchmark-isolated.log`); this does not erase aggregate failures.
+- Remaining non-GUI checks pass in `final-remaining-verify.log`. Supplementary
+  workspace tests excluding the already separately tested Command crate pass in
+  `remaining-units-configured.log`; this is not advertised as full verify. A first
+  direct invocation lacked the recipe's Xcode selection and failed compiling Metal;
+  rerunning through the existing configured recipe environment resolved it without
+  any installation or setup change. No assertion/budget was relaxed.
+
+Self-review rechecked original-source/hash retention, fixed-purpose invocation,
+full49-name inventory, monotonic draw tokens/sole-child callback, feature-off
+behavior, exact diagnostic relocation and strict installed-tree verification,
+source-frozen bootstrap, offline import argv, guest-only native observations and
+success/failure/cancellation cleanup ordering. No independent agent was requested.
+The now guest-verified observer and dependent semantic/runtime group can be
+committed as an intermediate coherent slice; full stable-migration handoff is not
+claimed with the aggregate verify failure or absent image gates.
+
+Queue audit: runtime absence is resolved; the next migration work is the bounded
+Checkbox input/two-clock readiness and Tokens/Sidebar framing pilot. No unrelated
+product lane is activated. Check SVG wiring and concrete baseline adoption remain
+separate from this semantic evidence. Native pixels, PNG/HTML inspection, two
+fresh complete exact captures, public capture cutover, stable functional aggregate
+and Python parity removal remain unproven. No completion checkbox, performance
+pass, push or publication. Test/transport durations above are measured; total
+implementation/self-review time was not instrumented. Subsequent edits require
+fresh payloads; no old image or semantic result is resealed as current capture.
+
+Final source-bound recheck: `attempt10` freshly prepares and verifies all1,513
+current source inputs after the final transport-inventory regression and Rust
+observation comment. No source changed after staging; independent post-run
+hash checks are in `/private/tmp/bbr-visual-runtime-fix/attempt10/final-inspection.json`.
+Payload `893cb26302d245ec92fd4f704d6a4869ebc01193c96f8e36a8865f142242c8d7`,
+consumer `560956264865694670c5f477ec912788d2905332737d618b875cb36f9269c7d5`,
+unchanged Gallery executable above. Exact49/49 result passes in5.38s; full caller
+119.54s, API exit0/status verified and original-identity recheck pass. Fresh clone
+`bbr-visual-7443-b3929582bda0` /192.168.66.34 repeats offline runtime import,
+source/installed-byte and before/after environment checks. Independent cleanup
+recheck again proves clone/key/disk/process absent and SSH unreachable; both gates
+are unheld. These are two successful semantic runs, **not two image captures**.
+Only documentation changes after this final source check. The aggregate benchmark
+failures above remain unresolved; intermediate commit does not claim full verify,
+stable-migration handoff or visual acceptance. No further unchanged aggregate retry
+is useful while host contention persists.
+
 ## Status vocabulary
 
 | Status | Meaning |

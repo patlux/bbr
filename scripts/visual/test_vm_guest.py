@@ -35,7 +35,9 @@ class GuestContracts(unittest.TestCase):
     def payload(self, suite):
         files = {"source/source.rs": ("source.rs", b"synthetic source", False),
                  "executables/0": ("scripts/visual/target/release/bbr-visual", b"synthetic consumer", True)}
-        if suite == "gallery":
+        if suite == "gallery-semantic":
+            files["executables/1"] = ("target/release/deps/bbr_gallery-fixture", b"synthetic semantic test", True)
+        elif suite == "gallery":
             files["executables/1"] = ("target/release/bbr-gallery", b"synthetic gallery", True)
         else:
             files["executables/1"] = ("target/release/bbr", b"synthetic app", True)
@@ -60,6 +62,12 @@ class GuestContracts(unittest.TestCase):
         self.assertTrue(vm_install.verify_installed(share, digest, repo, suite))
         if action == "inventory":
             (work / "live-inventory.tsv").write_text("synthetic live inventory\n")
+        elif action == "semantic":
+            raw = work / "raw"
+            raw.mkdir()
+            for name in ("semantic-results.json", "semantic-every-story-renders.json",
+                         "semantic-mode-state-switching.json"):
+                (raw / name).write_text('{"synthetic":"transport only, not successful tests"}')
         else:
             raw = work / "raw"
             raw.mkdir()
@@ -83,17 +91,89 @@ class GuestContracts(unittest.TestCase):
         self.assertFalse((returned / "capture.json").exists())
         self.assertTrue((returned / "live-inventory.tsv").exists())
 
-    def test_semantic_preparation_never_activates_guest_capture(self):
-        with patch.object(vm_guest.vm_observe, "observe") as observe, \
-                patch.object(vm_guest.vm_install, "install") as install, \
-                patch.object(vm_guest, "_producer") as producer:
-            with self.assertRaisesRegex(vm_guest.GuestError, "semantic guest execution is not wired"):
-                vm_guest.run(self.share, "a" * 64, self.repo, "gallery-semantic", self.work)
-            observe.assert_not_called()
+    def test_semantic_guest_uses_only_fixed_action_and_returns_no_capture_evidence(self):
+        digest = self.payload("gallery-semantic")
+        with patch.object(vm_guest.vm_observe, "observe", return_value=self.environment), \
+                patch.object(vm_guest, "_producer", self.producer):
+            result = vm_guest.run(self.share, digest, self.repo, "gallery-semantic", self.work)
+        self.assertEqual(self.calls, ["semantic"])
+        names = {"semantic-results.json", "semantic-every-story-renders.json",
+                 "semantic-mode-state-switching.json", "guest-receipt.json"}
+        self.assertEqual(set(result["files"]), names)
+        self.assertEqual(result["payload_sha256"], digest)
+        returned = self.root / "returned"
+        vm_transfer.unpack(self.work / "return.tar", returned, digest)
+        for name in names:
+            self.assertEqual((returned / name).read_bytes(), (self.work / "raw" / name).read_bytes())
+        self.assertTrue(vm_install.verify_installed(self.share, digest, self.repo, "gallery-semantic"))
+
+    def test_semantic_action_forbids_filters_and_capture_dispatch(self):
+        with patch.object(vm_guest.vm_observe, "observe", return_value=self.environment), \
+                patch.object(vm_guest.vm_install, "install") as install:
+            with self.assertRaises(ValueError):
+                vm_guest.run(self.share, "a" * 64, self.repo, "gallery-semantic", self.work, "{}", "a" * 64)
             install.assert_not_called()
-            producer.assert_not_called()
-        self.assertFalse(self.repo.exists())
-        self.assertFalse(self.work.exists())
+        with patch.object(vm_guest.subprocess, "Popen") as spawn:
+            for action in ("inventory", "capture", "capture-selected"):
+                with self.assertRaisesRegex(vm_guest.GuestError, "semantic"):
+                    vm_guest._producer(self.root / "fixture", "gallery-semantic", action,
+                                       self.repo, self.share, "a" * 64, self.work, 1)
+            spawn.assert_not_called()
+
+    def test_semantic_failures_preserve_no_receipt_or_archive(self):
+        root = self.root
+        for mutation in ("missing", "extra", "empty", "symlink", "hardlink", "oversize",
+                         "installed-extra", "installed-drift", "shared-drift", "environment", "exit"):
+            with self.subTest(mutation=mutation):
+                case = root / mutation
+                case.mkdir()
+                self.share, self.repo, self.work = (case / name for name in ("share", "repo", "work"))
+                self.share.mkdir()
+                digest = self.payload("gallery-semantic")
+                def produce(*args):
+                    self.producer(*args)
+                    result = self.work / "raw/semantic-results.json"
+                    if mutation == "missing": result.unlink()
+                    if mutation == "extra": (self.work / "raw/capture.json").write_text("{}")
+                    if mutation == "empty": result.write_bytes(b"")
+                    if mutation == "symlink":
+                        result.unlink()
+                        result.symlink_to(self.work / "raw/semantic-every-story-renders.json")
+                    if mutation == "hardlink": (case / "link").hardlink_to(result)
+                    if mutation == "oversize": result.write_bytes(b"x" * (4 * 1024 * 1024 + 1))
+                    if mutation == "installed-extra":
+                        extra = self.repo / "target/bbr-gallery-perf"
+                        extra.mkdir()
+                        (extra / "every-story-renders.json").write_text("{}")
+                    if mutation == "installed-drift":
+                        source = self.repo / "source.rs"
+                        source.chmod(0o600)
+                        source.write_text("changed")
+                    if mutation == "shared-drift": (self.share / "payload.json").write_text("{}")
+                    if mutation == "exit": raise vm_guest.GuestError("failed fixed action")
+                after = {**self.environment, "os_build": "drift"} if mutation == "environment" else self.environment
+                with patch.object(vm_guest.vm_observe, "observe", side_effect=[self.environment, after]), \
+                        patch.object(vm_guest, "_producer", produce):
+                    with self.assertRaises((vm_guest.GuestError, vm_install.InstallError)):
+                        vm_guest.run(self.share, digest, self.repo, "gallery-semantic", self.work)
+                self.assertFalse((self.work / "raw/guest-receipt.json").exists())
+                self.assertFalse((self.work / "return.tar").exists())
+
+    def test_semantic_fixed_process_argv_environment_and_nonzero_status(self):
+        from unittest.mock import Mock
+        self.work.mkdir()
+        child = Mock(returncode=2)
+        child.poll.return_value = 2
+        with patch.object(vm_guest.subprocess, "Popen", return_value=child) as spawn:
+            with self.assertRaisesRegex(vm_guest.GuestError, "failed: semantic"):
+                vm_guest._producer(self.root / "fixture", "gallery-semantic", "semantic",
+                                   self.repo, self.share, "a" * 64, self.work, 660)
+        self.assertEqual(spawn.call_args.args[0], [str(self.root / "fixture"), "guest-execute",
+                         "gallery-semantic", "semantic", str(self.repo), str(self.share), "a" * 64, str(self.work)])
+        self.assertEqual(spawn.call_args.kwargs["env"]["HOME"], "/Users/admin")
+        self.assertNotIn("start_new_session", spawn.call_args.kwargs)
+        child.terminate.assert_not_called()
+        child.kill.assert_not_called()
 
     def test_browser_uses_fixed_capture_only_and_preserves_transport_bytes(self):
         digest = self.payload("browser")
@@ -171,6 +251,24 @@ class GuestContracts(unittest.TestCase):
                     vm_guest.run(self.share, digest, self.repo, "gallery", work)
             producer.assert_not_called()
             self.assertFalse(self.repo.exists())
+
+    def test_failed_consumer_preserves_bounded_log_in_transport_stderr(self):
+        import io
+        from unittest.mock import Mock
+        self.work.mkdir()
+        def spawn(*args, **kwargs):
+            kwargs["stdout"].write(b"fixture failure reason\n")
+            kwargs["stdout"].flush()
+            child = Mock(returncode=1)
+            child.poll.return_value = 1
+            return child
+        stderr = io.StringIO()
+        with patch.object(vm_guest.subprocess, "Popen", side_effect=spawn), \
+             patch.object(vm_guest.sys, "stderr", stderr), self.assertRaisesRegex(vm_guest.GuestError, "rc=1"):
+            vm_guest._producer(self.root / "fixture", "gallery-semantic", "semantic", self.repo,
+                               self.share, "a" * 64, self.work, 5)
+        self.assertIn("fixture failure reason", stderr.getvalue())
+        self.assertFalse((self.work / "return.tar").exists())
 
     def test_cooperative_consumer_timeout_reaps_without_hard_kill(self):
         from unittest.mock import Mock

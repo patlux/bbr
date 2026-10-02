@@ -21,7 +21,8 @@ MANIFEST_LIMIT = 8 * 1024 * 1024
 MAX_FILES = 20_000
 DEADLINE_SECONDS = 120
 NAME = re.compile(r"[a-z0-9][a-z0-9-]*(?:\.png|\.snapshot\.json)\Z")
-METADATA = {"coverage.tsv", "inventory.json", "selection.json", "guest-receipt.json", "live-inventory.tsv"}
+METADATA = {"coverage.tsv", "inventory.json", "selection.json", "guest-receipt.json", "live-inventory.tsv",
+            "semantic-results.json", "semantic-every-story-renders.json", "semantic-mode-state-switching.json"}
 
 
 class TransferError(RuntimeError):

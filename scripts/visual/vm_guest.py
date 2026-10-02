@@ -13,6 +13,7 @@ import os
 from pathlib import Path
 import signal
 import subprocess
+import sys
 import time
 
 import vm_install
@@ -34,6 +35,10 @@ def _producer(consumer: Path, suite: str, action: str, repo: Path, share: Path,
     env = {"HOME": "/Users/admin", "USER": "admin", "LOGNAME": "admin",
            "PATH": "/usr/bin:/bin:/usr/sbin:/sbin", "TMPDIR": "/private/tmp",
            "TZ": "UTC", "LANG": "C", "LC_ALL": "C", "SEED": "0"}
+    if suite == "gallery-semantic" and (action != "semantic" or selected_sha256 is not None):
+        raise GuestError("semantic purpose requires fixed semantic action without filter")
+    if action == "semantic" and suite != "gallery-semantic":
+        raise GuestError("semantic action requires semantic purpose")
     if (action == "capture-selected") != (selected_sha256 is not None):
         raise GuestError("selected action requires independent request hash")
     argv = [str(consumer), "guest-execute", suite, action, str(repo), str(share), payload_hash, str(work)]
@@ -53,6 +58,13 @@ def _producer(consumer: Path, suite: str, action: str, repo: Path, share: Path,
                     raise GuestError("guest consumer log limit")
                 time.sleep(0.01)
             if child.returncode != 0 or os.fstat(log.fileno()).st_size > LOG_LIMIT:
+                # Preserve bounded test-only diagnostics before the disposable
+                # guest is destroyed. Failure output is never a returned receipt.
+                log.flush()
+                handle, _ = vm_install._open(work / f"{action}.log", LOG_LIMIT)
+                with handle:
+                    diagnostic = handle.read(LOG_LIMIT + 1)
+                print(diagnostic.decode("utf-8", errors="replace"), file=sys.stderr)
                 raise GuestError(f"guest consumer failed: {action} rc={child.returncode}")
         finally:
             if child.poll() is None:
@@ -75,9 +87,7 @@ def _check_observation(value: dict) -> None:
 
 def run(share: Path, payload_hash: str, repo: Path, suite: str, work: Path,
         selected: str | None = None, selected_sha256: str | None = None) -> dict:
-    if suite == "gallery-semantic":
-        raise GuestError("semantic guest execution is not wired")
-    if suite not in {"gallery", "browser"}:
+    if suite not in {"gallery", "browser", "gallery-semantic"}:
         raise GuestError("unsupported guest suite")
     # Observe before writes/installation. A fabricated environment variable is
     # insufficient; the observer probes the guest console, hardware and fonts.
@@ -100,6 +110,8 @@ def run(share: Path, payload_hash: str, repo: Path, suite: str, work: Path,
         _producer(consumer, suite, "capture-selected", repo, share, payload_hash, work, 660, selected_sha256)
         if vm_selection.read(work, selected_sha256, payload_hash, suite) != selected:
             raise GuestError("selected request changed during execution")
+    elif suite == "gallery-semantic":
+        _producer(consumer, suite, "semantic", repo, share, payload_hash, work, 660)
     else:
         if suite == "gallery":
             _producer(consumer, suite, "inventory", repo, share, payload_hash, work, 90)
@@ -114,6 +126,21 @@ def run(share: Path, payload_hash: str, repo: Path, suite: str, work: Path,
     vm_install._absolute(raw)
     if not raw.is_dir():
         raise GuestError("producer did not create raw output")
+    if suite == "gallery-semantic":
+        expected = {"semantic-results.json", "semantic-every-story-renders.json",
+                    "semantic-mode-state-switching.json"}
+        # Transport inventory only. Rust owns test/result/diagnostic validation.
+        found = set()
+        for path in raw.iterdir():
+            if path.name not in expected or len(found) >= len(expected):
+                raise GuestError("semantic raw inventory differs")
+            handle, meta = vm_install._open(path, 4 * 1024 * 1024)
+            handle.close()
+            if not meta.st_size:
+                raise GuestError("empty semantic raw evidence")
+            found.add(path.name)
+        if found != expected:
+            raise GuestError("semantic raw inventory incomplete")
     if suite == "gallery":
         inventory = work / "live-inventory.tsv"
         handle, meta = vm_install._open(inventory, LOG_LIMIT)

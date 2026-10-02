@@ -253,6 +253,133 @@ callback evidence and the observer commit still require the approved guest gate.
 Missing guest runtime must fail without realization/installation/repair. Network,
 asset and report-specific adoption approvals remain unchanged.
 
+### Bounded guest semantic-action increment
+
+Behind the existing actual-admin/VirtualMac and installed-payload boundary, allow
+only `guest-execute gallery-semantic semantic`, with no caller-selected filter or
+argv. Bind an independently authored sorted inventory of all 49 current ignored
+Gallery cases (including the capture-target scenario) to the original payload's
+source hashes. First invoke the exact staged harness with ignored-test listing;
+refuse missing, extra or duplicate names before any scenario runs. Then execute
+the entire ignored suite serially with the recipe's flags plus explicit stable
+pretty/no-color output. Preserve each existing test's own assertions/deadlines.
+
+Use immutable upstream process ownership with one 600s budget spanning listing,
+execution and source/installed-byte checks, bounded stdout and normal cleanup.
+Require actual successful process status and exact per-test `ok` lines plus one
+matching zero-failure/zero-ignored/zero-measured libtest summary. Nonzero status,
+zero tests, missing/extra/duplicate/failed results, truncated or ambiguous output,
+cancellation and source drift must not publish success. Unknown stdout format
+fails closed with bounded diagnostics; never assume exit zero proves coverage.
+Verify the protocol against a real, inert consumer libtest fixture on the host,
+not by executing any Gallery binary there.
+
+Publish only fresh `semantic-results.json` containing original bounded listing/run
+stdout, exact requirement and executable identity, and the original payload hash.
+Its Rust validator repeats completeness and source binding; it is functional test
+evidence, never a screenshot seal, rendering-environment claim, Collection input
+or baseline approval. Bracket all invocations/publication with existing installed
+and shared-byte checks. No guest download/install/repair is added.
+
+The existing sweep tests write exactly `every-story-renders.json` and
+`mode-state-switching.json` under the compiled `target/bbr-gallery-perf` directory.
+After complete test success, preflight both as bounded single-link regular files,
+require their report-only schema/suite identity and reject any extra entry. Move
+the unchanged bytes into distinct semantic diagnostic names in the fresh raw
+output, then remove only the now-empty owned diagnostic directory. The unchanged
+Python installed-tree verifier must then pass with no extra-file exception.
+Missing/invalid outputs are failures, not reasons to disable the existing tests.
+These diagnostic measurements are not product-performance acceptance.
+
+Python guest composition may install, invoke this fixed action, recheck original
+bytes/environment and package the exact semantic result/diagnostics through its
+existing receipt/archive machinery. Keep Python bootstrap and host transport
+closed for semantic payloads until host receipt/result validation is proven.
+
+Host validation must reuse the existing bounded returned-byte/marker verifier and
+host-versus-guest receipt binding. Keep semantic results a distinct typed result,
+never `Captured`/`Suite` or a rendering-environment policy. Require exactly the
+result, both named diagnostics and the guest receipt; validate hash-bound bytes
+against the host's original payload, source requirements, build hashes and purpose.
+Retain the original transport evidence for subsequent rechecks, not a replacement
+marker or manifest read back from writable output. Cross-purpose substitution,
+missing/extra or mutated files, stale sources/results, non-success transcripts,
+changed guest identity and cancellation must fail. A pure return validator proves
+neither VM teardown nor process exit: only the existing supervised route may
+supply it after both child and independent host cleanup checks succeed.
+
+The subsequent internal integration may generalize only that shared execution
+input from image `Suite` to payload `Purpose`; image callers retain their capture
+result and semantic callers must reject selections and return only `Verified`.
+Use `source_suite` solely for existing source/runtime policy, never native dispatch
+or image environment. The source-frozen bootstrap may then carry semantic purpose
+unchanged to the fixed guest action, preserving actual guest identity, offline
+runtime checks, fresh parents and refusal on hosts. Prove the whole supervised
+chain with inert local fixtures: success, guest/SSH failure, cancellation, source
+and receipt/result drift, host cleanup rejection, original identities and both
+leases held until independent cleanup. No production injection switch or second
+runner. Public capture stays closed; this route adds no CLI or approval bypass.
+No public VM command or networking is activated by this increment. Required local
+gates are negative-first contracts, actual inert libtest protocol verification,
+full visual tests, strict consumer Clippy/fmt and roadmap validation. The observer
+still cannot be committed or claimed callback-verified before its approved real
+guest execution. At failed protocol or unsupported stdout, preserve diagnostics;
+at unavailable guest approval/runtime, do not fall back to host execution.
+
+### Authorized offline runtime provisioning
+
+Patrick's 2026-10-02 instruction to fix all reported blockers supersedes the
+previous preinstalled-only rule for this bounded guest prerequisite. Export only
+the complete source-locked, already present and verified host Nix closure. Transfer
+it through the existing isolated SSH route after clone authentication/listener
+checks; hash and size-check it before one guest `nix-store --import`. Require actual
+admin/VirtualMac identity before guest writes, disable substitution/builders, and
+retain every existing post-import NAR/Python hash check before bootstrap execution.
+No download, host store write, runtime repair, Golden Image mutation, alternate
+Python, signature-policy change, recursive ownership change or new network route.
+Failure means cleanup and diagnostics, never retrying an ambiguous import in place.
+
+Keep the archive external to the product payload and bind it to the original
+payload/lock and exact export bytes; bounded output, cancellation and process
+ownership reuse the existing supervised path. Exercise negative-first contracts
+for drift, links, size/hash mismatch, fixed import commands, host refusal and
+failure/cancellation cleanup. Then prepare fresh sources and run all49 semantic
+scenarios in a fresh clone, diagnosing actual failures without weakening tests.
+The offline-import permission changes only this runtime prerequisite; baseline
+adoption, product performance and full visual-migration acceptance stay separate.
+
+### Observed guest environment compatibility
+
+Observe the actual guest, never substitute the host environment. macOS 27's
+name-selected IORegistry plist may be a direct `Root` dictionary instead of a
+singleton array; both must still prove one unlocked admin console. The golden
+image's empty `HomeManager` font directory and exact hidden version-marker link
+are non-font metadata, not permission for user fonts. The one stock
+`/Library/Fonts/Arial Unicode.ttf` alias must name exactly
+`/System/Library/Fonts/Supplemental/Arial Unicode.ttf`; reject chained or other
+links and require independently inventoried identical target bytes.
+
+Tart's `system_profiler` returns an empty GPU array on this image. Query the
+actual active CoreGraphics display modes and default Metal device in a bounded
+pinned-Python child instead. Require positive bounded geometry and device identity;
+no AppKit application, window, capture, fabricated values or host probe fallback.
+Before/after facts must remain identical. These observations establish capability
+and environment identity, not Metal rendering or image correctness.
+
+### Runtime-driven SSH observation repair
+
+The approved semantic run exposed a parser mismatch before guest execution:
+OpenSSH `sshd -T` emits repeated `listenaddress` and `hostkey` directives for its
+normal IPv4/IPv6 and host-key lists. Permit distinct entries only for those two
+repeatable observation fields; retain rejection of repeated security settings,
+unknown repeated directives, duplicate identical entries and malformed output.
+Do not change authentication configuration, listener/access requirements, source
+identity, cleanup, guest-runtime policy or test assertions. Reproduce the observed
+output shape in a portable regression, run policy/lifecycle and visual contracts,
+then retry with fresh source-bound preparation through the same supervised route.
+This is a compatibility correction to observation parsing, not relaxed network
+acceptance or permission to bypass a failed authentication/runtime gate.
+
 ## Evidence
 
 The portable increment is implemented in
@@ -268,6 +395,34 @@ nonacceptance. Tests also exercise the direct transport/guest and fresh-capture
 boundaries. Current real plan remains schema 1, 630 cases / 936 page pairs;
 31 withheld catalog rows remain unchanged. These are portable requirements and
 refusal evidence, not completed input, framing or native-capture acceptance.
+
+### Actual semantic prerequisite evidence (2026-10-02)
+
+The source-bound supervised run at
+`/private/tmp/bbr-visual-runtime-fix/attempt9` passes end to end:49/49 exact ignored
+Gallery cases including the capture-target callback across12 appearances, actual
+successful process status, both report-only diagnostics, original payload/build
+binding, unchanged installed bytes and before/after environment. Host API returned
+`status=verified`; test execution5.08s, complete caller96.22s (tooling timings only).
+The guest is macOS27.0/26A5353q, VirtualMac2,1, with an active3200×1800 logical /
+6400×3600 physical display, Apple Paravirtual Metal device and444 font hashes.
+The51-path locked runtime was imported offline and rehashed before execution.
+Request-bound resource cleanup and independent host recheck passed before gates
+released. A preceding real cancellation also completed observed cleanup.
+
+A final fresh source-bound recheck at
+`/private/tmp/bbr-visual-runtime-fix/attempt10` also passes49/49 (5.38s tests,
+119.54s caller). All1,513 source inputs match after execution; original identities,
+result validation, independent cleanup and gate release pass. This does not count
+as a second image capture. Visual contracts and strict Clippy pass; full aggregate
+`verify` remains red at the unchanged Command benchmark (67.988/93.215ms p95
+against50ms under load), despite a passing isolated19.686ms p95. No budget changed.
+
+The semantic observer and its dependent transport can now form a coherent
+intermediate commit with these targeted gates, not a stable-slice handoff. This proves TestPlatform callback
+wiring, not native input, Check SVG, rendered Metal pixels, PNG/HTML review,
+full functional aggregate or overall pilot completion. The capture endpoint guard
+and all acceptance boxes below remain unchanged.
 
 ### Unit and contract
 

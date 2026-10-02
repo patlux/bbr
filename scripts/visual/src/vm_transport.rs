@@ -86,6 +86,41 @@ pub fn validate_return(
         host,
         selected,
     } = expected;
+    let (returned, receipt) = verify_returned_bytes(raw, workspace, digest, cancelled)?;
+    let environment = vm_environment::bind(suite, host, staged, digest, &receipt)?;
+    ensure!(
+        returned.files.contains_key("selection.json") == selected.is_some(),
+        "returned selection presence differs from original host request"
+    );
+    if let Some(request) = selected {
+        ensure!(
+            suite == Suite::Gallery && request.payload_digest() == digest,
+            "host selected request payload/suite differs"
+        );
+        request.check(staged)?;
+        let record = &returned.files["selection.json"];
+        let bytes = bound_bytes(&returned.raw, "selection.json", &record.sha256)?;
+        ensure!(
+            bytes.len() as u64 == record.bytes && bytes == serde_json::to_vec(request.selection())?,
+            "returned selection differs from original host request"
+        );
+    }
+    Ok(Captured {
+        raw: returned.raw,
+        environment,
+        selection: selected.map(|r| r.selection().clone()),
+        evidence: raw.to_vec(),
+        workspace: workspace.into(),
+    })
+}
+
+/// Common flat-byte and original-marker integrity, independent of result purpose.
+pub(crate) fn verify_returned_bytes(
+    raw: &[u8],
+    workspace: &Path,
+    digest: &str,
+    cancelled: &AtomicBool,
+) -> Result<(Returned, vm_environment::Receipt)> {
     ensure!(
         raw.len() <= 8 * 1024 * 1024,
         "transport evidence exceeds bound"
@@ -194,31 +229,7 @@ pub fn validate_return(
         "guest receipt bytes changed before binding"
     );
     let receipt: vm_environment::Receipt = serde_json::from_slice(&receipt_bytes)?;
-    let environment = vm_environment::bind(suite, host, staged, digest, &receipt)?;
-    ensure!(
-        returned.files.contains_key("selection.json") == selected.is_some(),
-        "returned selection presence differs from original host request"
-    );
-    if let Some(request) = selected {
-        ensure!(
-            suite == Suite::Gallery && request.payload_digest() == digest,
-            "host selected request payload/suite differs"
-        );
-        request.check(staged)?;
-        let record = &returned.files["selection.json"];
-        let bytes = bound_bytes(&returned.raw, "selection.json", &record.sha256)?;
-        ensure!(
-            bytes.len() as u64 == record.bytes && bytes == serde_json::to_vec(request.selection())?,
-            "returned selection differs from original host request"
-        );
-    }
-    Ok(Captured {
-        raw: returned.raw,
-        environment,
-        selection: selected.map(|r| r.selection().clone()),
-        evidence: raw.to_vec(),
-        workspace: workspace.into(),
-    })
+    Ok((returned, receipt))
 }
 
 /// Internal route only. Does not imply network permission and has no CLI caller.
@@ -236,15 +247,72 @@ pub struct Input<'a> {
 }
 
 pub fn run(input: Input<'_>, options: &gate::Options, cancelled: &AtomicBool) -> Result<Captured> {
-    let Input {
+    let transfer = run_transfer(
+        TransferInput {
+            repo: input.repo,
+            purpose: input.suite.into(),
+            share: input.share,
+            staged: input.staged,
+            host: input.host,
+            workspace: input.workspace,
+            selection: input.selection,
+        },
+        options,
+        cancelled,
+    )?;
+    validate_return(
+        &transfer.evidence,
+        input.workspace,
+        ExpectedReturn {
+            suite: input.suite,
+            staged: input.staged,
+            digest: &transfer.digest,
+            host: input.host,
+            selected: transfer.selected.as_ref(),
+        },
+        cancelled,
+    )
+}
+
+pub(crate) struct TransferInput<'a> {
+    pub repo: &'a Path,
+    pub purpose: payload::Purpose,
+    pub share: &'a Path,
+    pub staged: &'a payload::Payload,
+    pub host: &'a vm_environment::HostBuild,
+    pub workspace: &'a Path,
+    pub selection: Option<&'a Selection>,
+}
+pub(crate) struct Transfer {
+    pub evidence: Vec<u8>,
+    pub digest: String,
+    selected: Option<selected_request::Request>,
+}
+
+/// One supervisor/bootstrap/cleanup authority for both image and semantic payloads.
+pub(crate) fn run_transfer(
+    input: TransferInput<'_>,
+    options: &gate::Options,
+    cancelled: &AtomicBool,
+) -> Result<Transfer> {
+    let TransferInput {
         repo,
-        suite,
+        purpose,
         share,
         staged,
         host,
         workspace,
         selection,
     } = input;
+    let suite = purpose.source_suite();
+    ensure!(
+        staged.repo == repo && staged.suite == purpose.id(),
+        "transport payload purpose/repository differs"
+    );
+    ensure!(
+        selection.is_none() || purpose == payload::Purpose::Capture(Suite::Gallery),
+        "only Gallery supports selected transport"
+    );
     store::disjoint(&[repo, share, workspace])?;
     ensure!(
         workspace.is_absolute()
@@ -259,10 +327,10 @@ pub fn run(input: Input<'_>, options: &gate::Options, cancelled: &AtomicBool) ->
         payload::source_snapshot(repo, &config, cancelled)? == staged.sources,
         "stale transport source"
     );
-    if suite == Suite::Gallery && selection.is_none() {
+    if purpose == payload::Purpose::Capture(Suite::Gallery) && selection.is_none() {
         crate::gallery_selection::static_plan(repo, &staged.sources)?;
     }
-    vm_runtime::verify(repo, suite, share, staged, cancelled)?;
+    vm_runtime::verify(repo, purpose, share, staged, cancelled)?;
     host.validate()?;
     ensure!(
         host.executable_hashes
@@ -278,10 +346,6 @@ pub fn run(input: Input<'_>, options: &gate::Options, cancelled: &AtomicBool) ->
         "host build differs from transport payload"
     );
     let digest = store::digest(&share.join("payload.json"))?;
-    ensure!(
-        selection.is_none() || suite == Suite::Gallery,
-        "only Gallery supports selected transport"
-    );
     let selected = selection
         .map(|s| selected_request::Request::new(staged, &digest, s.clone()))
         .transpose()?;
@@ -320,7 +384,7 @@ try:
 except BaseException as error:
     print(f'transport incomplete: {type(error).__name__}: {error}', file=sys.stderr)
     raise SystemExit(2)
-"#]).arg(repo.join("scripts/visual")).arg(share).arg(&digest).arg(repo).arg(suite.id()).arg(workspace).arg(&vm).args(selected.iter().map(|r| r.digest())),
+"#]).arg(repo.join("scripts/visual")).arg(share).arg(&digest).arg(repo).arg(purpose.id()).arg(workspace).arg(&vm).args(selected.iter().map(|r| r.digest())),
         &control, &digest, &vm_supervision::Policy::default(), cancelled,
         |request| vm_cleanup::verify(repo, &vm_cleanup::Expected { artifacts: &artifacts, vm: &vm,
             request_sha256: request, payload_sha256: &digest }).map(|_| ()))?;
@@ -336,16 +400,9 @@ except BaseException as error:
             "host selected request changed during transport"
         );
     }
-    validate_return(
-        &output.stdout,
-        workspace,
-        ExpectedReturn {
-            suite,
-            staged,
-            digest: &digest,
-            host,
-            selected: selected.as_ref(),
-        },
-        cancelled,
-    )
+    Ok(Transfer {
+        evidence: output.stdout,
+        digest,
+        selected,
+    })
 }

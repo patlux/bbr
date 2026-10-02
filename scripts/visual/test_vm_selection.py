@@ -145,6 +145,7 @@ class SelectedTransportContracts(unittest.TestCase):
         vm_selection.write(f.workspace, text, sha, f.digest, "gallery")
         with patch.object(vm_transport.vm_bootstrap, "plan", return_value="fixture") as plan, \
              patch.object(vm_transport.vm_lifecycle, "session", f.lifecycle), \
+             patch.object(vm_transport, "_provision", f.provision), \
              patch.object(vm_transport, "_exchange", f.exchange), \
              patch.object(vm_cleanup, "recheck", f.recheck):
             with self.assertRaises(Exception):

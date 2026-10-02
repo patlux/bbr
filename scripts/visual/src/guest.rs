@@ -12,6 +12,8 @@ use std::{
 };
 
 mod selected;
+mod semantic;
+mod semantic_diagnostics;
 
 #[cfg(test)]
 #[path = "guest_tests.rs"]
@@ -46,23 +48,38 @@ fn action(suite: Suite, action: &str) -> Result<()> {
     Ok(())
 }
 
+fn purpose_action(args: &[String]) -> Result<(payload::Purpose, Option<Suite>)> {
+    ensure!(args.len() == 7 || args.len() == 8, "guest-execute requires suite, action, repo, share, digest, work and selected request hash only for capture-selected");
+    let purpose = payload::Purpose::parse(&args[1])?;
+    let suite = match purpose {
+        payload::Purpose::Capture(suite) => {
+            action(suite, &args[2])?;
+            Some(suite)
+        }
+        payload::Purpose::GallerySemantic => {
+            ensure!(
+                args[2] == "semantic" && args.len() == 7,
+                "semantic guest action takes no filter or request"
+            );
+            None
+        }
+    };
+    ensure!(
+        (args[2] == "capture-selected") == (args.len() == 8),
+        "capture-selected requires an explicit request hash; other actions forbid one"
+    );
+    Ok((purpose, suite))
+}
+
 /// Internal transport entrypoint; do not expose a host bypass. The shared
 /// payload and installed consumer must both match independently expected bytes.
 pub fn dispatch(args: &[String], cancelled: &AtomicBool) -> Result<bool> {
     if args.first().map(String::as_str) != Some("guest-execute") {
         return Ok(false);
     }
+    let action_started = std::time::Instant::now();
     require_guest(cancelled)?;
-    ensure!(
-        args.len() == 7 || args.len() == 8,
-        "guest-execute requires suite, action, repo, share, digest, work and selected request hash only for capture-selected"
-    );
-    let suite = Suite::parse(&args[1])?;
-    action(suite, &args[2])?;
-    ensure!(
-        (args[2] == "capture-selected") == (args.len() == 8),
-        "capture-selected requires an explicit request hash; other actions forbid one"
-    );
+    let (purpose, suite) = purpose_action(args)?;
     let repo = PathBuf::from(&args[3]);
     let share = PathBuf::from(&args[4]);
     let work = PathBuf::from(&args[6]);
@@ -83,7 +100,7 @@ pub fn dispatch(args: &[String], cancelled: &AtomicBool) -> Result<bool> {
     let manifest = share.join("payload.json");
     let payload = read_manifest(&manifest, &args[5], cancelled)?;
     ensure!(
-        payload.repo == repo && payload.suite == suite.id(),
+        payload.repo == repo && payload.suite == purpose.id(),
         "guest payload identity differs"
     );
     payload::verify(&share, &payload, cancelled)?;
@@ -93,6 +110,47 @@ pub fn dispatch(args: &[String], cancelled: &AtomicBool) -> Result<bool> {
         "installed guest consumer path differs"
     );
     verify_installed(&payload, cancelled)?;
+    if purpose == payload::Purpose::GallerySemantic {
+        let deadline = action_started + Duration::from_secs(600);
+        semantic::execute_until(
+            &payload,
+            &work,
+            &args[5],
+            cancelled,
+            deadline,
+            |command, limits| {
+                let started = std::time::Instant::now();
+                verify_installed(&payload, cancelled)?;
+                payload::verify(&share, &payload, cancelled)?;
+                read_manifest(&manifest, &args[5], cancelled)?;
+                let limits = Limits {
+                    timeout: limits
+                        .timeout
+                        .checked_sub(started.elapsed())
+                        .context("semantic deadline during source preflight")?,
+                    ..limits.clone()
+                };
+                let output = cargo_gpui_visual::process::run(command, &limits, cancelled, true)?;
+                verify_installed(&payload, cancelled)?;
+                payload::verify(&share, &payload, cancelled)?;
+                read_manifest(&manifest, &args[5], cancelled)?;
+                Ok(output)
+            },
+        )?;
+        verify_installed(&payload, cancelled)?;
+        payload::verify(&share, &payload, cancelled)?;
+        read_manifest(&manifest, &args[5], cancelled)?;
+        ensure!(
+            std::time::Instant::now() < deadline,
+            "semantic deadline during final identity checks"
+        );
+        ensure!(
+            !cancelled.load(std::sync::atomic::Ordering::SeqCst),
+            "semantic execution cancelled"
+        );
+        return Ok(true);
+    }
+    let suite = suite.context("missing capture suite")?;
     if args[2] == "capture-selected" {
         let request = selected::load(&payload, &work, &args[5], &args[7])?;
         selected::execute(&payload, &work, &request, cancelled, |command, limits| {

@@ -39,11 +39,26 @@ fn missing_context(ctx: &StoryContext, title: &str) -> AnyElement {
 /// the real control's bounds — the real-pointer E2E target. Pure layout;
 /// the control itself is untouched.
 fn control_slot(selector: &str, child: impl IntoElement) -> AnyElement {
+    control_container(selector, child).into_any()
+}
+
+fn control_container(selector: &str, child: impl IntoElement) -> gpui::Div {
     div()
         .self_start()
         .debug_selector(move || selector.to_string())
         .child(child)
-        .into_any()
+}
+
+fn checkbox_slot(ctx: &StoryContext, child: impl IntoElement) -> AnyElement {
+    let slot = control_container("bbr-gallery-controls-checkbox", child);
+    #[cfg(feature = "visual-capture")]
+    let slot = match ctx.capture {
+        Some(capture) => crate::capture_target::observe_checkbox(slot, capture),
+        None => slot,
+    };
+    #[cfg(not(feature = "visual-capture"))]
+    let _ = ctx;
+    slot.into_any()
 }
 
 /// `gpui-component` Button: real clicks report through the recorder.
@@ -123,8 +138,8 @@ pub fn render_checkbox(ctx: &StoryContext) -> AnyElement {
         "Checkbox",
         vec![
             section_heading(theme, "gpui-component Checkbox"),
-            control_slot(
-                "bbr-gallery-controls-checkbox",
+            checkbox_slot(
+                ctx,
                 Checkbox::new("bbr-gallery-cb-subscribe")
                     .label("Subscribe to updates")
                     .checked(checked)

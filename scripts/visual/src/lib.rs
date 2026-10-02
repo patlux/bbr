@@ -12,10 +12,12 @@ pub mod read_only;
 pub mod review;
 pub mod runner;
 pub mod selected_request;
+pub mod semantic;
 pub mod vm_capture;
 pub mod vm_cleanup;
 pub mod vm_environment;
 pub mod vm_runtime;
+pub mod vm_semantic;
 pub mod vm_supervision;
 pub mod vm_transport;
 

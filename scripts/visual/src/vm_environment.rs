@@ -30,9 +30,10 @@ pub struct Guest {
     pub os_build: String,
     pub arch: String,
     pub model: String,
-    /// Raw, separately observed SPDisplaysDataType records, not host GPU facts.
+    /// Direct guest CoreGraphics/Metal records, never host GPU facts.
     pub displays: Value,
-    /// Concrete readable system/local font files; user font directories must be empty.
+    /// System/local font bytes including the verified stock alias. User fonts
+    /// are forbidden; empty Home Manager metadata is not treated as a font.
     pub fonts: Hashes,
     pub console_user: String,
     pub on_console: bool,
@@ -149,12 +150,28 @@ pub fn bind(
     payload_sha256: &str,
     receipt: &Receipt,
 ) -> Result<Value> {
+    validate_receipt(suite.into(), host, payload, payload_sha256, receipt)?;
+    Ok(rendering_environment(
+        suite,
+        host,
+        &receipt.environment_before,
+    ))
+}
+
+/// Shared provenance boundary, without implying that semantic tests capture pixels.
+pub(crate) fn validate_receipt(
+    purpose: crate::payload::Purpose,
+    host: &HostBuild,
+    payload: &Payload,
+    payload_sha256: &str,
+    receipt: &Receipt,
+) -> Result<()> {
     host.validate()?;
     receipt.environment_before.validate()?;
     receipt.environment_after.validate()?;
     digest(payload_sha256)?;
     ensure!(
-        payload.schema == 1 && payload.suite == suite.id() && receipt.schema == 1,
+        payload.schema == 1 && payload.suite == purpose.id() && receipt.schema == 1,
         "VM receipt suite/schema differs"
     );
     ensure!(
@@ -192,14 +209,18 @@ pub fn bind(
         host.executable_hashes == artifacts,
         "host build artifacts differ from guest payload"
     );
-    Ok(json!({
+    Ok(())
+}
+
+fn rendering_environment(suite: Suite, host: &HostBuild, guest: &Guest) -> Value {
+    json!({
         "layer":"gpui", "environment_schema":2,
         // Executable/source hashes bind this run's receipt, not the rendering
         // environment. Ordinary code changes must not require environment adoption.
         "host_build": {"os":host.os,"os_build":host.os_build,"arch":host.arch,
             "rustc":host.rustc,"xcode":host.xcode,"sdk":host.sdk,
             "gpui_source":host.gpui_source,"tool_revision":host.tool_revision},
-        "guest_rendering":receipt.environment_before,
+        "guest_rendering":guest,
         "capture_policy": {
             "suite":suite.id(), "appearance":["light","dark"], "scale":2,
             "width_pt":if suite == Suite::Gallery {1200} else {1080},
@@ -210,5 +231,5 @@ pub fn bind(
             "precision":"exact decoded RGBA8; no masks, tolerance or resampling",
             "coverage":"independent catalog and framing audit required"
         }
-    }))
+    })
 }

@@ -139,8 +139,16 @@ impl Runner {
             self.page.reset(Some(range.clone()));
             let deadline = Instant::now() + Duration::from_secs(5);
             loop {
-                self.draw();
+                let draw = self.draw();
                 let state = self.page.0.borrow();
+                state
+                    .checkbox
+                    .resolve(
+                        draw,
+                        case.story.0 == 16
+                            && range.contains(&crate::capture_target::CHECKBOX_CHILD),
+                    )
+                    .unwrap_or_else(|error| panic!("{}: {error}", case.id()));
                 assert!(
                     !state.bounds.is_empty(),
                     "page did not prepaint: {}",
@@ -185,10 +193,11 @@ impl Runner {
         }
     }
 
-    fn draw(&mut self) {
+    fn draw(&mut self) -> crate::capture_target::DrawToken {
         // Drain model/asset work without advancing timers (e.g. cursor blink).
         // No DisplayLink, native event loop, presentation or activation needed.
         self.cx.run_until_parked();
+        let draw = self.page.0.borrow_mut().checkbox.begin_draw();
         // Use the untyped app update: WindowHandle::update leases Root, which
         // would double-borrow that entity when draw renders it again.
         self.cx
@@ -204,5 +213,6 @@ impl Runner {
                 window.draw(cx).clear(); // Clear the per-App element arena every frame.
             })
             .expect("draw headless Gallery frame");
+        draw
     }
 }

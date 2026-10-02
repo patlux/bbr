@@ -21,6 +21,7 @@ import vm_install
 import vm_lifecycle
 import vm_transfer
 import vm_selection
+import vm_runtime_transfer
 
 LOG_LIMIT = 16 * 1024 * 1024
 ARCHIVE_LIMIT = vm_transfer.TOTAL_LIMIT + vm_transfer.MAX_FILES * 1024 + vm_transfer.MANIFEST_LIMIT
@@ -43,7 +44,7 @@ def _ssh(session) -> list[str]:
 
 
 def _execute(argv: list[str], stdout: Path, stderr: Path, *, script: str | None,
-             seconds: float, output_limit: int) -> None:
+             seconds: float, output_limit: int, input_path: Path | None = None) -> None:
     """Bound direct SSH output with files (no pipe deadlock or detached group).
 
     Rust owns whole-group hard cancellation; remote processes are finally bounded
@@ -54,7 +55,11 @@ def _execute(argv: list[str], stdout: Path, stderr: Path, *, script: str | None,
         vm_install._absolute(path)
         if path.exists() or path.is_symlink():
             raise TransportError("fresh transport diagnostics required")
-    with tempfile.TemporaryFile() as source, stdout.open("xb") as out, stderr.open("xb") as err:
+    if input_path is not None and script is not None:
+        raise TransportError("script and binary transport input are exclusive")
+    source = (vm_install._open(input_path, vm_runtime_transfer.ARCHIVE_LIMIT)[0]
+              if input_path is not None else tempfile.TemporaryFile())
+    with source, stdout.open("xb") as out, stderr.open("xb") as err:
         os.fchmod(out.fileno(), 0o600)
         os.fchmod(err.fileno(), 0o600)
         if script is not None:
@@ -93,6 +98,27 @@ def _execute(argv: list[str], stdout: Path, stderr: Path, *, script: str | None,
                     raise TransportError("SSH hard termination; remote cleanup requires VM teardown")
 
 
+def _provision(session, share, digest, repo, suite, workspace) -> None:
+    """One offline import after hardening; never retry ambiguous guest writes."""
+    import shlex
+    value = vm_runtime_transfer.prepare(share, digest, repo, suite, workspace, _execute)
+    script = vm_runtime_transfer.import_script(value)
+    ssh = _ssh(session)
+    _execute(["/usr/bin/ssh", *ssh[1:], "/bin/zsh", "-f", "-c", shlex.quote(script)],
+             workspace / "runtime-import.stdout", workspace / "runtime-import.stderr",
+             script=None, input_path=value.path, seconds=240, output_limit=LOG_LIMIT)
+    value.recheck()
+    imported = (workspace / "runtime-import.stdout").read_text().splitlines()
+    if len(imported) != len(value.paths) or set(imported) != set(value.paths):
+        raise TransportError("runtime import path inventory differs")
+    with (workspace / "runtime-transfer.json").open("x") as handle:
+        os.fchmod(handle.fileno(), 0o600)
+        json.dump({"schema": 1, "payload_sha256": value.payload_sha256,
+                   "runtime_lock_sha256": value.runtime_lock_sha256,
+                   "bytes": value.bytes, "sha256": value.sha256,
+                   "paths": value.paths}, handle, sort_keys=True)
+
+
 def _exchange(session, script: str, workspace: Path) -> None:
     ssh = _ssh(session)
     ssh = ["/usr/bin/ssh", *ssh[1:]]
@@ -109,7 +135,7 @@ def run(share: Path, digest: str, repo: Path, suite: str, workspace: Path, vm: s
         control: Path, request_sha256: str, selected_sha256: str | None = None) -> dict:
     """Called by vm_supervision only, after external network approval.
 
-    No retries or runtime installation. Payload/build/coverage/seal authority stays
+    One offline source-locked runtime import, no retries. Payload/build/coverage/seal authority stays
     in Rust. The terminal acknowledgement cannot precede archive validation and
     observed cleanup; returned candidates are still unsealed staging diagnostics.
     """
@@ -133,6 +159,7 @@ def run(share: Path, digest: str, repo: Path, suite: str, workspace: Path, vm: s
 
     def operation():
         with vm_lifecycle.session(share, binding.artifacts, binding=binding) as session:
+            _provision(session, share, digest, repo, suite, workspace)
             _exchange(session, script, workspace)
             vm_transfer.inspect(workspace / "return.tar", digest)
             if vm_install.inspect(share, digest, repo, suite) != payload:

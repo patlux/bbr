@@ -325,6 +325,12 @@ gallery:
 e2e-gallery:
     DEVELOPER_DIR="{{xcode_developer_dir}}" {{gui_gate}} timeout --kill-after=10s {{e2e_timeout}} cargo test -p bbr-gallery --bin bbr-gallery -- --ignored --nocapture
 
+# Feature-enabled semantic Gallery suite, never host execution. Use the approved
+# hardened Tart route; this recipe declares the exact build/test plan only.
+# It adds capture-observer wiring evidence, not Metal/pixel or input acceptance.
+e2e-gallery-capture:
+    DEVELOPER_DIR="{{xcode_developer_dir}}" {{gui_gate}} timeout --kill-after=10s {{e2e_timeout}} cargo test -p bbr-gallery --features visual-capture --bin bbr-gallery -- --ignored --nocapture --test-threads=1
+
 # Windowless Metal probe, not a sealed comparator/baseline run. Optional story
 # selector derives from the registry. Builds with mbx; retains the host GPU lock.
 gallery-capture story="all":
@@ -352,7 +358,8 @@ visual-test:
     timeout --kill-after=10s {{test_timeout}} mbx test --locked --offline --manifest-path scripts/visual/Cargo.toml
     timeout --kill-after=10s {{visual_timeout}} python3 scripts/visual/test_update_integration.py -v
 
-# Host builds + fresh external payload only; never boots Tart or executes native producers.
+# Host build/staging only: gallery, browser, or gallery-semantic (test --no-run).
+# Never boots Tart or executes producers/harnesses; internal guest route needs approval.
 visual-prepare suite destination:
     timeout --kill-after=30s {{visual_timeout}} mbx run --locked --offline --manifest-path scripts/visual/Cargo.toml -- prepare {{quote(suite)}} {{quote(destination)}}
 

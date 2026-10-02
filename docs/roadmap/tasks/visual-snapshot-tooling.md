@@ -191,6 +191,18 @@ probe a VM. Partial boot remains unproven; this prerequisite does not open captu
 authorize networking or claim actual VM cleanup. Host bootstrap/SSH/return wiring
 and the approved real pilot remain separate required evidence.
 
+### Offline runtime provisioning follow-up
+
+After the actual guest proved missing pinned libiconv, Patrick requested fixing
+all reported blockers (2026-10-02). The pilot packet's [offline provisioning
+contract](gallery-visual-pilot.md#authorized-offline-runtime-provisioning) now
+permits a hash-bound export/import of the already verified host closure into the
+single disposable guest through existing supervised SSH. This supersedes only
+the earlier preinstalled-only requirement. Host/Golden Image setup, downloads,
+substitution/repair, signature-policy changes and host GUI remain prohibited.
+The original complete pinned closure and post-import byte verification stay
+mandatory; no runtime version or dependency is substituted to make tests pass.
+
 ### Bounded guest-runtime prerequisite
 
 Before host bootstrap/SSH wiring, pin the existing Darwin Python interpreter and

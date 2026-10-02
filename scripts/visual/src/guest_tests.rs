@@ -95,6 +95,46 @@ fn only_fixed_native_commands_are_constructed_without_execution() {
     assert!(command(&payload, Suite::Gallery, "inventory", &root).is_err());
 }
 #[test]
+fn semantic_action_has_no_capture_fallback_or_caller_filter() {
+    let args: Vec<String> = [
+        "guest-execute",
+        "gallery-semantic",
+        "semantic",
+        "/repo",
+        "/share",
+        "hash",
+        "/work",
+    ]
+    .into_iter()
+    .map(str::to_owned)
+    .collect();
+    assert_eq!(
+        purpose_action(&args).unwrap(),
+        (payload::Purpose::GallerySemantic, None)
+    );
+    for action in [
+        "capture",
+        "inventory",
+        "capture-selected",
+        "arbitrary-shell",
+    ] {
+        let mut changed = args.clone();
+        changed[2] = action.into();
+        assert!(purpose_action(&changed).is_err());
+    }
+    for purpose in ["gallery", "browser", "unknown"] {
+        let mut changed = args.clone();
+        changed[1] = purpose.into();
+        assert!(purpose_action(&changed).is_err());
+    }
+    for extra in ["--exact", "e2e::fixture::one", "request-hash"] {
+        let mut changed = args.clone();
+        changed.push(extra.into());
+        assert!(purpose_action(&changed).is_err());
+    }
+}
+
+#[test]
 fn manifest_preflight_binds_bounded_regular_bytes_before_parsing() {
     let temp = tempfile::tempdir().unwrap();
     let root = temp.path().canonicalize().unwrap();

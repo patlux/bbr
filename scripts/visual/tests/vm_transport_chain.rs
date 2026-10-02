@@ -1,6 +1,6 @@
 //! Full Rust supervisor -> Python transport -> return/receipt path, with only
 //! runtime, lifecycle/resource and SSH boundaries replaced by inert local fixtures.
-use bbr_visual::{payload, vm_environment::HostBuild, vm_transport, Suite};
+use bbr_visual::{payload, vm_environment::HostBuild, vm_semantic, vm_transport, Suite};
 use cargo_gpui_visual::{config::Config, gate::Options, process, selection::Selection};
 use serde_json::{json, Value};
 use std::{
@@ -36,6 +36,11 @@ def verify(share,digest,repo,suite):
         runtime_lock_sha256=p['sources']['scripts/visual/guest-runtime.json'],python=lock['python'],
         dependencies={f['guest']:[] for f in p['files'] if f['executable']},closure_paths=1,closure_nar_bytes=17)
 "#).unwrap();
+    fs::write(
+        scripts.join("vm_runtime_transfer.py"),
+        "# Hardware/store boundary replaced in _provision below.\n",
+    )
+    .unwrap();
     fs::write(scripts.join("guest-runtime.json"),json!({"python":{"path":"/fixture/python","version":"fixture","sha256":"f".repeat(64)},"paths":{"fixture":{"narSize":17}}}).to_string()).unwrap();
     fs::write(
         scripts.join("vm_bootstrap.py"),
@@ -80,7 +85,13 @@ def recheck(vm,artifacts,ip,pid):
         (root/'host-observed').write_text('observed under both locks')
         if {reject}: raise RuntimeError('injected host resource rejection')
 "#,
-            reject = if ["host-reject", "selected-host-reject"].contains(&mode) {
+            reject = if [
+                "host-reject",
+                "selected-host-reject",
+                "semantic-host-reject"
+            ]
+            .contains(&mode)
+            {
                 "True"
             } else {
                 "False"
@@ -91,6 +102,7 @@ def recheck(vm,artifacts,ip,pid):
     let mut transport = source("vm_transport.py");
     transport.push_str(&format!(r#"
 # Isolated test boundary only. The production module has no injection flags.
+def _provision(*args): pass
 def _exchange(session,script,workspace):
     if {failed}: raise TransportError('injected SSH operation failure')
     if {cancelled}: raise vm_lifecycle.Cancelled('injected selected cancellation')
@@ -105,7 +117,20 @@ def _exchange(session,script,workspace):
     raw=workspace.parent/'synthetic-guest-raw'
     raw.mkdir()
     (raw/'guest-receipt.json').write_text(json.dumps(receipt))
-    (raw/'fixture--light.png').write_bytes(b'fixture bytes, NOT PNG')
+    if p['suite'] == 'gallery-semantic':
+        plan='scripts/visual/catalogs/gallery-semantic.json'
+        binary=next(f for f in p['files'] if '/deps/bbr_gallery-' in f['guest'])
+        result=dict(schema=1,origin='gallery-semantic-libtest',payload_sha256=digest,
+            plan_sha256=p['sources'][plan],executable=binary['guest'],executable_sha256=binary['sha256'],
+            listing='e2e::fixture::one: test\ne2e::fixture::two: test\n2 tests, 0 benchmarks\n',
+            execution='running 2 tests\ntest e2e::fixture::one ... ok\ntest e2e::fixture::two ... ok\ntest result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 8 filtered out; finished in 0.01s\n')
+        if {semantic_invalid}: result['execution']='failed synthetic fixture'
+        (raw/'semantic-results.json').write_text(json.dumps(result))
+        for suite in ('every-story-renders','mode-state-switching'):
+            (raw/('semantic-'+suite+'.json')).write_text(json.dumps(dict(suite=suite,sanity_only=True,
+                note='report-only frame-time observations; never a product budget',observations_ms={{'fixture':0.25}})))
+    else:
+        (raw/'fixture--light.png').write_bytes(b'fixture bytes, NOT PNG')
     request_path=workspace/'selected-request.json'
     if request_path.exists():
         selected=json.loads(request_path.read_text())['selection']
@@ -117,8 +142,12 @@ def _exchange(session,script,workspace):
             request_path.write_text('{{}}')
     if {unexpected}: (raw/'selection.json').write_text('{{}}')
     vm_transfer.pack(raw,workspace/'return.tar',digest)
-"#,failed=if ["failed", "selected-failed"].contains(&mode) {"True"} else {"False"},swapped=if mode=="swapped-receipt" {"True"} else {"False"},
-cancelled=if mode=="selected-cancelled" {"True"} else {"False"},
+    if {semantic_source_drift}:
+        (Path(p['repo'])/'fixture.rs').write_text('changed host source')
+"#,failed=if ["failed", "selected-failed", "semantic-failed"].contains(&mode) {"True"} else {"False"},swapped=if ["swapped-receipt", "semantic-swapped-receipt"].contains(&mode) {"True"} else {"False"},
+cancelled=if ["selected-cancelled", "semantic-cancelled"].contains(&mode) {"True"} else {"False"},
+semantic_invalid=if mode=="semantic-invalid" {"True"} else {"False"},
+semantic_source_drift=if mode=="semantic-source-drift" {"True"} else {"False"},
 selection_swap=if mode=="selected-swapped" {"True"} else {"False"},
 selection_missing=if mode=="selected-missing" {"True"} else {"False"},
 request_swap=if mode=="selected-request-swap" {"True"} else {"False"},
@@ -143,7 +172,15 @@ fn supervised_transport_checks_both_leases_and_binds_return_before_success() {
         "unexpected-selection",
         "endpoint-full",
         "selected-endpoint",
+        "semantic-success",
+        "semantic-failed",
+        "semantic-cancelled",
+        "semantic-host-reject",
+        "semantic-swapped-receipt",
+        "semantic-invalid",
+        "semantic-source-drift",
     ] {
+        let semantic = mode.starts_with("semantic-");
         let temp = tempfile::tempdir().unwrap();
         let root = temp.path().canonicalize().unwrap();
         let repo = root.join("repo");
@@ -173,6 +210,11 @@ suffixes=[".rs",".py",".json",".toml"]
         fs::create_dir(&catalogs).unwrap();
         fs::write(catalogs.join("stories.json"), json!({"schema":1,"stories":[{"id":"gallery-00","label":"Fixture","cases":["gallery-00-state-00-standard-normal-page-00"]}]}).to_string()).unwrap();
         fs::write(catalogs.join("gallery-plan.json"), json!({"schema":1,"cases":[{"base":"gallery-00-state-00-standard-normal","label":"Fixture","state":"Default","group":"Fixture","ranges":[[0,1]]}]}).to_string()).unwrap();
+        fs::write(
+            catalogs.join("gallery-semantic.json"),
+            json!({"schema":1,"tests":["e2e::fixture::one","e2e::fixture::two"]}).to_string(),
+        )
+        .unwrap();
         let endpoints = mode.contains("endpoint");
         if endpoints {
             let rest = json!({"base":"gallery-16-state-00-standard-normal","label":"Checkbox",
@@ -222,15 +264,21 @@ suffixes=[".rs",".py",".json",".toml"]
         });
         let mut artifacts = Vec::new();
         for (name, relative) in [
-            ("bbr-gallery", "target/release/bbr-gallery"),
+            (
+                "bbr-gallery",
+                if semantic {
+                    "target/release/deps/bbr_gallery-fixture"
+                } else {
+                    "target/release/bbr-gallery"
+                },
+            ),
             ("bbr-visual", "scripts/visual/target/release/bbr-visual"),
         ] {
             let path = repo.join(relative);
             fs::create_dir_all(path.parent().unwrap()).unwrap();
             fs::write(&path, "synthetic artifact, never execute").unwrap();
             fs::set_permissions(&path, fs::Permissions::from_mode(0o500)).unwrap();
-            artifacts
-                .push(json!({"target":{"name":name},"profile":{"test":false},"executable":path}));
+            artifacts.push(json!({"target":{"name":name,"kind":["bin"]},"profile":{"test":semantic && name=="bbr-gallery"},"features":["visual-capture"],"executable":path}));
         }
         let cancelled = AtomicBool::new(false);
         let sources = payload::source_snapshot(&repo, &config, &cancelled).unwrap();
@@ -240,7 +288,11 @@ suffixes=[".rs",".py",".json",".toml"]
             &config,
             &sources,
             &artifacts,
-            Suite::Gallery,
+            if semantic {
+                payload::Purpose::GallerySemantic
+            } else {
+                Suite::Gallery.into()
+            },
             &share,
             &cancelled,
         )
@@ -267,26 +319,52 @@ suffixes=[".rs",".py",".json",".toml"]
             compatibility: vec![root.join("bbr.lock")],
             wait: Duration::from_millis(100),
         };
-        let result = vm_transport::run(
-            vm_transport::Input {
-                repo: &repo,
-                suite: Suite::Gallery,
-                share: &share,
-                staged: &staged,
-                host: &host,
-                workspace: &workspace,
-                selection: selection.as_ref(),
-            },
-            &options,
-            &cancelled,
-        );
+        let result = if semantic {
+            vm_semantic::run(
+                vm_semantic::Input {
+                    repo: &repo,
+                    share: &share,
+                    staged: &staged,
+                    host: &host,
+                    workspace: &workspace,
+                },
+                &options,
+                &cancelled,
+            )
+            .map(|verified| {
+                verified
+                    .recheck(
+                        &staged,
+                        &cargo_gpui_visual::store::digest(&share.join("payload.json")).unwrap(),
+                        &host,
+                        &cancelled,
+                    )
+                    .unwrap();
+                None
+            })
+        } else {
+            vm_transport::run(
+                vm_transport::Input {
+                    repo: &repo,
+                    suite: Suite::Gallery,
+                    share: &share,
+                    staged: &staged,
+                    host: &host,
+                    workspace: &workspace,
+                    selection: selection.as_ref(),
+                },
+                &options,
+                &cancelled,
+            )
+            .map(|captured| captured.selection)
+        };
         assert_eq!(
             result.is_ok(),
-            ["success", "selected-success"].contains(&mode),
+            ["success", "selected-success", "semantic-success"].contains(&mode),
             "{mode}: {result:?}"
         );
-        if let Ok(captured) = result.as_ref() {
-            assert_eq!(captured.selection, selection);
+        if let Ok(returned_selection) = result.as_ref() {
+            assert_eq!(*returned_selection, selection);
         }
         if [
             "selected-missing",
@@ -301,6 +379,17 @@ suffixes=[".rs",".py",".json",".toml"]
                     .unwrap_err()
                     .to_string()
                     .contains("returned selection"),
+                "{mode}: {result:?}"
+            );
+        }
+        if let Some(expected) = match mode {
+            "semantic-invalid" => Some("semantic result count differs"),
+            "semantic-swapped-receipt" => Some("guest used a different payload"),
+            "semantic-source-drift" => Some("source/payload changed during transport"),
+            _ => None,
+        } {
+            assert!(
+                result.as_ref().unwrap_err().to_string().contains(expected),
                 "{mode}: {result:?}"
             );
         }
@@ -323,7 +412,12 @@ suffixes=[".rs",".py",".json",".toml"]
         let gate: Value = serde_json::from_slice(&fs::read(&options.path).unwrap()).unwrap();
         assert_eq!(
             gate["active"],
-            ["host-reject", "selected-host-reject"].contains(&mode),
+            [
+                "host-reject",
+                "selected-host-reject",
+                "semantic-host-reject"
+            ]
+            .contains(&mode),
             "{mode}"
         );
         assert!(!workspace.join("raw/capture.json").exists());
@@ -332,6 +426,8 @@ suffixes=[".rs",".py",".json",".toml"]
             "selected-failed",
             "selected-cancelled",
             "selected-request-swap",
+            "semantic-failed",
+            "semantic-cancelled",
         ]
         .contains(&mode)
         {

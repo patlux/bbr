@@ -137,6 +137,8 @@ mod capture;
 mod capture_cases;
 #[cfg(all(target_os = "macos", feature = "visual-capture"))]
 mod capture_page;
+#[cfg(all(target_os = "macos", feature = "visual-capture"))]
+mod capture_target;
 
 #[cfg(test)]
 mod dependency_contract;

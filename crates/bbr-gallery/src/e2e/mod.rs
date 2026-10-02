@@ -19,6 +19,8 @@
 
 mod address;
 mod auth;
+#[cfg(feature = "visual-capture")]
+mod capture_target;
 mod command;
 mod context_menu;
 mod controls;

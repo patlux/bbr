@@ -53,6 +53,11 @@ class TransportContracts(unittest.TestCase):
                 "tart_pid": 12345, "tart_exit": 0, "clone_absent": True, "disk_detached": True,
                 "private_key_absent": True, "owned_process_reaped": True, "ssh_unreachable": True})
 
+    def provision(self, *args):
+        self.assertIn("boot-fixture", self.calls)
+        self.assertNotIn("exchange-fixture", self.calls)
+        self.assertFalse((self.control / "terminal.json").exists())
+
     def exchange(self, session, script, workspace):
         self.calls.append("exchange-fixture")
         self.assertFalse((self.control / "terminal.json").exists())
@@ -71,6 +76,7 @@ class TransportContracts(unittest.TestCase):
     def execute(self, *, exchange=None, recheck=None):
         with patch.object(vm_transport.vm_bootstrap, "plan", return_value="synthetic command, never executed"), \
              patch.object(vm_transport.vm_lifecycle, "session", self.lifecycle), \
+             patch.object(vm_transport, "_provision", self.provision), \
              patch.object(vm_transport, "_exchange", exchange or self.exchange), \
              patch.object(vm_cleanup, "recheck", recheck or self.recheck):
             return vm_transport.run(self.fixture.share, self.digest, self.fixture.repo, "gallery",
@@ -108,6 +114,35 @@ class TransportContracts(unittest.TestCase):
         self.assertEqual(self.terminal(), "cancelled")
         self.assertEqual(self.calls, ["boot-fixture", "cleanup-fixture", "observe-fixture"])
         self.assertFalse((self.workspace / "raw").exists())
+
+    def test_runtime_failure_or_cancellation_cleans_before_any_bootstrap(self):
+        for failure in (vm_transport.TransportError("runtime import failed"), vm_lifecycle.Cancelled("runtime cancellation")):
+            with self.subTest(failure=failure):
+                if (self.control / "terminal.json").exists():
+                    (self.control / "terminal.json").unlink()
+                    for entry in (self.workspace / "vm").iterdir(): entry.unlink()
+                    self.calls.clear()
+                with patch.object(self, "provision", side_effect=failure), self.assertRaises(type(failure)):
+                    self.execute()
+                self.assertEqual(self.calls, ["boot-fixture", "cleanup-fixture", "observe-fixture"])
+                self.assertEqual(self.terminal(), "cancelled" if isinstance(failure, vm_lifecycle.Cancelled) else "failed")
+                self.assertFalse((self.workspace / "raw").exists())
+
+    def test_binary_input_uses_owned_bounded_stream_without_script_or_detach(self):
+        archive = self.workspace / "runtime.export"
+        archive.write_bytes(b"\x00\xffbinary")
+        out, err = self.workspace / "binary-out", self.workspace / "binary-err"
+        vm_transport._execute(["/bin/cat"], out, err, script=None, input_path=archive,
+                              seconds=2, output_limit=128)
+        self.assertEqual(out.read_bytes(), archive.read_bytes())
+        with self.assertRaises(vm_transport.TransportError):
+            vm_transport._execute(["never-run"], self.workspace / "bad-out", self.workspace / "bad-err",
+                                  script="conflicting", input_path=archive, seconds=2, output_limit=128)
+        archive.unlink()
+        archive.symlink_to(out)
+        with self.assertRaises(Exception):
+            vm_transport._execute(["never-run"], self.workspace / "link-out", self.workspace / "link-err",
+                                  script=None, input_path=archive, seconds=2, output_limit=128)
 
     def test_truncated_archive_cleans_vm_but_cannot_publish_candidates(self):
         def broken(*args):
@@ -166,6 +201,37 @@ class TransportContracts(unittest.TestCase):
         session.ssh.insert(1, "-A")
         with self.assertRaisesRegex(vm_transport.TransportError, "isolated"):
             vm_transport._ssh(session)
+
+    def test_runtime_import_uses_exact_route_and_rejects_missing_extra_duplicate_paths(self):
+        clone = SimpleNamespace(artifacts=self.workspace / "vm")
+        session = SimpleNamespace(clone=clone, ip="192.168.64.2")
+        session.ssh = vm_lifecycle.tart_vm.ssh_args(clone.artifacts / "runner_ed25519",
+            clone.artifacts / "known_hosts", session.ip, isolated=True)
+        value = SimpleNamespace(path=self.workspace / "runtime.export", payload_sha256=self.digest,
+            runtime_lock_sha256="a"*64, bytes=7, sha256="b"*64,
+            paths=("/fixture/a", "/fixture/b"), recheck=Mock())
+        for observed in ("/fixture/a\n", "/fixture/a\n/fixture/b\n/extra\n",
+                         "/fixture/a\n/fixture/a\n", "/fixture/b\n/fixture/a\n"):
+            def execute(argv, stdout, stderr, **kwargs):
+                self.assertEqual(argv[:-4], ["/usr/bin/ssh", *session.ssh[1:]])
+                self.assertEqual(argv[-4:], ["/bin/zsh", "-f", "-c", "'fixed import'"])
+                self.assertEqual(kwargs["input_path"], value.path)
+                self.assertIsNone(kwargs["script"])
+                self.assertEqual(kwargs["seconds"], 240)
+                stdout.write_text(observed)
+            with patch.object(vm_transport.vm_runtime_transfer, "prepare", return_value=value), \
+                 patch.object(vm_transport.vm_runtime_transfer, "import_script", return_value="fixed import"), \
+                 patch.object(vm_transport, "_execute", side_effect=execute):
+                if observed == "/fixture/b\n/fixture/a\n":
+                    vm_transport._provision(session, self.fixture.share, self.digest,
+                                            self.fixture.repo, "gallery", self.workspace)
+                    receipt = json.loads((self.workspace / "runtime-transfer.json").read_text())
+                    self.assertEqual(receipt["payload_sha256"], self.digest)
+                else:
+                    with self.assertRaisesRegex(vm_transport.TransportError, "inventory differs"):
+                        vm_transport._provision(session, self.fixture.share, self.digest,
+                                                self.fixture.repo, "gallery", self.workspace)
+                    self.assertFalse((self.workspace / "runtime-transfer.json").exists())
 
     def test_bounded_direct_local_stream_and_timeout_no_detached_child(self):
         out, err = self.workspace / "out", self.workspace / "err"

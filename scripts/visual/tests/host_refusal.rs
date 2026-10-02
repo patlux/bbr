@@ -20,6 +20,15 @@ fn unwired_native_entrypoints_fail_before_artifacts_or_builds() {
         vec!["produce", "browser"],
         vec!["guest-execute", "gallery", "capture"],
         vec!["guest-execute", "gallery-semantic", "semantic"],
+        vec![
+            "guest-execute",
+            "gallery-semantic",
+            "semantic",
+            "/not-read",
+            "/not-read",
+            "a",
+            "/not-written",
+        ],
         vec!["produce", "gallery-semantic"],
         vec![
             "guest-execute",

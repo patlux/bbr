@@ -11,6 +11,36 @@ contracts, source inspection and real runtime evidence are separate columns of
 proof; neither historical native captures nor synthetic PNGs substitute for fresh
 Tart captures. No milestone checkbox is completed by this document.
 
+## Runtime addendum (2026-10-02)
+
+The earlier table and blocked-boundary narrative describe the original inspection
+and first two attempts. They are superseded only for the semantic prerequisite by
+`/private/tmp/bbr-visual-runtime-fix/attempt9`: the existing supervised route now
+passes49/49 Gallery scenarios, including the Checkbox target observer, and returns
+fully validated original-source/build results after independently verified teardown.
+The pinned51-path runtime is exported from already verified host bytes and imported
+offline into the disposable clone, with no host/Golden mutation or downloads.
+Guest console,444 font hashes, actual CoreGraphics geometry and Metal device are
+observed before/after and equal. Real failure-path, cancellation and successful
+semantic-run cleanup are proven; image-capture timeout cleanup is not inferred.
+A final freshly staged `attempt10` under the same evidence root repeats49/49,
+original identity validation and independent cleanup with all1,513 current source
+hashes matching. Timings:5.38s tests /119.54s caller, report-only. Neither run
+produces images. Current visual contracts/strict Clippy pass, but full non-GUI
+`verify` now fails at the unchanged Command benchmark under host load; the isolated
+benchmark pass does not erase those aggregate failures. Exact logs and p95 values
+are recorded in Current delivery, superseding the old verification surface below.
+
+The concrete runtime-absence blocker is resolved. The observer no longer lacks its
+semantic callback gate and may be committed with its dependent49-case catalog and
+route after local verification. This is not image capture or migration parity:
+Check SVG/input/two-clock readiness, Sidebar nested/paint framing, browser/full
+Gallery captures, exact fresh repeats, PNG/HTML review, stable functional aggregate,
+public capture activation and Python removal remain open. No baseline or environment
+adoption follows from semantic success. Detailed failed attempts and current next
+work are recorded in Current delivery; historical no-install/approval stops are not
+new user prohibitions.
+
 ## Requirement mapping
 
 Paths in the table are repository-relative identifiers under
@@ -28,13 +58,13 @@ Paths in the table are repository-relative identifiers under
 | Nested content and shadow framing | Current measured outer pagination and existing semantic menu-height tests | Nested scroll windows, aliases, clipped descendants/shadows and complete content remain unproven; source formulas are not measurements |
 | Tokens / real Checkbox / multipage Sidebar Light/Dark pilot | Existing production capture seams, portable selected pipeline and typed schema-2 Checkbox still requirements; endpoint-bearing execution/review fails closed | No fresh real pilot. Checkbox/initial Radio need legitimate asset-source approval; checked animation readiness, pointer transitions and framing require real evidence |
 | All eight browser images | Shared `browser_output.rs` validates exact names, markers, RGBA8 and 2160×2814 / 608×2814 sizes | Current VM capture of all eight is absent; pre-Paper references are not newly approved |
-| Actual guest capture only | `runner::require_vm_execution` refuses normal capture; `guest-execute` requires admin/VirtualMac, fixed actions and source/executable binding | No public VM capture route activated and no real guest execution in this migration |
+| Actual guest capture only | `runner::require_vm_execution` refuses normal capture; `guest-execute` requires admin/VirtualMac, fixed actions and source/executable binding; two approved headless clone attempts recorded below | No public VM capture route activated; bootstrap runtime failure precedes any Gallery execution |
 | Exact source/build identity | `payload.rs`, `prepare.rs`, source snapshots, Cargo executable hashes, installation checks; historical host-only preparations verified | Prior payloads are stale diagnostics. Prepare again on the exact approved capture tree; verify actual guest installed/executed bytes |
 | Separate host build and guest rendering environments | `vm_environment.rs`, guest observations and pre/post receipt binding; synthetic drift tests | Actual guest OS/display/fonts/session facts and equality between complete runs not observed |
-| Guest runtime without repair/download fallback | `guest-runtime.json`, `vm_runtime.py`, `vm_runtime.rs`; pinned host closure verified offline | Availability of the pinned closure in the golden guest is unknown. Failure must not trigger installation or a host fallback |
+| Guest runtime without repair/download fallback | `guest-runtime.json`, `vm_runtime.py`, `vm_runtime.rs`; pinned host closure verified offline | Actual approved retry proves pinned libiconv is absent in the golden guest; no installation or host fallback occurred |
 | Safe bootstrap, transfer and raw return | Frozen helper hashes, fresh installation, bounded flat archives, original payload/request/receipt binding; hostile-input and cross-language tests | Actual read-only share, SSH stream, guest paths and returned native images remain unproven |
-| Bounded cancellation/process/VM cleanup | Immutable upstream process owner, `vm_supervision.rs`, concrete bound evidence plus independent host checks; local signal/descendant tests | Real normal/timeout/cancelled Tart resource absence still required. Mocked observers prove protocol, not teardown |
-| Network/privacy/profile boundaries | No new network or real profile use; clone-only hardening and listener/authentication policies implemented with fixtures | Before any boot: Patrick's current approval of disposable private-NAT/key-only SSH; then verify effective auth/listeners and allowed/forbidden access. No bridge, forwarding or host GUI |
+| Bounded cancellation/process/VM cleanup | Immutable upstream process owner, `vm_supervision.rs`, concrete bound evidence plus independent host checks; local signal/descendant tests | Two real failed attempts prove request-bound resource absence and independent host recheck; successful execution and timeout/cancellation teardown still required |
+| Network/privacy/profile boundaries | Patrick approved the bounded route; actual retry proves effective key-only auth, TCP22 listener/access and TCP88/5900 rejection; both disposable clones removed | No bridge, forwarding, public listener, host GUI or real profile use; preserve these boundaries on future approved runs |
 | Exact decoded RGBA8, no tolerance/mask/resampling | Existing validators and immutable exact comparator; byte-preserving transfer/renames; exact one-pixel regression | Two independent complete same-source/environment VM captures still absent |
 | Stills Review Collections | Explicit Rust `compare` uses current config and canonical coverage; invalid sibling visibility and fresh output contracts pass | Real migrated reports not visually inspected; failed suites remain failed evidence |
 | Partial reports never full coverage/acceptance | Selected schema-2 `TEILLAUF` through separate upstream report, no Collection mixing; direct acceptance rejected with/without adoption | Real selected route still needs capture proof; even all-story selection remains development-only |
@@ -94,19 +124,31 @@ these current migration gates. Later source changes require new capture seals.
    evidence and exact files remain in Current delivery. Pure tests do not verify
    the callback. Host-only `prepare gallery-semantic` now reuses source-bound
    staging/runtime checks for an exact feature-enabled release test harness and
-   standalone consumer; it executes neither. Its distinct payload purpose is
-   rejected by capture/bootstrap until fixed guest execution/result validation is
-   wired. The next local prerequisite is that bounded action through the existing
-   hardened/no-install transport: the generic E2E runner attempts dependency
-   realization and must not run unchanged under this goal. Real callback/input/paint
-   still needs the approved guest, and further input
+   standalone consumer; it executes neither. Its distinct payload purpose never
+   becomes an image suite. The guest-only fixed action and exact 49-case
+   result validator are portable-tested, not guest runtime evidence: they bind
+   original requirement/executable hashes, list before running, and require exact
+   successful libtest output with actual zero exit status. Portable-tested guest
+   composition now preserves the two exact report-only sweep files outside the
+   installed tree before its unchanged strict verification. The distinct pure host
+   return validator reuses byte/receipt guards and retains original host identities;
+   it does not produce capture evidence. The shared-supervisor/frozen-bootstrap
+   integration now passes synthetic complete-chain tests, retaining both leases
+   through independent cleanup checks. No public CLI or actual VM call is enabled
+   by this local evidence. Actual host-only preparation and syntax-only bootstrap
+   inspection passed at `/private/tmp/bbr-visual-semantic-route-prepare.Mw6A35`;
+   later source/documentation edits require another fresh staging before execution.
+   All these candidates stay uncommitted with the observer dependency. The generic E2E runner
+   attempts dependency realization and must not run unchanged under this goal.
+   Real callback/input/paint still needs the approved guest, and further input
    wiring must not conceal that missing gate. Keep the 936 historical
    pairs and 31 blockers until replacement evidence is actually proven. No product
    renderer change or guessed page count is authorized by this audit.
-2. Execution boundary: obtain approval for the disposable clone's private NAT,
-   dynamic guest TCP 22 reachable from the host/allowed NAT peers, run-specific
-   key-only SSH, no bridge/forwarding/public listener, clone/key teardown and
-   verification of unintended access paths. Do not boot merely to inspect runtime.
+2. Execution boundary: Patrick approved the described private-NAT/key-only SSH
+   semantic run on 2026-10-02. Two real attempts and independent cleanup are now
+   recorded in Current delivery; the retry passed effective auth/listener/access
+   checks but stopped at absent pinned libiconv before Gallery execution. Network
+   approval is not the remaining blocker; no-install guest runtime is.
 3. Asset boundary: obtain the narrow legitimate Gallery production asset-source
    correction for the real Check SVG used by Checkbox and initial Radio. Empty
    assets or a test-only drawn substitute cannot prove the pilot.
@@ -117,6 +159,19 @@ these current migration gates. Later source changes require new capture seals.
    network/asset approvals and from tooling success. Additional composition/sequence
    packets are sequenced after stable migration, not idle parallel scope.
 
-Useful authorized local requirement work remains, so this audit does not justify
-pausing the whole goal. It also establishes that completion cannot be inferred
-from the amount of implemented infrastructure or portable green tests.
+The subsequent semantic-route checkpoint in Current delivery completes the
+bounded local prerequisite: portable action, strict diagnostics, receipt/return,
+shared supervision and host-only preparation are verified. Its actual guest gate
+is now the next required step. Repeating audits/builds adds no runtime proof;
+additional input/framing work is deferred until that observer gate, and later
+compositions/parity removal depend on it. The later approved runs at
+`/private/tmp/bbr-visual-semantic-approved.09DN2I` supersede the network-approval
+blocker. The first uncovered a legitimate OpenSSH repeated-field parser defect;
+a negative-first repair passed portable tests and the actual fresh retry audit.
+That retry failed because the pinned guest library
+`/nix/store/jspv3c5l2zx4kiwzhq0zgxcwp34cqifz-libiconv-115.100.1` is absent.
+Both clones and keys were removed with independently rechecked evidence. No
+Gallery scenario ran and no dependency was installed. Preserve the uncommitted
+observer/dependent candidates; migration remains incomplete at the concrete
+runtime boundary. The isolated parser repair may be committed separately because
+its actual guest audit passed and it has no observer dependency.
