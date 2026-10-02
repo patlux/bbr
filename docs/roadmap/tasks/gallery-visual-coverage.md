@@ -152,6 +152,22 @@ Verify the catalog and read-only diagnostics with consumer/upstream contracts;
 no product/renderer/vendor/asset change, native run or real-capture claim. Remaining
 browser-component/composition families and runtime framing retain open status.
 
+### Bounded Status / Tab Row / Saved Pages Library applicability audit
+
+Inspect IDs 21–30 against current story builders and production render branches.
+Keep static status text, row-state projections, recorder dispatch and real browser
+transitions distinct. Check stale rejected-matrix reasons against current favicon
+and row DTOs, the Library row-selection flags versus its separate selection set,
+collection staging branches, and the fixed-height/windowed composition. Expose
+concrete omitted states and framing gaps through additive withheld catalog rows;
+never remove historical requirements or infer page counts from producer output.
+Verify catalog/doctor contracts and source references only. No renderer, fixture,
+asset, product or baseline edits; no native/VM execution or Split activation.
+The [Status / Tab Row / Library audit](../../visual/gallery-library-audit.md)
+records these source findings. IDs 31–48 remain a subsequent bounded source slice.
+This audit does not complete applicability, interaction, endpoint, full-framing
+or visual acceptance gates.
+
 ## Iteration policy
 
 Begin with audited inventory and the smallest native capture path. Diagnose

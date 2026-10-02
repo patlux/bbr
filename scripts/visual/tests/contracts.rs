@@ -135,7 +135,7 @@ fn authored_catalogs_cover_required_pairs_and_keep_unproven_coverage_visible() {
             .iter()
             .filter(|s| s.state == State::Withheld)
             .count(),
-        12
+        15
     );
     let browser: Catalog =
         store::read_json(&repo.join("scripts/visual/catalogs/browser.json")).unwrap();
@@ -203,6 +203,39 @@ fn source_projected_states_and_missing_assets_never_become_coverage() {
             .unwrap_or_else(|| panic!("missing concrete source-audit blocker: {base}"));
         assert_eq!(entry.state, State::Withheld);
         assert!(entry.reason.as_deref().unwrap().contains(reason));
+        assert!(entry.page.is_none() && entry.sequence.is_none() && entry.moment.is_none());
+    }
+}
+
+#[test]
+fn tab_and_library_source_gaps_remain_explicit_non_capture_requirements() {
+    let repo = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let gallery: Catalog =
+        store::read_json(&repo.join("scripts/visual/catalogs/gallery.json")).unwrap();
+    gallery.validate().unwrap();
+    for (base, reasons) in [
+        (
+            "gallery-22-stale-matrix-exclusions",
+            ["bitmap", "split", "focus"],
+        ),
+        (
+            "gallery-30-selection-collection-gaps",
+            ["selected", "toolbar", "collection"],
+        ),
+        ("gallery-30-windowed-framing", ["24", "520", "scroll"]),
+    ] {
+        let entry = gallery
+            .snapshots
+            .iter()
+            .find(|s| s.base == base)
+            .unwrap_or_else(|| panic!("missing concrete source-audit blocker: {base}"));
+        assert_eq!(entry.state, State::Withheld);
+        for reason in reasons {
+            assert!(
+                entry.reason.as_deref().unwrap().contains(reason),
+                "{base}: {reason}"
+            );
+        }
         assert!(entry.page.is_none() && entry.sequence.is_none() && entry.moment.is_none());
     }
 }

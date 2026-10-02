@@ -1088,6 +1088,58 @@ Actual network/asset permissions, runtime availability, legitimate endpoint and
 nested framing, fresh pilot/full repeats and current functional Tart gates remain
 required. The goal and Gallery acceptance stay open.
 
+### Status / Tab Row / Library source-audit checkpoint
+
+Preflight: clean `main@7cc720cc`, no index lock, visual/Tart process or observed
+capture-lock holder. ROADMAP and this complete delivery contract were re-read.
+Ordinary user BBR and unrelated mbx processes remain untouched. Sole local visual
+writer; no workflow/subagent, foreign worktree or extra product lane authorized.
+IDs 21–48 were audited as runnable source work; the concrete 21–30 findings form
+this smaller reviewable slice. Preliminary reads of 31–34 are not a completed
+remaining-family audit. VM/network and asset approvals remain pending.
+
+The [source continuation](../visual/gallery-library-audit.md) traces IDs 21–30
+through actual builders, production branches, recorder and semantic-test seams.
+Tab Row still rejects bitmap favicons despite the current production image/fallback
+path; every fixture omits the split mark, and the focused label has no dedicated
+ring/input path. This records gaps only, without activating deferred Split work.
+Library selection/multi set row flags but leave the separate selection set empty,
+so the production selection toolbar is absent. Move sheet and collection stages
+are never supplied. Recorder dispatch does not mutate the fixture models. The
+large-1k model supplies only rows 1–24 inside a 520pt nested scroll viewport;
+outer pagination cannot establish complete descendant visibility or full-list
+coverage. No runtime clipping defect or native pixels are inferred from source.
+
+Three additive withheld rows expose these concrete gaps; all prior rows, including
+936 historical required page pairs and twelve existing blockers, are preserved
+exactly as JSON values. No page/sequence/moment invention, old exclusion promotion,
+renderer/fixture/product/vendor/asset/config/baseline change or catalog activation.
+The canonical Gallery packet records the bounded scope before its implementation.
+
+Evidence: the new missing-blocker contract fails before catalog edits
+(`/tmp/bbr-visual-library-audit-red.log`); all ten catalog/validator and four
+read-only discovery contracts then pass (0.79s each test binary,
+`/tmp/bbr-visual-library-audit-focused.log`). Full `just visual-test` passes 151
+Python discovery tests (one additional integration skip, separately passed),
+unchanged upstream and **71 consumer tests** plus existing signal fixtures:
+`/tmp/bbr-visual-library-audit-visual-test.log`. Strict consumer all-target Clippy
+passes (`/tmp/bbr-visual-library-audit-clippy.log`). Formatting, roadmap (160
+tracked first-party Markdown files; `/tmp/bbr-visual-library-audit-roadmap.log`)
+and whitespace checks pass. Structured comparison confirms every prior
+catalog row unchanged, exactly three new withheld rows and all new source paths
+present. These timings are tooling evidence only; audit/review wall time was not
+instrumented and no product-performance claim is made.
+
+Self-review checks actual render predicates rather than comments, separates
+selection-row fill from toolbar state, traces recorder-only callbacks, preserves
+Library's legitimate monogram-only boundary, and distinguishes potential nested
+paint concerns from measured clipping. No native/VM run, actual PNG/HTML review,
+functional GUI gate or baseline/environment adoption. Parallelism audit: IDs
+31–48 remain runnable locally; all other lane authorizations stay unchanged.
+Required approvals, guest runtime, legitimate input/endpoints and framing, fresh
+pilot/full repeats, current functional Tart gates and final requirement-to-artifact
+completion audit remain open. No goal completion or pause is claimed.
+
 ## Status vocabulary
 
 | Status | Meaning |

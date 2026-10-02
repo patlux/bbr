@@ -13216,6 +13216,36 @@
       "reason": "The first Radio is selected by default and calls checkbox_check_icon, which resolves icons/check.svg. The empty Gallery asset source cannot supply it; this affects initial Radio captures, not only a future Checkbox transition. Legitimate asset-source approval and fresh guest visual evidence are required."
     },
     {
+      "base": "gallery-22-stale-matrix-exclusions",
+      "label": "Tab Row: stale exclusions and unrepresented production branches",
+      "group": "Unproven coverage",
+      "sequence": null,
+      "moment": null,
+      "page": null,
+      "state": "withheld",
+      "reason": "The matrix rejects bitmap favicons as unsupported although production FaviconSpec carries an image and renders it with decode fallback. Every fixture sets split to None; the focused label neither drives focus nor adds a production focus-ring branch. Current applicability and painted shadow/companion-glyph bounds need audit and guest evidence, not automatic promotion of stale rejection reasons or Split activation."
+    },
+    {
+      "base": "gallery-30-selection-collection-gaps",
+      "label": "Library: selected rows omit the selection toolbar and collection stages",
+      "group": "Unproven coverage",
+      "sequence": null,
+      "moment": null,
+      "page": null,
+      "state": "withheld",
+      "reason": "The selection and multi fixtures set row flags but leave model.selected empty, so the production toolbar never renders. All eleven models leave move_sheet_open and collection_create_staged false and collection_action None. Recorder callbacks do not update these fixture models. Selection, move and collection create/rename/remove presentations remain missing coverage; selector names and dispatch tests cannot substitute for them."
+    },
+    {
+      "base": "gallery-30-windowed-framing",
+      "label": "Library: a fixed scroll viewport is not complete nested framing",
+      "group": "Unproven coverage",
+      "sequence": null,
+      "moment": null,
+      "page": null,
+      "state": "withheld",
+      "reason": "Large 1k supplies only rows 1-24 with scroll_offset zero inside a 520pt surface containing a nested scroll list. Outer pagination treats that entire surface as one child and never traverses its rows or scroll positions. Neither all 1000 records nor full visibility of the 24 supplied rows is proven; independently bounded viewport/framing requirements and guest review remain open."
+    },
+    {
       "base": "gallery-locked-session",
       "label": "Locked-session execution",
       "group": "Unproven coverage",
