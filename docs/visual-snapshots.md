@@ -364,8 +364,44 @@ supervisor/transport-chain fixtures exercise these paths. Known-clean failure or
 cancellation releases both leases; rejected host cleanup retains active gate
 evidence. Returned fixture bytes are explicitly not native PNG evidence. Host
 raw diagnostics may remain after a receipt rejection, but no seal is published.
-Actual guest runtime/SSH/capture/teardown, current catalog activation, host raw
-preparation into upstream sealing and the approved real pilot remain required.
+Actual guest runtime/SSH/capture/teardown, current catalog activation and the
+approved real pilot remain required. The internal raw-to-seal bridge below does
+not enable the ordinary CLI or establish runtime parity.
+
+### Fresh transport to upstream sealing
+
+The internal `vm_capture` route calls immutable upstream `capture_local`; its
+source snapshot precedes one fresh supervised transport invocation. The first
+local environment callback performs that transport, which obtains actual guest
+before/after observations and proves cleanup. Both callbacks revalidate the
+original return evidence and source/payload identity. They never execute the
+configured legacy host environment or producer command. There is no import-old-
+raw/reseal CLI; fresh workspace and run paths are mandatory.
+
+Returned PNGs are bounded, hash-checked copies into a fresh run, never decoded
+and re-encoded. Gallery preparation reuses the independent full plan or the exact
+selected schedule, including asymmetric Light/Dark child ranges and name-only
+canonicalization. Browser preparation shares the retained eight-image validator;
+no second browser inventory authority. Extra files, injected seal/inventory/
+sequence metadata, missing or extra pages, wrong dimensions/precision, duplicate
+registry rows, source/payload/receipt drift and cancellation prevent sealing.
+Prepared bytes and inventory are checked again before the final environment
+callback returns. Upstream alone publishes `capture.json` and owns comparisons,
+partial labels and acceptance refusal.
+
+Original return diagnostics/marker remain unchanged outside the run. The guest
+receipt and live registry are preserved as unchanged ancillary files alongside
+the prepared PNGs, after producer validation. These sidecars are not additional
+upstream-sealed manifest fields or an authentication boundary. The original
+transport evidence remains necessary to audit build identity and cleanup.
+
+Four portable contracts exercise fresh synthetic PNGs through this route and
+actual upstream seal/report APIs (selected and full Gallery fixtures, all eight
+browser fixtures), byte preservation, explicit partial HTML/nonacceptance and
+negative cases. They are not actual image review, native capture, current full
+Gallery coverage or VM teardown proof. Normal `produce`/`check` remain blocked;
+real pilot, current catalog/state/framing audit and functional Tart gates remain
+open. Existing baselines and retained Python entrypoints are unchanged.
 
 ### Current Gallery source-audit boundary
 

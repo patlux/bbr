@@ -311,6 +311,22 @@ existing supervision, cancellation and cleanup; test with portable synthetic
 transport/producer fixtures and no SSH/Tart/native execution. No real catalog
 activation, ordinary guard removal, baseline acceptance or parity claim.
 
+### Bounded returned-raw to upstream-seal slice
+
+Connect only the internal supervised transport to upstream `capture_local`, with
+its source snapshot preceding the fresh transport invocation. Use the actual
+validated guest before/after observations for environment callbacks; never probe
+the host as rendering evidence or expose an import/reseal-old-directory command.
+Retain and recheck original transport byte/selection evidence around bounded
+copying into a fresh upstream run. Prepare Gallery names/inventory against its
+source-bound independent plan (or exact selected schedule), and browser output
+against all eight existing cases, reusing the existing validators. Extra metadata,
+missing/extra/duplicate pages, wrong precision/size, source/environment drift and
+cancellation must leave diagnostics without an upstream seal. Preserve raw PNG
+bytes and selected schema/nonacceptance. Test the internal transport seam with
+fresh synthetic PNGs and real upstream sealing/review APIs, never VM/native code.
+No normal CLI activation, catalog activation, baseline write or parity claim.
+
 ## Iteration policy
 
 Run targeted contracts first, diagnose failures before changing code, and

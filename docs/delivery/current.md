@@ -972,6 +972,71 @@ current catalog activation, approved pilot, independent complete repeats, actual
 PNG/HTML review and current functional Tart gates remain open. Migration and
 baseline acceptance are not complete; retained Python entrypoints stay preserved.
 
+### Fresh raw-return to upstream-seal checkpoint
+
+Preflight: `main@1b0abd5b`, only this session's pending raw-to-seal slice, no Git
+index lock or visual/Tart process. ROADMAP and the entire delivery document were
+re-read. Ordinary user BBR and unrelated mbx processes remain untouched. Sole
+local visual writer; no agents, workflows, foreign worktree access or extra lane.
+The same VM/network and Checkbox permissions remain pending.
+
+The internal `vm_capture` route invokes immutable upstream `capture_local` so its
+source snapshot precedes one fresh supervised transport. Both local environment
+callbacks use validated guest before/after receipt facts, not host probes. The
+original return bytes and selected request remain host expectations throughout
+copying, structural preparation and the final callback. Gallery reuses the full
+independent plan or exact selected schedule; browser shares the retained eight-
+image validator. PNGs are copied and renamed, never decoded/re-encoded for output.
+Original guest receipt/live registry bytes remain ancillary evidence; the raw
+transport marker is not rewritten to pretend it describes canonicalized names.
+Upstream alone writes `capture.json`, compares and enforces partial nonacceptance.
+
+Fresh run/workspace guards prevent old-directory resealing. Bounded single-link,
+no-follow copies check exact sizes/hashes and cancellation/deadlines. Original
+return and prepared output are rechecked before sealing; unexpected metadata,
+injected seals/inventory/sequences, invalid images/coverage, changed receipts,
+source/payload/environment/scope and cancellation cannot seal. Failed diagnostics
+remain without automatic retry, report generation or baseline writes. Normal
+capture/produce remains blocked, and no real catalog is activated.
+
+Evidence:
+- Four new parameterized portable contracts generate fresh synthetic RGBA8 PNGs
+  for selected/full Gallery and all eight browser images, then use actual upstream
+  seal/compare/HTML/accept APIs. They prove unchanged image/receipt hashes, exact
+  guest/source identity, schema-2 `TEILLAUF` and selected acceptance refusal.
+  They also exercise 24 invalid/drifted-return variants with specific rejection
+  messages, pre-cancelled/stale no-invocation, no transport retry, copy expiry/hash
+  rejection and mutation of already prepared PNG/inventory/receipt/selection.
+- Initial red: missing module (`/tmp/bbr-visual-return-seal-red.log`). Focused four
+  contracts pass in 6.21s (`/tmp/bbr-visual-return-seal-focused-final.log`); rejection
+  reason recheck passes (`/tmp/bbr-visual-return-seal-reason-check.log`). Full gate
+  `/tmp/bbr-visual-return-seal-final-visual-test.log` passes **151 Python discovery
+  tests** (one extra integration skip, separately passed), unchanged upstream and
+  **69 consumer tests** plus signal fixtures. Consumer unit group: 6.34s.
+- Post-review full gate and strict consumer all-target Clippy pass:
+  `/tmp/bbr-visual-return-seal-reviewed-visual-test.log`,
+  `/tmp/bbr-visual-return-seal-reviewed-clippy.log`. Formatting, roadmap, all
+  49 shared script contracts and whitespace pass; logs:
+  `/tmp/bbr-visual-return-seal-roadmap.log`,
+  `/tmp/bbr-visual-return-seal-script-tests.log` (17.845s).
+  Timings measure tooling tests only; implementation/review elapsed time was not
+  instrumented. No product-performance or native runtime evidence is inferred.
+
+Self-review checked upstream callback/seal ordering, original source/config/plan
+and byte retention, exact canonical inventory, freshness, refusal boundaries and
+unchanged product/upstream/baselines. Negative tests assert their intended failure
+rather than incidental rejection. Ancillary receipt files are not new upstream-
+sealed manifest fields and must not be advertised as same-user authentication.
+No key, SSH, Tart, native producer, actual PNG/HTML visual review, GUI gate or
+baseline/environment adoption occurred. Retained Python entrypoints stay intact;
+source edits require fresh future payloads and captures.
+
+Parallelism audit: remaining applicability/state/framing source audit is locally
+runnable; no other lane is authorized. Actual guest runtime, network and Checkbox
+approval, current catalog, real pilot, two independent complete captures, actual
+image/report review and current functional Tart gates remain open. This internal
+bridge is prerequisite evidence, not migration completion or parity acceptance.
+
 ## Status vocabulary
 
 | Status | Meaning |

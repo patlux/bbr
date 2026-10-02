@@ -1,6 +1,6 @@
 //! Consumer build/fixture policy. Pixel comparison, seals, process cleanup and
 //! host locking belong exclusively to the immutable portable library.
-use crate::{browser_cases, gallery, process, Suite};
+use crate::{browser_output, gallery, process, Suite};
 use anyhow::{ensure, Context, Result};
 use cargo_gpui_visual::{
     gate::{Gate, Options},
@@ -178,36 +178,7 @@ pub fn produce(repo: &Path, suite: Suite, output: &Path, cancelled: &AtomicBool)
             gallery::validate_and_prepare(output, &plan, live_inventory.as_deref().unwrap())?;
         }
         Suite::Browser => {
-            let cases = browser_cases();
-            let actual: std::collections::BTreeSet<_> = fs::read_dir(output)?
-                .map(|e| {
-                    e?.file_name()
-                        .into_string()
-                        .map_err(|_| anyhow::anyhow!("invalid output name"))
-                })
-                .collect::<Result<_>>()?;
-            let mut expected: std::collections::BTreeSet<_> =
-                cases.iter().map(|case| format!("{case}.png")).collect();
-            for fixture in ["ordinary", "representative"] {
-                for mode in ["light", "dark"] {
-                    let name = format!("{fixture}--{mode}.snapshot.json");
-                    gallery::regular(&output.join(&name))?;
-                    let _: serde_json::Value = store::read_json(&output.join(&name))?;
-                    expected.insert(name);
-                }
-            }
-            ensure!(actual == expected, "browser inventory differs");
-            for case in &cases {
-                gallery::png(
-                    &output.join(format!("{case}.png")),
-                    if case.contains("-rail--") {
-                        (608, 2814)
-                    } else {
-                        (2160, 2814)
-                    },
-                )?;
-            }
-            store::write_json(&output.join("inventory.json"), &cases)?;
+            browser_output::validate_and_prepare(output)?;
         }
     }
     Ok(())

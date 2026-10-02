@@ -38,6 +38,29 @@ pub struct Captured {
     pub environment: Value,
     /// Explicit selected runs can never be interpreted as full-suite evidence.
     pub selection: Option<Selection>,
+    // Original validated transport evidence, never rediscovered from raw files.
+    evidence: Vec<u8>,
+    workspace: PathBuf,
+}
+
+impl Captured {
+    pub(crate) fn recheck(
+        &self,
+        expected: ExpectedReturn<'_>,
+        cancelled: &AtomicBool,
+    ) -> Result<()> {
+        let checked = validate_return(&self.evidence, &self.workspace, expected, cancelled)?;
+        ensure!(
+            checked.raw == self.raw
+                && checked.environment == self.environment
+                && checked.selection == self.selection,
+            "captured identity changed after transport"
+        );
+        Ok(())
+    }
+    pub(crate) fn files(&self) -> Result<BTreeMap<String, ReturnedFile>> {
+        Ok(serde_json::from_slice::<Returned>(&self.evidence)?.files)
+    }
 }
 
 pub struct ExpectedReturn<'a> {
@@ -193,12 +216,15 @@ pub fn validate_return(
         raw: returned.raw,
         environment,
         selection: selected.map(|r| r.selection().clone()),
+        evidence: raw.to_vec(),
+        workspace: workspace.into(),
     })
 }
 
 /// Internal route only. Does not imply network permission and has no CLI caller.
 /// Caller supplies fresh host-built payload and gate options; fixed Python route
 /// handles bootstrap/return while upstream owns the host process group and leases.
+#[derive(Clone, Copy)]
 pub struct Input<'a> {
     pub repo: &'a Path,
     pub suite: Suite,

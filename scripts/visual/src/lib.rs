@@ -1,3 +1,4 @@
+pub mod browser_output;
 pub mod discovery;
 pub mod environment;
 pub mod gallery;
@@ -10,6 +11,7 @@ pub mod provenance;
 pub mod read_only;
 pub mod runner;
 pub mod selected_request;
+pub mod vm_capture;
 pub mod vm_cleanup;
 pub mod vm_environment;
 pub mod vm_runtime;
