@@ -26,6 +26,7 @@ pub(crate) fn dispatch_capture(
     let path = match req {
         Request::CaptureChrome { path }
         | Request::CaptureSettings { path }
+        | Request::CaptureFindBar { path }
         | Request::CaptureCommandPalette { path } => path,
         _ => return None,
     };
@@ -56,6 +57,34 @@ pub(crate) fn dispatch_capture(
                 return Some(Response::Error(Error::new(
                     "palette_closed",
                     "open the centered Command Palette before child-window readback",
+                )))
+            }
+            Err(error) => {
+                return Some(Response::Error(Error::new(
+                    "capture_failed",
+                    error.to_string(),
+                )))
+            }
+        }
+    } else if matches!(req, Request::CaptureFindBar { .. }) {
+        let target = crate::window_seam::with_app(window, app, cx, |view, window, _cx| {
+            let snapshot = view.snapshot(window);
+            (
+                snapshot.find.open,
+                snapshot.portal.presentation,
+                view.portal_frame_handle(),
+            )
+        });
+        match target {
+            Ok((true, Some(id), Some(handle)))
+                if id == crate::app::find::FIND_PRESENTATION_ID.0 =>
+            {
+                handle
+            }
+            Ok(_) => {
+                return Some(Response::Error(Error::new(
+                    "find_closed",
+                    "open the Find bar before child-window readback",
                 )))
             }
             Err(error) => {

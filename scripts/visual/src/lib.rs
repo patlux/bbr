@@ -50,7 +50,7 @@ impl Suite {
 }
 
 /// Required additional application stills, separate from the historical shell pairs.
-pub const BROWSER_SURFACES: [&str; 32] = [
+pub const BROWSER_SURFACES: [&str; 35] = [
     "history",
     "history-clear-data",
     "library-empty",
@@ -83,6 +83,9 @@ pub const BROWSER_SURFACES: [&str; 32] = [
     "command-palette-open",
     "command-palette-actions-match",
     "command-palette-actions-empty",
+    "find-open",
+    "find-matches",
+    "find-no-matches",
 ];
 
 pub fn browser_cases() -> Vec<String> {

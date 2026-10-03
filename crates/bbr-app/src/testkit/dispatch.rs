@@ -892,6 +892,7 @@ pub(crate) fn dispatch(
         // arms); reaching one here is a routing bug.
         #[cfg(feature = "visual-capture")]
         Request::CaptureChrome { .. }
+        | Request::CaptureFindBar { .. }
         | Request::CaptureCommandPalette { .. }
         | Request::CaptureSettings { .. }
         | Request::ScrollSettings { .. } => {
@@ -899,6 +900,7 @@ pub(crate) fn dispatch(
         }
         #[cfg(not(feature = "visual-capture"))]
         Request::CaptureChrome { .. }
+        | Request::CaptureFindBar { .. }
         | Request::CaptureCommandPalette { .. }
         | Request::CaptureSettings { .. }
         | Request::ScrollSettings { .. } => Response::Error(Error::new(

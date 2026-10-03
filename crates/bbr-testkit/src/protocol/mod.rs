@@ -521,6 +521,13 @@ mod tests {
     }
 
     #[test]
+    fn capture_find_bar_request_has_exact_wire_shape() {
+        let literal = json!({ "CaptureFindBar": { "path": "/tmp/find.png" } });
+        let request: Request = serde_json::from_value(literal.clone()).unwrap();
+        assert_eq!(serde_json::to_value(request).unwrap(), literal);
+    }
+
+    #[test]
     fn capture_command_palette_request_has_exact_wire_shape() {
         let literal = json!({ "CaptureCommandPalette": { "path": "/tmp/palette.png" } });
         let request: Request = serde_json::from_value(literal.clone()).unwrap();

@@ -245,6 +245,18 @@ Stop on a genuine unresolved runtime/integrity/determinism or relevant-gate fail
 with retained evidence and the minimal prerequisite; do not manufacture a permission
 blocker or treat an agent-authored precaution as a user restriction.
 
+Find's bounded matrix is now verified as an intermediate tooling increment:
+opened pilot before expansion, then two source-equal78-image Tart runs with exact
+PNG/rendering equality and all72 approved references unchanged. Production Cmd-F
+opens Find; the existing shared query-input seam drives actual native WebKit
+counts, not fake results or a claim of keystroke typing. All six new Light/Dark
+images and both HTML reports are inspected. Feature/normal Clippy, protocol/output
+contracts, serial visual suite and independent source/build/report/cleanup checks
+pass. The [Find checkpoint](../../delivery/current.md#find-production-child-capture-verified-2026-10-03)
+records exact evidence and limitations. No reference adoption, stable aggregate,
+Command benchmark repair or broader migration completion follows. Downloads then
+Peek retain their pilot-first dependency and separate bounded-matrix requirement.
+
 ## Non-goals
 
 - No browser appearance or behavior changes, portal capture beyond the bounded

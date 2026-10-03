@@ -1723,6 +1723,11 @@ pub enum Request {
     CaptureChrome {
         path: String,
     },
+    /// Read only the existing production Find bar's transparent portal scene.
+    /// Visual-feature-only; closed and other portal presentations are rejected.
+    CaptureFindBar {
+        path: String,
+    },
     /// Read only the existing centered Command Palette's portal-child scene.
     /// Visual-feature-only; preserves transparency, never composites the parent
     /// or native webpage and refuses closed/other portal presentations.

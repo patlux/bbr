@@ -31,7 +31,7 @@ no Git lock or holder of the repository/GPUI Visual capture locks was found.
 
 | ID | Slice | Status | Worktree | Owner | Contract | Next gate |
 |---|---|---|---|---|---|---|
-| VISUAL-RUST | Standalone GPUI Visual consumer migration | `running` | main, activation base above | session `01a0f8f4` | [visual tooling](../roadmap/tasks/visual-snapshot-tooling.md) | Palette capture implementation settled as a verified intermediate slice;72 approved references and historical evidence preserved. Benchmark sources/config match the last passing base and have no dependency on the capture seam; both recorded50ms maximum failures remain unresolved, not reclassified as passes. Patrick activated serial Find → Downloads → Peek, each pilot-first with two same-source runs and no automatic adoption. Seven withheld families, public cutover and stable aggregate remain open; latest checkpoint below |
+| VISUAL-RUST | Standalone GPUI Visual consumer migration | `running` | main, activation base above | session `01a0f8f4` | [visual tooling](../roadmap/tasks/visual-snapshot-tooling.md) | Palette capture implementation settled as a verified intermediate slice;72 approved references and historical evidence preserved. Benchmark sources/config match the last passing base and have no dependency on the capture seam; both recorded50ms maximum failures remain unresolved, not reclassified as passes. Find's pilot and two expanded78-image Tart runs now pass exact source/image/rendering and independent cleanup checks; six new Find candidates remain unapproved. Downloads is next, then Peek, each with an actual-capability matrix and pilot-first proof. Seven withheld families, public cutover and stable aggregate remain open; latest checkpoint below |
 
 Historical reuse evidence is read-only Git/session metadata, not a takeover of
 `/Users/patwoz/dev/Personal/macos/bbr-visual-snapshots`: its five migration commits
@@ -3032,6 +3032,95 @@ unchanged; new images remain candidates. Full application/native coverage, Galle
 interaction/framing, public capture/Python cutover and stable aggregate remain open.
 No broader checkbox is completed. Assessment time is not product performance;
 implementation/review wall time was not instrumented.
+
+### Find production-child capture verified (2026-10-03)
+
+Starting checkpoint `537e4a1ba3b37453d3580c1664ec41b5e1b918e9` settles the
+Palette implementation. Same sole local writer; complete delivery queue reread,
+known Find changes only, empty pre-stage index. No subagents/workflows/new lanes,
+foreign-worktree inspection, host producer, publication or reference adoption.
+The next serial item remains Downloads, followed by Peek; unrelated product and
+broader migration work are not activated.
+
+Find now has three real production child-frame states in Light/Dark: empty query,
+`alice` with native WebKit count3/current1, and `xyzzy` with count0/no ordinal.
+Production Cmd-F opens the bar; query entry uses the existing `find_set_query`
+input seam shared with production typing, **not simulated keystroke entry**. A
+fresh deterministic data document supplies actual WKWebView results. The new
+visual-feature-only authenticated `CaptureFindBar` requires the existing0xC3
+presentation and actual portal handle; closed, Palette and nested-path requests
+fail without output. No production renderer/lifecycle/dependency changed.
+
+The74-image pilot passed before query expansion. Both final runs contain78 PNGs,
+all byte-identical across independent disposable Tart clones, including all72
+unchanged approved references. New Find images remain candidates:
+- `/Users/patwoz/dev/Personal/macos/bbr/reports/visual/find-expanded-20261003-a/index.html`
+- `/Users/patwoz/dev/Personal/macos/bbr/reports/visual/find-expanded-20261003-b/index.html`
+
+They bind the same1,528 source hashes, cases/policy and rendering environment.
+Payload `952211044f3bfd422da6240a752d2898e7e4cffba3e49322f97a4c1a97cbad80`;
+capture A `1b258fe0c6cbcef7b83d4d1feca4d4eecf5711e2f0228cffd9addae0b37e2f0e`;
+B `94c04ef61d7da26b9754b3b72a83eced94c5387541deba993d26a8a3bb4207ef`.
+Each report has72 `same`, six `missing-baseline`, no comparison error/environment
+mismatch and all seven withheld families. All224 sealed files per report and22
+historical collection seals rehash exactly. Baseline metadata remains
+`d9b23b6161cabf9b84525c3392d5f70c86a8a36fc6662783efc476112bef649a`;
+all72 PNGs/case records/environment, immutable90-file export and GPUI pin are
+unchanged. Expanded opened-state images also exactly match the earlier pilot.
+
+The fixture asserts2160×2814 RGBA8, transparent exterior, actual360×36pt bar at
+[712,8], scale2, independent portal-window identity and hidden native parent/child.
+Readback preserves Find/portal/focus/command state plus tabs, sessions and active
+view/profile/space; Escape restores the original browser focus and identities.
+This is transparent renderer evidence, not native on-screen visibility or captured
+webpage composition. No fabricated background, crop, resampling, tolerance or mask.
+
+Three original request/payload-bound cleanup chains independently reverify clone,
+key, disk and owned-process absence plus former SSH unreachability. Frozen payload
+bytes/build hashes, installed receipts and exact before/after guest observations
+also revalidate. The existing offline51-path runtime/private-NAT/key-only SSH
+route is unchanged. No Golden Image modification, new exposure or cleanup bypass.
+
+Relevant intermediate verification passes:
+- Negative-first protocol/catalog regressions, including expansion, retained.
+  Protocol19/19 and capture-path1/1 pass; portable fixtures reject missing Find
+  image/metadata and wrong dimensions.
+- Strict visual-feature/testkit/normal app+UI and consumer all-target Clippy pass.
+- `RUST_TEST_THREADS=1 CARGO_NET_OFFLINE=true just visual-test`:171 Python
+  discoveries (170 pass/one integration skip separately passed),188 upstream
+  and118 consumer top-level tests plus nested fixtures. No ignored GUI execution
+  on the host. The two same-source optimized Tart runs execute the affected
+  complete real-app capture suite, including new Find assertions.
+- Formatting, roadmap/index, whitespace and final source/report/reference audit
+  precede the local intermediate commit. No unchanged Command benchmark retry,
+  full verify pass, canonical functional aggregate or performance claim. Both
+  recorded Command maximum-latency failures remain unresolved.
+
+All six original Find images were visually inspected across proven identical
+runs. Both actual HTML reports were inspected in the existing managed Chrome
+task tab; all78 unique assets load at original dimensions. Desktop1672×963 and
+narrow390×844 show no measured horizontal overflow, broken anchors, duplicate IDs
+or overlap/label overflow in94 navigation rows. All six Find anchors resolve.
+Retained browser diagnostics include omitted-stdin/batch-quoting/redeclared-const
+errors and the initial narrow screenshot at the preceding anchor; scoped eval
+then verifies the requested Dark no-match anchor. Desktop viewport is restored.
+Original report bytes/styles never change. This is not an accessibility or full
+nested-paint-framing audit.
+
+Evidence: `/Users/patwoz/dev/Personal/macos/bbr/reports/visual/evidence/find-20261003/`;
+scratch originals `/private/tmp/bbr-visual-find/`. Explicit allowlisting excludes
+keys, known-host files, executables and archives. Measured caller times: pilot
+135.589s, expanded A159.066s/B138.000s; initial independent integrity/cleanup audit
+9.073s. These are tooling times, not product performance; implementation/review
+wall time was not instrumented. Self-review checks real-child/lease routing,
+feature refusal, genuine native counts, identity preservation, independent inventory
+and unchanged approvals. No independent agent review or broader completion box.
+
+This is a coherent intermediate capture-tooling commit, not stable-migration
+handoff. Downloads/Peek matrices and pilots are next; complete native/app coverage,
+Gallery interaction/framing, public entrypoint/Python cutover and stable aggregate
+remain open. Further capture-affecting edits require new payloads/runs, never old
+report resealing or silent reference adoption.
 
 ## Status vocabulary
 

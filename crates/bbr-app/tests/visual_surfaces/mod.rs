@@ -1,5 +1,6 @@
 //! Additional stills use actual application actions and windows, never Gallery.
 pub mod command;
+pub mod find;
 mod history;
 mod library;
 mod settings;

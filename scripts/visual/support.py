@@ -31,7 +31,8 @@ CASES = tuple(
                     "settings-profile-create", "settings-profile-edit",
                     "settings-shortcuts-scroll-1", "settings-shortcuts-scroll-2",
                     "settings-shortcuts-scroll-3", "command-palette-open",
-        "command-palette-actions-match", "command-palette-actions-empty")
+        "command-palette-actions-match", "command-palette-actions-empty",
+        "find-open", "find-matches", "find-no-matches")
     for appearance in ("light", "dark")
 )
 

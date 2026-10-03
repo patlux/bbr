@@ -206,10 +206,31 @@ fn populated_library_is_required_independently_of_producer_output() {
         assert_eq!(entry.state, State::Withheld);
         assert!(!entry.reason.as_ref().unwrap().is_empty());
     }
-    assert_eq!(browser_cases().len(), 72);
+    assert_eq!(browser_cases().len(), 78);
     for mode in ["light", "dark"] {
         assert!(browser_cases().contains(&format!("library-populated--{mode}")));
     }
+}
+
+#[test]
+fn find_bar_is_an_independent_child_window_requirement() {
+    let repo = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let browser: Catalog =
+        store::read_json(&repo.join("scripts/visual/catalogs/browser.json")).unwrap();
+    for base in ["find-open", "find-matches", "find-no-matches"] {
+        let entry = browser
+            .snapshots
+            .iter()
+            .find(|s| s.base == base)
+            .expect("real Find child state must be required independently");
+        assert_eq!(entry.state, State::Required);
+    }
+    let remaining = browser
+        .snapshots
+        .iter()
+        .find(|s| s.base == "portal-surfaces")
+        .unwrap();
+    assert_eq!(remaining.state, State::Withheld);
 }
 
 #[test]
