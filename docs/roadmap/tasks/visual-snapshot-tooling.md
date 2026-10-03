@@ -157,9 +157,58 @@ comparisons of both stored captures show66/66 exact. The [approval record](../..
 binds the precise report/capture, unchanged historical records and verification.
 This approval does not close any broader migration or coverage requirement.
 
+### Command Palette child-window capture (authorized 2026-10-03)
+
+Patrick's “ja lets go” activates one bounded real Command Palette capture path.
+First prove a Light/Dark empty-query pair in a fresh about:blank profile, reading
+only the existing production portal window's own Metal scene. No Gallery replica,
+parent-window substitution, WebKit pixels or synthetic background composition.
+Retain the full child-frame RGBA8/2x dimensions and transparency, and record its
+native/window/presentation identity separately from on-screen visibility (the
+harness remains hidden). Assert closed/wrong-presentation/path refusal and unchanged
+command/browser state across readback. Typed readiness and production motion
+completion precede capture; pixels never synchronize the application.
+
+After that first supervised Tart proof, extend only to an actions search with
+matches and an actions search without matches; ordinary free-text search always
+has a web-search fallback and must not be mislabeled empty. Capture two fresh runs
+of the final source tree, inspect originals and HTML, require exact repeatability
+and unchanged existing66 references. New images stay unapproved. Preserve all
+remaining Command/Find/Downloads/Peek and other withheld requirements explicitly.
+Own only visual capture/testkit routing, deterministic fixtures, independent output
+catalog/contracts and evidence documents. No product rendering/lifecycle changes,
+upstream patch, host GUI, foreign worktree, subagent, new exposure or acceptance.
+
+Verify negative-first protocol/catalog/output contracts, affected feature/normal
+Clippy, portable visual contracts, non-GUI verify, fresh optimized guest capture
+and same-source repeat, source/report/resource integrity and roadmap. This is an
+intermediate tooling increment, not migration or performance closeout. Diagnose
+any first-capture failure before building more variants; stop with retained logs,
+owned-resource cleanup and the concrete blocker if the path cannot be proven.
+
+The candidate has two source-identical72-image Tart runs:66 approved references
+remain exact, six new child-frame stills remain unapproved, and seven withheld
+families remain open. Actual PNG/report inspection and independent source/report/
+cleanup checks pass, as do portable visual contracts and affected Clippy. The
+fresh non-GUI aggregate and one isolated unchanged Command benchmark both fail
+its50ms maximum-latency gate. Remaining non-GUI checks pass separately; they do
+not erase that failure. The candidate stays uncommitted, without stable-slice or
+migration completion. Full evidence and the bounded stop are recorded in
+[Current delivery](../../delivery/current.md#command-palette-candidate-and-verification-stop-2026-10-03).
+
+Patrick subsequently approved exactly those six images from report B. Official
+selective collection acceptance now stores72 references; both existing captures
+compare72/72 exact. The prior66 PNGs/records, rendering environment, historical
+reports and source seals are preserved. All seven withheld families remain red.
+The [reference-approval record](../../delivery/current.md#explicit-command-palette-reference-approval-2026-10-03)
+contains the exact selection, capture/journal identities and fresh verification.
+This reference-only approval does not accept the uncommitted implementation or
+resolve its recorded Command maximum-latency failure and broader migration gates.
+
 ## Non-goals
 
-- No browser appearance or behavior changes, portal capture, native WKWebView
+- No browser appearance or behavior changes, portal capture beyond the bounded
+  Command Palette child-window follow-up above, native WKWebView
   pixels, AppKit traffic-light pixels, animation-frame or full UI-state matrix.
 - No renderer helper dependency, GPUI migration, registry publication, server,
   browser launch, automatic baseline acceptance, tolerance or masking.
@@ -189,8 +238,8 @@ second, followed by fresh captures and an explicit baseline review.
 
 Use the real optimized app with isolated test profiles and real WKWebViews.
 Keep capture behind visual-capture; no production runtime capture API. The
-bounded application-surface follow-up may add only the explicit Settings-window
-testkit readback described above.
+bounded application-surface follow-ups may add only the explicit Settings-window
+and Command Palette child-window testkit readbacks described above.
 Drive readiness through typed state and deadlines, never pixel stability or
 fixed sleeps. Preserve mandatory functional E2E and performance budgets.
 All compiler commands use mbx. GUI/Gallery/browser captures execute only in

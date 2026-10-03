@@ -31,7 +31,7 @@ no Git lock or holder of the repository/GPUI Visual capture locks was found.
 
 | ID | Slice | Status | Worktree | Owner | Contract | Next gate |
 |---|---|---|---|---|---|---|
-| VISUAL-RUST | Standalone GPUI Visual consumer migration | `running` | main, activation base above | session `01a0f8f4` | [visual tooling](../roadmap/tasks/visual-snapshot-tooling.md) | Two source-identical 66-image Tart captures verified; Patrick explicitly approved the additional38 references. Official acceptance preserves the original28 and environment; fresh stored-run reviews show66/66 exact. Seven withheld families keep coverage FAIL. Complete coverage, interactive/framing pilot, public cutover and stable aggregate remain open; latest checkpoint below |
+| VISUAL-RUST | Standalone GPUI Visual consumer migration | `running` | main, activation base above | session `01a0f8f4` | [visual tooling](../roadmap/tasks/visual-snapshot-tooling.md) | Exactly six Command Palette images explicitly approved and adopted; both stored captures now compare72/72 exact. Prior66 references, rendering environment and historical evidence preserved. Reference-only verification passes; capture implementation remains uncommitted, and the unchanged50ms Command maximum still fails its recorded aggregate/isolated checks. Seven withheld families, complete coverage, public cutover and stable aggregate remain open; latest checkpoint below |
 
 Historical reuse evidence is read-only Git/session metadata, not a takeover of
 `/Users/patwoz/dev/Personal/macos/bbr-visual-snapshots`: its five migration commits
@@ -2806,6 +2806,181 @@ No broader migration, Gallery/native coverage, public capture/Python cutover or
 canonical functional/performance completion is implied. Earlier “unapproved38”
 statements remain accurate historical checkpoints, superseded only by this explicit
 reference approval. No push or additional work is activated.
+
+### Command Palette capture activated (2026-10-03)
+
+Patrick's “ja lets go” activates the proposed smallest real overlay capture,
+then only matched/no-match search variants and an exact repeat/report if the
+first pair works. Clean base `main@9e72e9fe`; session `01a0f8f4` remains the sole
+local writer. Complete delivery queue read; index/worktree initially clean,
+no observed capture-lock holder or visual/Tart/compiler process. Golden Image
+is stopped. Foreign worktrees and ordinary apps remain untouched.
+
+Queue audit: the bounded Command Palette child readback and deterministic fixture
+are runnable now. Additional overlay families, Gallery pilot, public cutover and
+unrelated product queue items are not activated. No workflow/subagent/new lane.
+Exclusive territory is visual-only testkit dispatch, capture fixtures, consumer
+inventory/catalog/tests and documentation, serial on this base with no competing
+writer or merge order. Use existing frozen-payload, offline-runtime, private-NAT,
+key-only SSH supervision and independently verified cleanup. No host producer,
+Golden Image mutation, new exposure, publication or baseline adoption. All66
+approved references remain unchanged. The first real pair is the dependency gate
+before the search matrix; hidden-window renderer evidence is not on-screen native
+visibility or WebKit composition evidence.
+
+### Command Palette candidate and verification stop (2026-10-03)
+
+The real production Portal child now supplies empty-query, matched-actions
+(`> tab`) and no-match-actions (`> qqqzzz`) Light/Dark stills. Authenticated
+`CaptureCommandPalette` is visual-feature-only, requires the existing Palette
+presentation/handle, and refuses closed, other-presentation and nested-path calls.
+The child draws after releasing the app lease; no Gallery reconstruction, parent
+readback, pixel composition, renderer/lifecycle or dependency change. The real
+fixture proves unchanged command/tab/session/focus state across readback and
+Escape restoration. RGBA8 dimensions remain2160×2814 with transparent exterior;
+hidden-parent/native-child flags are explicit, not on-screen visibility evidence.
+
+Pilot1 exposed AppKit's startup height1408 instead of1407. The fixture now uses
+the existing production resize/layout-settled boundary, keeping exact assertions.
+Fresh pilot2 passed before searches were added. The final two runs each contain
+**72 byte-identical PNGs**, including the unchanged **66 approved references**:
+- `/Users/patwoz/dev/Personal/macos/bbr/reports/visual/command-expanded-20261003-a/index.html`
+- `/Users/patwoz/dev/Personal/macos/bbr/reports/visual/command-expanded-20261003-b/index.html`
+
+Both bind the same1,527 current sources, cases/policy and exact rendering identity.
+Payload SHA256 `3115d8f2273bdf60699ae341975b637f629a1f38a6db52673981615661b15fe1`;
+capture A `40bf8e25bf84382dd123b02ad41b2a0c8c9e84e9e91c984a8cb2c2ae4ddd0db8`;
+B `80fbf672952451ab0df92d4b71cd955b0a066f2369398bf91cd5d16fe7142af4`.
+Each review has66 `same`, six `missing-baseline`, zero comparison errors or
+rendering drift and seven withheld families. All206 report-sealed files per run
+and17 earlier collection seals pass read-only checks. Baseline metadata remains
+`f324a93f983da0ff7518a9d8a07182332155e39b9c3f182eabac74f11dfc3d79`;
+all baseline-store bytes, immutable90-file export and GPUI pin are unchanged.
+No reference/environment adoption or historical resealing occurs.
+
+Original new PNGs and the actual managed-Chrome report were inspected. Matching
+actions have ten semantic results but the image shows only the current viewport;
+no full-result-list framing is claimed. The no-match state retains the current
+production copy “Type a destination”, not a tooling-invented no-results message.
+All72 unique local image sources load at their original dimensions. Desktop
+1672×963 and narrow390×844 checks find no horizontal overflow, broken anchors,
+duplicate IDs or overlap/label overflow in88 navigation rows. All six new anchors
+resolve. A visible-image `complete` wait timed out in the background tab despite
+nonzero natural dimensions and readable screenshots; this is retained separately
+from successful explicit asset loading. The first narrow screenshot retained an
+earlier scroll position; re-anchoring produced the correctly labeled screenshot.
+Original report bytes/styles stay unchanged; desktop viewport is restored.
+
+All four transports, including failed pilot1, pass request/payload-bound independent
+clone/key/disk/process/SSH-absence rechecks. The existing frozen-payload/offline
+runtime/private-NAT/key-only SSH route is unchanged. Golden Image stays stopped;
+no host producer, foreign-worktree mutation or new exposure. A transient unclassified
+capture-lock descriptor was observed during inspection and disappeared before its
+process could be identified; no signal, takeover or gate-idleness inference.
+
+Verification and measured tooling times:
+- Negative-first protocol/catalog regressions, then18 protocol tests and one
+  capture-path test pass. Missing Palette PNG/metadata and wrong dimensions are
+  rejected by the portable raw-return contracts. Strict visual-feature/testkit/
+  normal app/UI and consumer Clippy pass.
+- Full serial offline `just visual-test` passes in377.35s:171 Python discoveries
+  (170 pass, one integration skip separately passed),188 upstream and117 consumer
+  top-level passes, plus nested fixtures. Earlier compatibility-inventory66/72
+  failure and unchanged upstream-test timeout124 remain in their original logs.
+- Fresh mbx-equivalent non-GUI `just verify` fails after85.94s at the unchanged
+  Command benchmark: p50=6.545ms, p95=34.192ms, max=133.806ms against50ms. One
+  isolated unchanged recheck also fails: p50=9.856ms, p95=44.433ms, max=154.387ms.
+  Host load was elevated; causation is unproven and unrelated workloads untouched.
+- Remaining Command integration/doc tests, other workspace tests, workspace strict
+  Clippy, roadmap/UI boundaries and49 script tests pass in64.62s. These explicitly
+  separate checks do not convert the failed aggregate into a pass. No skipped or
+  relaxed benchmark, product fix, canonical functional/performance aggregate or
+  stable migration acceptance is claimed.
+- Pilot2 caller137.448s; final callers145.148s/138.601s. Independent source/report/
+  history/resource audit10.319s. None is product performance. Implementation and
+  self-review wall time were not instrumented.
+
+Evidence is preserved under
+`/Users/patwoz/dev/Personal/macos/bbr/reports/visual/evidence/command-palette-20261003/`;
+scratch originals remain at `/private/tmp/bbr-visual-command`. A scratch inspector
+initially shadowed Python's standard `inspect` module; renaming only that scratch
+file resolved the diagnostic import failure. Source files did not change afterward.
+Self-review checked actual-child routing/lease lifetime, feature-off refusal,
+semantic field existence and preservation, independent inventory, exact repeats,
+remaining coverage and approval separation. No independent agent was requested.
+
+Queue/stop audit: only this serial candidate is authorized; no subagent/workflow,
+new lane, publication or additional overlay/product work. The implementation stays
+**uncommitted** because the requested fresh non-GUI gate remains red. Six images
+are review candidates, not references. The next verification step must investigate
+the unchanged Command maximum-latency failure without weakening it; changing that
+product subsystem requires a separate bounded scope. Broader migration/coverage,
+Gallery interaction/framing, public guards and Python cutover remain open. Preserve
+this candidate and evidence rather than repeatedly retrying or claiming completion.
+
+### Explicit Command Palette reference approval (2026-10-03)
+
+Patrick answered “ja” to the explicit question about adopting exactly six new
+Command Palette images from
+`/Users/patwoz/dev/Personal/macos/bbr/reports/visual/command-expanded-20261003-b/index.html`.
+The approved bases are `command-palette-open`, `command-palette-actions-match`
+and `command-palette-actions-empty`, each Light/Dark. This supersedes only their
+preceding unapproved-candidate status, not the recorded benchmark failure or the
+capture implementation's uncommitted state. No additional product work is activated.
+
+Preflight at `main@9e72e9fed2061973b1a213084a557ac31ae9d22e` preserves the known
+15-file candidate and empty index. The sole local writer reread the complete
+queue; only selective adoption and its verification are runnable under this
+approval. No subagent/workflow/new lane, foreign-worktree mutation, producer,
+VM, environment probe or publication. The pinned official CLI was rebuilt through
+bounded locked/offline mbx; all90 immutable export files,1,527 current capture
+sources, both72-image runs and20 historical collection directories were verified.
+
+Official `accept-collection` succeeds with exactly six `browser:case` selections
+and the seven complete explicit withheld acknowledgements, **no environment
+adoption**. Its schema-2 journal is complete for browser. New PNGs exactly match
+approved capture `80fbf672952451ab0df92d4b71cd955b0a066f2369398bf91cd5d16fe7142af4`.
+All66 previous PNGs/case records, both previous capture records and the complete
+approved rendering/provenance environment remain unchanged. Historical report and
+run files are byte-identical; only the official acceptance journal was added to
+the approved report. No historical resealing or source modification occurs.
+
+- Baseline metadata SHA256 changes from
+  `f324a93f983da0ff7518a9d8a07182332155e39b9c3f182eabac74f11dfc3d79` to
+  `d9b23b6161cabf9b84525c3392d5f70c86a8a36fc6662783efc476112bef649a`.
+- Acceptance journal SHA256:
+  `4e6b81af8bb9c250ebbc8dad8159735da385526d2442cea0dca6917ff3d242a8`.
+- Fresh stored-run comparisons, not new captures:
+  `/Users/patwoz/dev/Personal/macos/bbr/reports/visual/command-accepted-20261003-a/index.html`
+  and `/Users/patwoz/dev/Personal/macos/bbr/reports/visual/command-accepted-20261003-b/index.html`.
+  Both show72/72 `same`, zero comparison errors, exact rendering equality and218
+  verified sealed report files. Collection exit1/FAIL remains solely the same
+  seven withheld families; provenance differences stay visible.
+
+Fresh serial offline `just visual-test` passes in322.45s:171 Python discoveries
+(170 pass, one integration skip separately passed),188 upstream and117 consumer
+top-level passes plus existing nested fixtures. No real reference writes occur in
+those disposable acceptance tests. Acceptance took1.994s; comparisons3.971s/5.910s,
+all measured tooling time, not product performance. No new functional/performance
+aggregate is run or claimed; both recorded Command maximum-latency failures remain.
+
+The existing managed Chrome task tab displays the new B report. It shows zero
+changed images, zero missing references and72 unchanged; all six approved assets
+load at2160×2814, with `same` labels. The initial browser anchor check incorrectly
+reused the missing-baseline `f-` finding anchor. Static report inspection identified
+the correct `s-` same-image anchors; following its actual navigation link and
+checking again succeeded. Both screenshots are retained, without editing the
+report or its styles. Desktop viewport remains1672×963 with no horizontal overflow.
+
+Evidence and explicit allowlisted hashes are preserved at
+`/Users/patwoz/dev/Personal/macos/bbr/reports/visual/evidence/command-palette-acceptance-20261003/`;
+scratch originals remain at `/private/tmp/bbr-visual-command-acceptance`.
+Self-review checks selection/journal identity, unchanged prior references and
+source/report seals, independent coverage and approval versus implementation
+acceptance. Roadmap/index/whitespace and final adoption/comparison integrity checks
+precede the reference-only local commit. The source-bound capture implementation
+is deliberately not staged with these approved references; its bytes are preserved.
+No migration checkbox, stable-slice completion, benchmark repair or push is implied.
 
 ## Status vocabulary
 
