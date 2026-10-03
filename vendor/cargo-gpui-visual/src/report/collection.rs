@@ -55,6 +55,7 @@ pub(crate) fn write_collection(root: &Path, collection: &Collection) -> Result<(
             d.count += r.results.len();
             d.global |= r.results.iter().any(|i| i.status == "changed");
             d.sections += &format!("<details><summary>Aufnahmeumgebung · {label}</summary><code>{}</code></details><p>Capture: <code>{}</code></p><p>Referenzen: <code>{}</code></p>",escape(&r.environment.to_string()),escape(&r.capture_hash),escape(&s.suite.baselines.display().to_string()));
+            d.sections += &super::provenance_notice(r);
             for error in &r.errors {
                 d.sections += &format!("<p>{}</p>", escape(error));
             }

@@ -180,6 +180,7 @@ pub fn load_manifest(run: &Path) -> Result<Manifest> {
         ),
         "Explicit capture layer required"
     );
+    crate::environment::validate(&m.environment)?;
     ensure!(!m.sources.is_empty(), "Capture requires source hashes");
     ensure!(
         m.images.keys().collect::<BTreeSet<_>>() == cases,

@@ -77,6 +77,37 @@ coverage. New or changed images require separate approval. Preserve old failed
 attempts and source seals; never reseal. Commit independently verified upstream,
 reference-adoption and consumer-import slices, without push or migration closeout.
 
+### Rendering identity versus run provenance (authorized 2026-10-03)
+
+Patrick approved the bounded environment-contract correction (“ok mach das”).
+Keep every raw observation, exact image/source checks and before/after receipt
+identity. Introduce an explicit versioned, reversible split: only the validated
+Metal registry instance ID and complete portable-tool revision move to provenance.
+All remaining observed fields compare exactly, including OS/build, compiler/SDK,
+GPUI pin, Metal name, display geometry/scale, fonts, locale and capture policy.
+A separate fingerprint of portable capture/codec inputs binds rendering-relevant
+tool changes; a whole-repository documentation/report revision is not that identity.
+Unknown fields must never be silently dropped or classified as provenance.
+
+Implement portable comparison/validation and exact-hash guarded metadata migration
+upstream first, with negative-first contracts. Legacy environments retain exact
+comparison until explicit migration. Migration must reconstruct the old approved
+environment losslessly, preserve every reference byte and historical capture/source
+record, refuse locks/pending writes/stale hashes, and invalidate old review state.
+Import the complete immutable export before consumer changes. Verify the runtime
+boundary early, then two fresh source-identical supervised Tart captures against
+the unchanged 28 approved PNGs; coverage must still fail on the existing withheld
+row. Preserve historical reports/seals. No new image acceptance, rendering change,
+other consumer, public capture activation or migration-closeout claim.
+
+Bounded evidence is now recorded in the [rendering-identity addendum](../../visual/migration-evidence-audit.md#rendering-identity-and-provenance-addendum-2026-10-03):
+upstream regression contracts, complete immutable 90-file export, consumer exact
+classification tests, official metadata-only migration and two fresh source-equal
+Tart runs. All 28 PNGs and rendering conditions match; provenance remains sealed
+and coverage stays red. Every historical file except the authorized environment
+metadata is unchanged. This closes the requested correction only, not any broader
+migration checkbox, full application/native coverage or stable aggregate gate.
+
 ## Non-goals
 
 - No browser appearance or behavior changes, portal capture, native WKWebView

@@ -1,5 +1,9 @@
 #[path = "collection/acceptance.rs"]
 mod acceptance;
+#[path = "collection/environment.rs"]
+mod environment;
+#[path = "collection/presentation.rs"]
+mod presentation;
 #[path = "collection/withheld.rs"]
 mod withheld;
 

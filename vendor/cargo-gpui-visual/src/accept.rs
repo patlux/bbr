@@ -394,6 +394,18 @@ pub(crate) fn prepare(
             .is_empty(),
         "Invalid baseline images/inventory"
     );
+    let expected_mismatch =
+        (!crate::environment::equivalent(&metadata.environment, &m.environment)?)
+            .then(|| serde_json::json!({"baselines":metadata.environment,"capture":m.environment}));
+    ensure!(
+        review.environment_mismatch == expected_mismatch,
+        "Reviewed rendering environment evidence differs"
+    );
+    ensure!(
+        review.provenance_difference
+            == crate::environment::provenance_difference(&metadata.environment, &m.environment)?,
+        "Reviewed provenance evidence differs"
+    );
     let format = metadata.format();
     if adopt {
         for sequence in &review.sequences {
@@ -438,7 +450,7 @@ pub(crate) fn prepare(
         }
     }
     ensure!(
-        metadata.environment == m.environment || adopt,
+        crate::environment::equivalent(&metadata.environment, &m.environment)? || adopt,
         "Baseline environment mismatch"
     );
     // Read, encode and prove every payload before any baseline mutation. PNG

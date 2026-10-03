@@ -117,13 +117,7 @@ impl Guest {
             self.timezone == "UTC" && self.locale == "C",
             "guest capture process locale/timezone differs"
         );
-        let displays = self.displays.as_array().filter(|v| !v.is_empty());
-        ensure!(
-            displays.is_some_and(|v| v
-                .iter()
-                .all(|d| d.as_object().is_some_and(|o| !o.is_empty()))),
-            "missing guest display/Metal observations"
-        );
+        crate::vm_rendering::validate_displays(&self.displays)?;
         ensure!(!self.fonts.is_empty(), "missing guest font identity");
         for (path, hash) in &self.fonts {
             ensure!(
@@ -151,11 +145,10 @@ pub fn bind(
     receipt: &Receipt,
 ) -> Result<Value> {
     validate_receipt(suite.into(), host, payload, payload_sha256, receipt)?;
-    Ok(rendering_environment(
-        suite,
-        host,
-        &receipt.environment_before,
-    ))
+    crate::vm_rendering::partition(
+        &rendering_environment(suite, host, &receipt.environment_before),
+        &crate::vm_rendering::tool_inputs(&payload.sources)?,
+    )
 }
 
 /// Shared provenance boundary, without implying that semantic tests capture pixels.

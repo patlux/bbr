@@ -76,6 +76,33 @@ fn run(
             json!({"baselines":root,"conversion":result,"accepted":[],"next_step":"Regenerate reports after conversion; prior baseline-state seals are stale."}),
         ));
     }
+    if cli.command == "partition-environment" {
+        let root = store::absolute(
+            &cli.repo
+                .join(cli.baselines.context("--baselines required")?),
+        )?;
+        let path = store::absolute(
+            &cli.repo
+                .join(cli.environment.context("--environment required")?),
+        )?;
+        store::no_symlinks(&path)?;
+        let target = store::read_json(&path)?;
+        let result = cargo_gpui_visual::environment_migration::migrate(
+            &root,
+            &cli.expected_hash.context("--expected-hash required")?,
+            &target,
+            cli.dry_run,
+        )?;
+        if !cli.json {
+            println!("{} environment partition for {} references. Original observations and images preserved; regenerate reviews.",
+                if result.written { "Migrated" } else { "Inspected" }, result.cases);
+        }
+        return Ok(reply(
+            0,
+            json!({"baselines":root,"migration":result,"accepted":[],
+            "next_step":"Regenerate reports; old baseline-state seals are stale. No images accepted."}),
+        ));
+    }
     if cli.command == "inspect" {
         let root = store::absolute(&cli.repo.join(cli.report.context("--report required")?))?;
         let data = cargo_gpui_visual::inspect::inspect(&root, &cli.inspect)?;

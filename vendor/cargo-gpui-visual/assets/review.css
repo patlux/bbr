@@ -83,10 +83,10 @@ nav a[aria-current="true"]::after{content:"im Blick";margin-left:auto;font:var(-
 nav small{color:var(--color-text-muted);font-size:var(--text-micro)}
 .toc-status{display:flex;align-items:center;gap:6px;color:var(--color-text-muted)}
 nav a[aria-current="true"] .toc-status{color:var(--color-text-secondary)}
-.toc-row.compact{gap:10px;height:24px;padding:0 8px}
+.toc-row.compact{gap:10px;min-height:24px;padding:4px 8px}
 .toc-row.compact code{flex:1;font-size:var(--text-micro);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .toc-row.compact small{color:var(--color-text-subtle)}
-.toc-label{overflow-wrap:anywhere}
+.toc-label{min-width:0;overflow-wrap:anywhere}
 nav a.seen code::before{content:"✓ ";color:var(--color-ok)}
 .dot{flex:none;width:8px;height:8px;border-radius:2px;background:var(--color-same)}
 .dot.changed,.dot.missing-capture,.dot.withheld{background:var(--color-changed)}

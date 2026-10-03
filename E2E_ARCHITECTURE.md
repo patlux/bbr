@@ -1240,7 +1240,40 @@ than synthesized. Pixel comparison supplements functional E2E and never acts
 as its synchronization. Commands, provenance, geometry, baseline review and
 integration boundaries are documented in [Visual snapshots](docs/visual-snapshots.md).
 
-### Unified snapshot command
+### Rendering identity and sealed provenance
+
+The internal supervised Tart route uses the immutable upstream comparison-schema-1
+partition. BBR authors `bbr-tart-rendering-v1` in
+`/Users/patwoz/dev/Personal/macos/bbr/scripts/visual/src/vm_rendering.rs`: only the
+validated guest Metal registry instance ID and complete portable-tool revision
+are provenance. OS/build, compiler/SDK, GPUI pin, fonts, Metal name, display geometry,
+locale and capture policy remain exact. Nine source-bound portable capture/codec/
+execution/dependency files are part of the exact contract; new relevant modules
+require a reviewed list/contract change, not an automatic provenance exclusion.
+Unknown native-display fields fail validation; other unclassified observation
+fields stay rendering keys. No field is silently discarded.
+
+The reversible envelope seals every original fact. Before/after capture and
+receipt checks still compare full observations, including provenance. Between
+runs/baselines, layer, contract, rendering fields and provenance pointer set must
+match exactly. Provenance value changes remain explicit in sealed review JSON
+and original HTML without changing pixel or independent coverage verdicts.
+Image-only acceptance never silently refreshes historical environment provenance.
+
+Legacy JSON remains fully exact until the separately authorized upstream
+`partition-environment` operation verifies the old metadata hash, every reference,
+no locks/pending writes and lossless reconstruction. It changes only environment
+metadata, invalidates previous review baseline-state seals and grants no new image
+or coverage approval. The 2026-10-03 migration and two fresh 28-image real-app Tart
+runs are recorded in [Visual snapshots](docs/visual-snapshots.md). Public capture
+and Gallery endpoint guards remain closed; these runs use the existing internal
+supervised API, not legacy host capture.
+
+### Historical unified snapshot command
+
+The retained Python capture commands below are not Tart-aware and must not run on
+the host. The internal Rust route has bounded runtime evidence, but public cutover
+and full parity remain open.
 
 `just visual` runs portable adapter/upstream contracts, then sealed Gallery and
 browser snapshot checks sequentially. Independent suite configs preserve the

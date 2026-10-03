@@ -168,6 +168,79 @@ exclusions, Gallery/pilot gaps, public capture guards and Python parity work sta
 open. This addendum supersedes only the earlier no-adoption/no-same-tree-repeat
 claims for the bounded 28-image application set.
 
+## Rendering identity and provenance addendum (2026-10-03)
+
+Patrick's “ok mach das” authorized the bounded environment correction, explicit
+metadata migration and two fresh Tart runs, without new reference acceptance.
+Portable authority is now standalone commit
+`e3050c78cc1347ea0164218d7bcd0d74addcdb8a`, imported as its complete unchanged
+90-file export with provenance and byte-identical LICENSE/NOTICE. It also includes
+the upstream compact-navigation overlap correction `ce4ff11`.
+
+The explicit reversible comparison-schema-1 envelope retains every observation.
+BBR's `bbr-tart-rendering-v1` classifies only the validated Metal registry instance
+ID and complete tool revision as provenance. Nine historically source-bound
+capture/codec/execution/dependency fingerprints compare exactly alongside all other
+rendering conditions and the provenance pointer set. Legacy environments remain
+fully exact; within-capture before/after observations remain fully exact too.
+Review JSON/HTML retains provenance differences, and acceptance recomputes those
+facts without silently replacing the approved historical environment.
+
+Official metadata migration, after an inspected dry-run, changed only the
+baseline environment representation: SHA256
+`fac87538eec85882e9781b9ece83541d06444ceaee20ff41c252447cde0233c1` →
+`593f2ad806c8065915c7b5247e74423bbe4250a05ffe3b69f878be5981488bc4`.
+It reconstructs the original approved observations losslessly, preserves all
+non-environment baseline records and every reference PNG, and intentionally stales
+old review baseline-state seals. Of 677 preserved files, 676 remain byte-identical;
+only the authorized metadata file changes. Historical reports are never resealed.
+
+Fresh runs:
+- `/Users/patwoz/dev/Personal/macos/bbr/reports/visual/app-environment-20261003-a/index.html`
+- `/Users/patwoz/dev/Personal/macos/bbr/reports/visual/app-environment-20261003-b/index.html`
+
+Both bind the same 1,523 sources and 1,526-file payload, pass exact rendering
+comparison with **28/28 PNGs identical to references and each other**, and have no
+comparison errors. Each Collection remains FAIL solely for the unchanged
+`browser:remaining-app-surfaces` coverage row. Historical tool `c2723ca` / Metal
+`4294967700` versus fresh tool `e3050c7` / Metal `4294967701` and `4294967703`
+remain visible provenance, not ignored or newly adopted observations. Independent
+checks cover all 86 sealed report files per run, payload/source/build/installed
+bytes, unchanged before/after facts, request-bound terminals, offline runtime and
+clone/key/process/disk/SSH absence. Caller times 84.579s / 81.570s are tooling only.
+
+Evidence bundle:
+`/Users/patwoz/dev/Personal/macos/bbr/reports/visual/evidence/environment-20261003/`.
+It preserves the official migration receipt, pre-state, inspection script/results,
+original report screenshots and browser measurements. Scratch runtime evidence and
+all attempts remain under `/private/tmp/gpui-visual-environment`. Upstream passes
+188 top-level tests plus three nested fixtures; the consumer focused/full suite
+passes 114 top-level tests plus 16 nested executions, two normal-discovery ignored
+fixtures explicitly exercised by their protocol test. Serial `just visual-test`
+passes the imported contracts, 170 Python tests plus separately run integration,
+and consumer tests. Strict consumer/imported-tool Clippy and fmt pass. Official
+`validate` proves current source/image integrity, not baseline environment equality;
+the latter comes from the separately checked sealed reviews. Read-only `doctor`
+reports 1,523 sources with no producer or environment probe.
+
+Original A/B HTML was inspected in the existing managed Chrome task tab; B at
+1672×963 DPR2 and 390×844 DPR1 has 28 loaded images, 32 navigation rows, no broken
+anchors/images, duplicate IDs, label overflow, row overlap or horizontal overflow.
+Provenance is disclosed separately and coverage stays visibly red. The bounded
+static layout/type scan returns nine warnings (eight compact 1.25 leading reports
+and one compact heading-scale warning). Existing tokens account for those warnings;
+no overlap or clipping was observed in the inspected viewports. This is not a
+full accessibility/typography pass. No report bytes or vendor source were polished
+in place. A browser image-decode command timeout is retained; the subsequent pending
+image check was empty and screenshots succeeded.
+
+This supersedes the prior environment-mismatch limitation only for the bounded
+28-image matrix. Native/application completeness, interactive/framing pilot,
+public capture guards, Python cutover and stable functional aggregate remain open.
+Historical aggregate Command benchmark failures are not erased by this slice.
+Sole-writer self-review only; no independent agent, other-consumer changes, push,
+new image acceptance, performance pass or migration-closeout claim.
+
 ## Requirement mapping at the original inspection base
 
 Paths in the table are repository-relative identifiers under

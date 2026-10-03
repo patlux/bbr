@@ -94,6 +94,11 @@ mask option. Exit 0 = exact match/explicit successful operation; 1 = review requ
 2 = invalid capture/configuration. Reports and baseline PNGs are ordinary files.
 No command commits or pushes.
 
+Environment comparison can explicitly separate rendering from run provenance using
+an exact, reversible versioned partition. Legacy observations remain strict until
+an authorized exact-hash metadata migration; before/after capture identity is
+always complete. See [environment contracts](docs/environments.md).
+
 Baseline schema 2 stores historical sources once per capture instead of per frame.
 Legacy schema 1 remains readable without writes; explicit acceptance writes schema 2.
 For an existing store, `compact-baselines --baselines <store> --expected-hash <sha256>

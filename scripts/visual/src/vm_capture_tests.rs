@@ -36,9 +36,14 @@ impl Fixture {
             .success());
         fs::create_dir_all(repo.join("scripts/visual/catalogs")).unwrap();
         fs::write(repo.join("fixture.rs"), "// synthetic renderer source\n").unwrap();
-        fs::write(repo.join(suite.config()), "schema=1\ncapture=['tripwire-never-execute']\nenvironment_command=['tripwire-no-host-probe']\nbaselines='refs'\nreport='review'\nruns='runs'\nstory_catalog='stories.json'\n[source_policy]\nscopes=['fixture.rs','visual.toml','visual-gallery.toml','scripts/visual/catalogs','stories.json']\nsuffixes=['.rs','.toml','.json']\n").unwrap();
+        fs::write(repo.join(suite.config()), "schema=1\ncapture=['tripwire-never-execute']\nenvironment_command=['tripwire-no-host-probe']\nbaselines='refs'\nreport='review'\nruns='runs'\nstory_catalog='stories.json'\n[source_policy]\nscopes=['fixture.rs','visual.toml','visual-gallery.toml','scripts/visual/catalogs','stories.json','vendor/cargo-gpui-visual']\nsuffixes=['.rs','.toml','.json','.lock']\n").unwrap();
         fs::write(repo.join("scripts/visual/catalogs/gallery-plan.json"), json!({"schema":1,"cases":[{"base":"gallery-00-state-00-standard-normal","label":"Fixture","state":"default","group":"Foundations","ranges":[[0,1],[1,3]],"dark_ranges":[[0,2],[2,3]]}]}).to_string()).unwrap();
         fs::write(repo.join("stories.json"), json!({"schema":1,"stories":[{"id":"gallery-00","label":"Fixture","cases":["gallery-00-state-00-standard-normal-page-00","gallery-00-state-00-standard-normal-page-01"]}]}).to_string()).unwrap();
+        for path in crate::vm_rendering::TOOL_INPUTS {
+            let path = repo.join("vendor/cargo-gpui-visual").join(path);
+            fs::create_dir_all(path.parent().unwrap()).unwrap();
+            fs::write(path, "synthetic capture input").unwrap();
+        }
         let config = Config::load(&repo.join(suite.config())).unwrap();
         let selection =
             selected.then(|| Selection::resolve(&repo, &config, &["gallery-00".into()]).unwrap());
@@ -181,7 +186,7 @@ impl Fixture {
             os_build: "guest-build".into(),
             arch: "arm64".into(),
             model: "VirtualMac-fixture".into(),
-            displays: json!([{"synthetic":true}]),
+            displays: json!([{"origin":"guest-coregraphics-metal","screens":[{"id":1,"width_px":6400,"height_px":3600,"width_pt":3200,"height_pt":1800}],"metal":{"name":"Synthetic Metal","registry_id":100}}]),
             fonts: [("/System/Library/Fonts/fixture.ttf".into(), "c".repeat(64))].into(),
             console_user: "admin".into(),
             on_console: true,
@@ -278,7 +283,9 @@ impl Fixture {
             "source" => fs::write(self.repo.join("fixture.rs"), "// changed").unwrap(),
             "receipt" => fs::write(raw.join("guest-receipt.json"), "{}").unwrap(),
             "hardlink" => fs::hard_link(&image, self.root.join("alias.png")).unwrap(),
-            "environment" => captured.environment["guest_rendering"]["os_build"] = json!("mutated"),
+            "environment" => {
+                captured.environment["rendering"]["guest_rendering"]["os_build"] = json!("mutated")
+            }
             "scope" => captured.selection = None,
             "payload" => fs::write(self.share.join("payload.json"), "{}").unwrap(),
             "symlink" => {
@@ -315,7 +322,7 @@ fn fresh_selected_full_gallery_and_browser_reuse_upstream_seals_without_pixel_re
         assert_eq!(manifest.selection, f.selection);
         assert_eq!(manifest.sources, f.staged.sources);
         assert_eq!(
-            manifest.environment["guest_rendering"]["os_build"],
+            manifest.environment["rendering"]["guest_rendering"]["os_build"],
             "guest-build"
         );
         for (name, hash) in &manifest.images {

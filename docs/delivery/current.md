@@ -31,7 +31,7 @@ no Git lock or holder of the repository/GPUI Visual capture locks was found.
 
 | ID | Slice | Status | Worktree | Owner | Contract | Next gate |
 |---|---|---|---|---|---|---|
-| VISUAL-RUST | Standalone GPUI Visual consumer migration | `running` | main, activation base above | session `01a0f8f4` | [visual tooling](../roadmap/tasks/visual-snapshot-tooling.md) | Acceptance correction and approved 28-image adoption verified; imported-tool same-tree Tart repeats are pixel-exact. Environment drift, complete coverage, interactive/framing pilot, public cutover and stable aggregate remain open; latest checkpoint below |
+| VISUAL-RUST | Standalone GPUI Visual consumer migration | `running` | main, activation base above | session `01a0f8f4` | [visual tooling](../roadmap/tasks/visual-snapshot-tooling.md) | Rendering/provenance correction, explicit metadata-only migration and two fresh 28-image Tart repeats verified; pixels and rendering compare exactly, provenance remains visible, coverage remains FAIL. Complete coverage, interactive/framing pilot, public cutover and stable aggregate remain open; latest checkpoint below |
 
 Historical reuse evidence is read-only Git/session metadata, not a takeover of
 `/Users/patwoz/dev/Personal/macos/bbr-visual-snapshots`: its five migration commits
@@ -2505,6 +2505,126 @@ remain open. No completion checkbox, full verify/E2E/performance or independent
 agent-review claim. Measured durations are tooling only; implementation/self-review
 wall time was not instrumented. No additional unchanged aggregate retry or silent
 environment adoption accompanies the local checkpoint.
+
+### Rendering identity/provenance correction verified (2026-10-03)
+
+Patrick authorized “ok mach das” for the bounded environment correction, explicit
+metadata migration and two fresh supervised Tart runs. Starting BBR checkpoint
+`ca67fd02dc9a21440ac4130226514b926f7595d1`; same sole local visual writer,
+no subagent/workflow/other-consumer/foreign-worktree/publication scope. At restoration,
+HEAD, empty pre-stage index, preserved candidates and upstream clean commit were
+rechecked. The entire delivery queue was reread in bounded chunks. Only this
+correction's documentary closeout and commit are runnable under the current request;
+other product lanes and broader migration remain deferred, not newly activated.
+
+Portable authority is committed upstream as
+`e3050c78cc1347ea0164218d7bcd0d74addcdb8a`. The complete immutable **90-file**
+export, tracked set, provenance and unchanged LICENSE/NOTICE are verified in BBR.
+It includes the prior `ce4ff11` compact-navigation layout regression correction.
+The comparison-schema-1 envelope is explicit and reversible, not a generic ignore
+list. Legacy JSON remains fully exact. Layer, contract, rendering fields and the
+provenance pointer set compare exactly; whole capture before/after identity remains
+strict. Sealed JSON and original HTML preserve separately classified differences;
+acceptance recomputes them and never refreshes historical provenance implicitly.
+
+BBR authors `bbr-tart-rendering-v1`: only validated guest Metal registry instance ID
+and complete tool revision become provenance. All other observed facts stay exact.
+Nine source-bound capture/codec/execution/dependency fingerprints retain meaningful
+tool-change detection. Native display validation rejects unknown/malformed fields,
+missing device facts and invalid geometry. New capture modules require reviewed
+contract/list changes. No product/native producer, GPUI pin, pixels, dimensions,
+coverage catalog, baseline PNG, budget, tolerance or mask changes accompany this
+correction.
+
+Official `partition-environment`, after inspected dry-run and exact old-hash guard,
+changes only the baseline environment representation:
+- Before SHA256: `fac87538eec85882e9781b9ece83541d06444ceaee20ff41c252447cde0233c1`.
+- After SHA256: `593f2ad806c8065915c7b5247e74423bbe4250a05ffe3b69f878be5981488bc4`.
+- All nine rendering fingerprints derive from historical source seals and match
+  the current rendering inputs. Original tool `c2723ca` and Metal `4294967700`
+  reconstruct losslessly; every non-environment metadata value is preserved.
+- Independent preservation check: 677 files, 676 byte-identical, only the explicitly
+  authorized metadata file changed. Approved PNGs and historical reports/seals
+  are untouched. Old reviews intentionally become stale against new baseline
+  metadata; no old report is edited/resealed and no new image is accepted.
+
+Fresh runtime evidence under `/private/tmp/gpui-visual-environment/attempt1`:
+
+| Run | Caller seconds | Capture SHA256 |
+|---|---|---|
+| `app-environment-20261003-a` | 84.579018083 | `d08be997c8bdf91a3e05bddbfcb8a191ef04abb6f311c7a6ddad1719e585f32b` |
+| `app-environment-20261003-b` | 81.569718791 | `1fafc8dc4ad8d04a9ef3039fbda97c213c03dc5020e10772450df7f8f7f9e0c9` |
+
+Both use one fresh 1,526-file payload
+`95b38ca92bf1a8bdc119d5dfb4598349ef914f063e2221da20b37ce80261d323`
+and identical **1,523 source hashes**. All **28 PNGs match references and each other
+byte-for-byte**; zero changed pixels/comparison errors, `environment_mismatch:null`
+and `review.passed:true`. Each Collection/suite remains false solely for the same
+withheld `remaining-app-surfaces` requirement. Captured tool `e3050c7`, Metal A
+`4294967701` and B `4294967703` remain explicit provenance in the sealed reviews
+and original HTML. No environment/image adoption accompanies those captures.
+
+Reports:
+- `/Users/patwoz/dev/Personal/macos/bbr/reports/visual/app-environment-20261003-a/index.html`
+- `/Users/patwoz/dev/Personal/macos/bbr/reports/visual/app-environment-20261003-b/index.html`
+
+Independent inspection verifies all payload/source/installed bytes, baseline-state
+bindings, 86 sealed report files per run, before/after guest observations and
+request/payload-bound completed terminals. Both transports verify the original
+51-path offline runtime, key-only SSH/no forwarding, only SSH listeners and closed
+ports 88/5900. Read-only resource rechecks again prove both exact clones, keys,
+disks and owned processes absent and former SSH unreachable. Both host leases
+have no observed holder. Host app, Golden Image and unrelated workloads are
+untouched. Timings above are tooling, not product-performance evidence.
+
+Verification and retained attempts under `/private/tmp/gpui-visual-environment`:
+- Early runtime preflight succeeds before implementation: prepare 398.67s,
+  caller 156.876s, 28 exact images/coverage red and independently absent clone.
+  A scratch caller's `clap_derive` toolchain error is resolved through the pinned
+  upstream wrapper, without target/cache overrides.
+- Upstream negative-first regressions then **188 top-level tests + 3 nested
+  fixtures**, strict all-target Clippy/fmt pass; tests 130.34s, Clippy 28.89s.
+  The intermediate missing `provenance_notice` qualification error remains in logs.
+- Consumer **114 top-level tests + 16 nested executions**, two normal-discovery
+  ignored fixtures explicitly exercised by their protocol contract, pass in
+  57.92s. Four initial synthetic fixtures lacked the `.lock` source-policy suffix;
+  fixtures were corrected, not production fingerprint completeness weakened.
+- `RUST_TEST_THREADS=1 CARGO_NET_OFFLINE=true just visual-test` passes in 219.75s:
+  171 Python discoveries (170 pass, one integration skip separately passing),
+  imported upstream and consumer contracts. Strict all-target Clippy for both
+  Cargo roots and fmt pass. Full logs retain expected injected failure transcripts;
+  those are not failed real tests. Existing `block` warning is not suppressed.
+- Official `validate` passes for each fresh run with sources/images valid and
+  producer unexecuted. It explicitly does **not** check baseline environment;
+  rendering equality is separately proven by the sealed review inspection.
+  Read-only `doctor` reports 1,523 sources, no producer/environment probe.
+- Focused self-review covers reversible migration, exact classification, stale/
+  pending/locked no-write paths, capture-time drift, retained coverage and approval,
+  immutable export and source/resource identity. No independent agent review.
+
+Original A/B reports were inspected in the existing managed Chrome task tab.
+Desktop B at 1672×963 DPR2 and narrow B at 390×844 DPR1 show 28 loaded images,
+32 navigation rows, no duplicate IDs, broken anchors/images, label overflow,
+row overlap or horizontal overflow. The provenance disclosure and coverage-only
+FAIL are visible. Original screenshots and measurements are retained under
+`/Users/patwoz/dev/Personal/macos/bbr/reports/visual/evidence/environment-20261003/`,
+alongside migration/pre-state and integrity evidence. The first combined browser
+image-decode command timed out; follow-up found no pending images and screenshots
+succeeded. The bounded static Impeccable layout/type scan returns nine existing
+compact-typography warnings (eight leading, one hierarchy), not a full-audit pass.
+No observed overlap/clipping in the checked viewports; no vendor/report polish,
+new browser/profile or unrelated tab changes. The task tab returns to report B
+with its desktop viewport restored.
+
+Final documentary edits are outside the capture source policy; exact current
+source/export/preservation checks, roadmap/index-roadmap, formatting and whitespace
+are rechecked before the local commit. This closes only the requested correction.
+Complete app/native coverage, Gallery interaction/framing, public capture guards,
+Python cutover, current stable functional aggregate and historical aggregate
+Command p95 failures remain open. No full verify/E2E/performance pass, broader
+migration checkbox, automatic reference acceptance or push. Total implementation/
+self-review time was not instrumented. Do not silently extend into other queue
+items or repeat unrelated aggregates to turn this bounded evidence into closeout.
 
 ## Status vocabulary
 

@@ -80,7 +80,7 @@ impl Fixture {
             os_build: "guest-build".into(),
             arch: "arm64".into(),
             model: "VirtualMac-fixture".into(),
-            displays: json!([{"synthetic":true}]),
+            displays: json!([{"origin":"guest-coregraphics-metal","screens":[{"id":1,"width_px":6400,"height_px":3600,"width_pt":3200,"height_pt":1800}],"metal":{"name":"Synthetic Metal","registry_id":100}}]),
             fonts: [("/System/Library/Fonts/fixture.ttf".into(), "c".repeat(64))].into(),
             console_user: "admin".into(),
             on_console: true,

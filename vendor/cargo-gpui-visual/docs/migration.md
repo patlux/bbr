@@ -937,6 +937,75 @@ then import a complete immutable export and capture fresh Tart screenshot eviden
 This supersedes only the historical BBR ownership observations below; it does not
 authorize the preserved isolated worktree or new/changed image acceptance.
 
+## BBR report navigation overlap correction (2026-10-02)
+
+Patrick requested fixing the overlapping report navigation in GPUI Visual and
+regenerating the reports. The existing compact row forced a24px height around
+30px wrapped labels: managed Chrome measured10 overflowing labels among32 rows
+in BBR's repeated application report. Replace the fixed height with a24px minimum
+and4px vertical padding, and allow the label flex item to shrink. Labels, statuses,
+anchors, report identity and comparison/acceptance behavior remain unchanged.
+
+A disposable collection regression checks long escaped labels, withheld rows and
+the embedded content-sized CSS; it fails before the fix and passes afterward.
+The first exact-test invocation omitted the module prefix and ran zero tests;
+`red-exact.log` is the actual failing regression. Fresh pinned locked/offline
+`mbx test` passes181 top-level entries plus3 nested fixtures; strict all-target
+Clippy and rustfmt pass. The bounded combined gates/report-generation command took
+349.15s. Impeccable's one final changed-CSS scan returns no findings.
+
+Managed Chrome checks both new reports at1672px and the repeated report at1024,
+836 and390px, plus a long-label synthetic collection at1672/320px: no navigation
+label/row overlap, horizontal overflow, broken navigation anchors or duplicate IDs.
+836×482 is a200%-equivalent reflow viewport, not a browser-zoom claim. Filtering
+and History navigation work. The initial History screenshot preceded lazy image
+decode; the retained final screenshot explicitly awaited both images' decode.
+This is scoped navigation verification, not a full report accessibility audit.
+
+The official `review-collection` command creates two new immutable reports at
+`/Users/patwoz/dev/Personal/macos/bbr/reports/visual/app-layout-fix-20261002-{a,b}/index.html`
+from the existing sealed `app-acceptance-fix-20261002-{a,b}` captures. Each has28
+exact image matches, zero comparison errors and the unchanged coverage/environment
+FAIL. Their collection JSON and all84 PNG assets are byte-identical to the prior
+reports; only HTML and its report seal change. All86 sealed files per new report,
+1517 current capture sources and448 preserved old-report/capture/reference files
+were independently hash-checked. No capture, reseal, adoption or native execution.
+
+Evidence: `/private/tmp/gpui-visual-sidebar-overlap`; retained browser screenshots
+and integrity results also live at
+`/Users/patwoz/dev/Personal/macos/bbr/reports/visual/evidence/layout-fix-20261002/`.
+BBR's tracked tree and immutable4743437 import stay unchanged so those source-bound
+captures remain valid. A future consumer refresh must import the complete upstream
+export, never patch the vendored CSS. Other consumers and publication untouched.
+
+## Explicit environment partition (2026-10-03)
+
+Patrick authorized separating rendering identity from provenance and verifying two
+fresh BBR Tart captures. The portable opt-in contract now compares exact rendering,
+contract and provenance classification, while retaining differing provenance values
+in sealed reviews and the original HTML. Legacy JSON stays exact; before/after
+capture identity remains full. Acceptance recomputes both evidence dimensions.
+[Contract and explicit metadata migration](environments.md). No device-specific
+ignore list or consumer rendering policy lives in the portable tool.
+
+The new regression first fails for provenance-only drift and malformed-envelope
+acceptance. Seven added contracts cover exact rendering/contract/classification
+changes, reversible migration, unchanged reference/history, locks/pending/state
+refusal, CLI dry-run/write and coverage still red despite pixel/environment passes.
+The existing local-capture contract also rejects within-run provenance drift.
+Fresh locked/offline full suite passes188 top-level entries plus3 nested fixtures;
+strict all-target Clippy and fmt pass (130.34s/28.89s/0.88s measured). Logs:
+`/private/tmp/gpui-visual-environment/upstream-{red,tests,clippy,fmt}.log`.
+A first targeted compile lacked the report-helper qualification; corrected, with
+no assertion or deadline relaxation. Sole-writer self-review, no agents.
+
+An early BBR runtime/dependency preflight through its unchanged supervised route
+passes28/28 exact images, source/runtime/receipt checks and observed cleanup
+(156.876s caller). This is not new-contract repeat evidence. Consumer contract,
+explicit reference-metadata migration, immutable export and final fresh repeats
+follow separately. No image adoption, old-report mutation, other-consumer write,
+product rendering/dependency change or publication in this upstream slice.
+
 ## Current consumer ownership gates
 
 Read-only recheck after R2d (2026-09-28): BBR's complete live delivery document

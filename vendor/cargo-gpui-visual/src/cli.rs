@@ -96,6 +96,18 @@ pub enum Operation {
         #[arg(long)]
         dry_run: bool,
     },
+    /// Explicitly partition approved environment metadata without changing old facts or images.
+    PartitionEnvironment {
+        #[arg(long)]
+        baselines: PathBuf,
+        #[arg(long)]
+        expected_hash: String,
+        /// Complete versioned environment JSON; must reconstruct the old observation exactly.
+        #[arg(long)]
+        environment: PathBuf,
+        #[arg(long)]
+        dry_run: bool,
+    },
     /// Read-only config/source checks. Does not execute producers, probes or devices.
     Doctor {
         #[arg(long)]
@@ -168,6 +180,7 @@ pub struct Request {
     pub json: bool,
     pub dry_run: bool,
     pub expected_hash: Option<String>,
+    pub environment: Option<PathBuf>,
     pub format: Option<String>,
     pub run: Option<PathBuf>,
     pub baselines: Option<PathBuf>,
@@ -251,6 +264,18 @@ impl From<Cli> for Request {
                 r.baselines = Some(baselines);
                 r.format = Some(format);
                 r.expected_hash = Some(expected_hash);
+                r.dry_run = dry_run;
+            }
+            Operation::PartitionEnvironment {
+                baselines,
+                expected_hash,
+                environment,
+                dry_run,
+            } => {
+                r.command = "partition-environment";
+                r.baselines = Some(baselines);
+                r.expected_hash = Some(expected_hash);
+                r.environment = Some(environment);
                 r.dry_run = dry_run;
             }
             Operation::Doctor { baselines, .. } => {

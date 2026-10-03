@@ -205,6 +205,12 @@ pub fn write_with_options(root: &Path, r: &Review, options: &Options) -> Result<
     write_review(root, r, options, None)
 }
 
+pub(crate) fn provenance_notice(r: &Review) -> String {
+    r.provenance_difference.as_ref().map_or_else(String::new, |difference| {
+        format!("<details><summary>Provenienz geändert · separat vom Rendering-Vergleich</summary><code>{}</code></details>", escape(&difference.to_string()))
+    })
+}
+
 /// Counts of reviewable units (stills and whole sequences) for the top bar.
 pub(crate) fn summary<'a>(statuses: impl Iterator<Item = &'a str>) -> String {
     let (mut changed, mut new, mut same) = (0, 0, 0);
@@ -321,6 +327,7 @@ pub(crate) fn write_review(
         "<details id=\"umgebung\"><summary>Aufnahmeumgebung</summary><code>{}</code></details>",
         escape(&r.environment.to_string())
     );
+    environment += &provenance_notice(r);
     if let Some(selection) = &r.selection {
         environment.insert_str(0, &format!("<p class=selection-scope><strong>TEILLAUF · nur ausgewählte Stories: {}</strong><br>Kein vollständiger Suite-Nachweis; Baseline-Übernahme gesperrt. {}</p>", escape(&selection.ids()), if r.passed { "Auswahl stimmt exakt überein." } else { "Auswahl benötigt Prüfung." }));
     }

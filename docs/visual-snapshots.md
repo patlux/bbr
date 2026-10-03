@@ -1,9 +1,9 @@
 # Production-chrome visual snapshots
 
 BBR reuses the portable **cargo-gpui-visual 0.1.1** comparator/report from the
-standalone GPUI Visual authority. The complete unchanged 84-file export lives in
-`vendor/cargo-gpui-visual`, pinned to commit
-`4743437699567ba16fdcabf8fc12010a367f9134`. Its file hashes and previous SDK
+standalone GPUI Visual authority. The complete unchanged 90-file export lives in
+`/Users/patwoz/dev/Personal/macos/bbr/vendor/cargo-gpui-visual`, pinned to commit
+`e3050c78cc1347ea0164218d7bcd0d74addcdb8a`. Its file hashes and previous SDK
 import provenance are in `scripts/visual/tool-source.json`; every invocation
 verifies them and rejects
 unexpected vendor files (excluding mbx's generated target directory). The CLI is
@@ -11,7 +11,7 @@ Apache-2.0 with its original LICENSE/NOTICE retained. Its independent Cargo
 root never links GPUI; BBR does not depend on a developer's SDK checkout or
 on the SDK renderer helper. Nothing is installed or published.
 
-## Current application report (2026-10-02)
+## Current application report (2026-10-03)
 
 The current report contains **28 real application stills**, not Gallery replicas:
 
@@ -45,8 +45,8 @@ journal without editing report/catalog evidence. New/changed images still need
 separate approval. The earlier expanded runs matched 28/28 PNG bytes but had
 different source seals; they are not the required same-final-tree repeat proof.
 
-After importing the fixed tool, two new independent Tart captures use the same
-1,517-source inventory and staged payload:
+The earlier acceptance-fix import produced two independent Tart captures with the
+same 1,517-source inventory and staged payload:
 
 - `/Users/patwoz/dev/Personal/macos/bbr/reports/visual/app-acceptance-fix-20261002-a/index.html`
 - `/Users/patwoz/dev/Personal/macos/bbr/reports/visual/app-acceptance-fix-20261002-b/index.html`
@@ -59,7 +59,53 @@ one. The only environment differences are tool revision `c2723ca` → `4743437`
 and the clone-specific Metal registry ID: approved `4294967700`, run A
 `4294967701`, run B `4294967713`. No normalization, new environment adoption or
 baseline write was performed. Thus same-tree image repeatability is demonstrated
-for this bounded matrix, not environment equality or complete migration coverage.
+for that historical matrix, not environment equality or complete migration coverage.
+Those historical reports remain unchanged.
+
+### Current rendering-identity correction
+
+Patrick explicitly authorized the environment/provenance correction and a
+metadata-only migration, not new image acceptance. The current immutable tool
+supports a versioned, reversible partition; BBR's `bbr-tart-rendering-v1` contract
+classifies only the portable-tool revision and validated Metal registry instance
+ID as provenance. All other observations remain exact rendering conditions.
+Nine source-bound capture/codec/execution/dependency fingerprints retain meaningful
+tool-change detection; changing the classification or fingerprint set also fails
+comparison. Whole before/after capture observations still match exactly.
+
+Official `partition-environment` migrated only
+`/Users/patwoz/dev/Personal/macos/bbr/tests/visual/baselines/baseline.json`, after
+an inspected dry-run and exact old-hash check. The approved historical environment
+reconstructs losslessly, including tool `c2723ca` and Metal ID `4294967700`.
+Every non-environment metadata record and all 28 approved PNGs remain unchanged.
+Old reviews' baseline-state seals intentionally become stale; historical reports
+are never edited or resealed. The complete migration receipt is retained under
+`/Users/patwoz/dev/Personal/macos/bbr/reports/visual/evidence/environment-20261003/`.
+
+Two **fresh** optimized real-app Tart runs use one payload and the same 1,523
+source hashes:
+
+- `/Users/patwoz/dev/Personal/macos/bbr/reports/visual/app-environment-20261003-a/index.html`
+- `/Users/patwoz/dev/Personal/macos/bbr/reports/visual/app-environment-20261003-b/index.html`
+
+Each proves **28/28 byte-identical PNGs**, zero changed pixels/errors and exact
+rendering equality against the approved references. The single-suite comparison
+passes; the Collection remains **REVIEW REQUIRED / FAIL solely for the existing
+withheld application coverage**. Tool `e3050c7` and Metal IDs `4294967701` /
+`4294967703` remain visible as provenance differences in sealed JSON and original
+HTML, not removed or silently adopted. All 86 sealed report files per run, current
+source/build/payload identity and independent clone/key/disk/process/SSH absence
+were rechecked. Caller durations 84.579s / 81.570s are tooling, not product timings.
+
+Managed-Chrome screenshots and desktop/narrow measurements are retained under
+`/Users/patwoz/dev/Personal/macos/bbr/reports/visual/evidence/environment-20261003/`.
+At 1672×963 DPR2 and 390×844 DPR1, all 28 images load; navigation labels/rows,
+anchors and horizontal bounds pass the focused checks. The static layout/type
+scanner retains nine existing compact-typography warnings, not a clean full-audit
+claim. No report bytes were changed during inspection. This is bounded rendering
+identity/repeat evidence, not full application, native-pixel or migration coverage.
+
+### Earlier acceptance screenshots
 
 Seven unmodified managed-Chrome screenshots are retained under
 `/Users/patwoz/dev/Personal/macos/bbr/reports/visual/evidence/acceptance-fix-20261002/`:

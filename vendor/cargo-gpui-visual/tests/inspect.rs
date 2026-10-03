@@ -31,6 +31,7 @@ fn review() -> Review {
         baseline_state: Default::default(),
         environment: json!({"layer":"gpui"}),
         environment_mismatch: None,
+        provenance_difference: None,
         results: vec![Finding {
             case: "sequence-opening-frame-0000--light".into(),
             status: "same".into(),

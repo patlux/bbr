@@ -9,7 +9,12 @@ use std::{collections::BTreeMap, path::PathBuf};
 fn fixture() -> (HostBuild, Payload, Receipt) {
     let repo = PathBuf::from("/Users/fixture/bbr");
     let binary = repo.join("target/release/bbr-gallery");
-    let sources = BTreeMap::from([("source.rs".into(), "a".repeat(64))]);
+    let mut sources = BTreeMap::from([("source.rs".into(), "a".repeat(64))]);
+    sources.extend(
+        bbr_visual::vm_rendering::TOOL_INPUTS
+            .iter()
+            .map(|p| (format!("vendor/cargo-gpui-visual/{p}"), "f".repeat(64))),
+    );
     let artifacts = BTreeMap::from([(binary.to_str().unwrap().into(), "b".repeat(64))]);
     let host = HostBuild {
         os: "27.0".into(),
@@ -51,7 +56,7 @@ fn fixture() -> (HostBuild, Payload, Receipt) {
         os_build: "guest-build".into(),
         arch: "arm64".into(),
         model: "VirtualMac2,1".into(),
-        displays: json!([{"sppci_model":"Apple Paravirtual device","spdisplays_metal":"supported"}]),
+        displays: json!([{"origin":"guest-coregraphics-metal","screens":[{"id":1,"width_px":6400,"height_px":3600,"width_pt":3200,"height_pt":1800}],"metal":{"name":"Synthetic Metal","registry_id":100}}]),
         fonts: BTreeMap::from([("/System/Library/Fonts/fixture.ttf".into(), "c".repeat(64))]),
         console_user: "admin".into(),
         on_console: true,
@@ -80,10 +85,18 @@ fn host_build_and_guest_pixels_keep_distinct_identity() {
     let (host, payload, receipt) = fixture();
     let environment =
         vm_environment::bind(Suite::Gallery, &host, &payload, &"d".repeat(64), &receipt).unwrap();
-    assert_eq!(environment["host_build"]["os_build"], "host-build");
-    assert_eq!(environment["guest_rendering"]["os_build"], "guest-build");
+    assert_eq!(
+        environment["rendering"]["host_build"]["os_build"],
+        "host-build"
+    );
+    assert_eq!(
+        environment["rendering"]["guest_rendering"]["os_build"],
+        "guest-build"
+    );
     assert_eq!(environment["layer"], "gpui");
-    assert!(environment["host_build"].get("executable_hashes").is_none());
+    assert!(environment["rendering"]["host_build"]
+        .get("executable_hashes")
+        .is_none());
     assert!(environment.get("payload_sha256").is_none());
 }
 #[test]
@@ -177,6 +190,127 @@ fn missing_or_host_substituted_guest_observations_cannot_validate() {
             "{mutation}"
         );
     }
+}
+#[test]
+fn only_validated_provenance_values_are_non_gating_between_runs() {
+    use cargo_gpui_visual::environment;
+    let (mut host, payload, mut receipt) = fixture();
+    let original =
+        vm_environment::bind(Suite::Gallery, &host, &payload, &"d".repeat(64), &receipt).unwrap();
+    host.tool_revision = "next-tool-revision".into();
+    receipt.environment_before.displays[0]["metal"]["registry_id"] = json!(200);
+    receipt.environment_after = receipt.environment_before.clone();
+    let changed =
+        vm_environment::bind(Suite::Gallery, &host, &payload, &"d".repeat(64), &receipt).unwrap();
+    assert_ne!(original, changed);
+    assert!(environment::equivalent(&original, &changed).unwrap());
+    let raw = environment::observation(&changed).unwrap();
+    assert_eq!(raw["host_build"]["tool_revision"], "next-tool-revision");
+    assert_eq!(
+        raw["guest_rendering"]["displays"][0]["metal"]["registry_id"],
+        200
+    );
+    receipt.environment_after.displays[0]["metal"]["registry_id"] = json!(201);
+    assert!(
+        vm_environment::bind(Suite::Gallery, &host, &payload, &"d".repeat(64), &receipt).is_err()
+    );
+}
+#[test]
+fn every_rendering_condition_and_tool_input_remains_exact() {
+    use cargo_gpui_visual::environment;
+    for field in [
+        "os",
+        "fonts",
+        "metal",
+        "pixels",
+        "points",
+        "sdk",
+        "gpui",
+        "capture-code",
+    ] {
+        let (mut host, mut payload, mut receipt) = fixture();
+        let original =
+            vm_environment::bind(Suite::Gallery, &host, &payload, &"d".repeat(64), &receipt)
+                .unwrap();
+        match field {
+            "os" => receipt.environment_before.os_build = "new".into(),
+            "fonts" => {
+                *receipt
+                    .environment_before
+                    .fonts
+                    .values_mut()
+                    .next()
+                    .unwrap() = "e".repeat(64)
+            }
+            "metal" => {
+                receipt.environment_before.displays[0]["metal"]["name"] = json!("Different Metal")
+            }
+            "pixels" => {
+                receipt.environment_before.displays[0]["screens"][0]["width_px"] = json!(3200)
+            }
+            "points" => {
+                receipt.environment_before.displays[0]["screens"][0]["width_pt"] = json!(1600)
+            }
+            "sdk" => host.sdk = "new".into(),
+            "gpui" => host.gpui_source = "new".into(),
+            "capture-code" => {
+                payload.sources.insert(
+                    "vendor/cargo-gpui-visual/src/capture.rs".into(),
+                    "e".repeat(64),
+                );
+                receipt.sources = payload.sources.clone();
+            }
+            _ => unreachable!(),
+        }
+        receipt.environment_after = receipt.environment_before.clone();
+        let changed =
+            vm_environment::bind(Suite::Gallery, &host, &payload, &"d".repeat(64), &receipt)
+                .unwrap();
+        assert!(
+            !environment::equivalent(&original, &changed).unwrap(),
+            "{field}"
+        );
+    }
+}
+#[test]
+fn unknown_or_malformed_native_display_records_fail_closed() {
+    for field in ["unknown", "registry", "geometry", "origin", "missing"] {
+        let (host, payload, mut receipt) = fixture();
+        let d = &mut receipt.environment_before.displays[0];
+        match field {
+            "unknown" => d["metal"]["unclassified"] = json!(true),
+            "registry" => d["metal"]["registry_id"] = json!(0),
+            "geometry" => d["screens"][0]["width_px"] = json!(0),
+            "origin" => d["origin"] = json!("host"),
+            "missing" => {
+                d["metal"].as_object_mut().unwrap().remove("name");
+            }
+            _ => unreachable!(),
+        }
+        receipt.environment_after = receipt.environment_before.clone();
+        assert!(
+            vm_environment::bind(Suite::Gallery, &host, &payload, &"d".repeat(64), &receipt)
+                .is_err(),
+            "{field}"
+        );
+    }
+}
+#[test]
+fn rendering_fingerprint_requires_all_authored_inputs_without_hashing_report_only_changes() {
+    let (_, mut payload, _) = fixture();
+    let inputs = bbr_visual::vm_rendering::tool_inputs(&payload.sources).unwrap();
+    payload.sources.insert(
+        "vendor/cargo-gpui-visual/assets/review.css".into(),
+        "e".repeat(64),
+    );
+    assert_eq!(
+        inputs,
+        bbr_visual::vm_rendering::tool_inputs(&payload.sources).unwrap()
+    );
+    payload
+        .sources
+        .remove("vendor/cargo-gpui-visual/src/capture.rs");
+    assert!(bbr_visual::vm_rendering::tool_inputs(&payload.sources).is_err());
 }
 #[test]
 fn ordinary_binary_changes_do_not_impersonate_environment_drift() {

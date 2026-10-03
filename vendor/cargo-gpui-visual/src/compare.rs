@@ -34,6 +34,8 @@ pub struct Review {
     pub baseline_state: Hashes,
     pub environment: Value,
     pub environment_mismatch: Option<Value>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub provenance_difference: Option<Value>,
     pub results: Vec<Finding>,
     pub errors: Vec<String>,
     /// A selected run can pass its scope, never the full suite.
@@ -146,13 +148,16 @@ fn compare_inner(
     let state = baseline_state(baselines)?;
     let mut errors = Vec::new();
     let mut environment_mismatch = None;
+    let mut provenance_difference = None;
     let metadata = baselines.join("baseline.json");
     let mut expected_sequences: Vec<crate::sequence::Sequence> = Vec::new();
     let mut stored_cases = BTreeMap::new();
     let mut format = Format::Png;
     if metadata.exists() {
         let stored = crate::baseline::Baseline::load(baselines)?;
-        if stored.environment != m.environment {
+        provenance_difference =
+            crate::environment::provenance_difference(&stored.environment, &m.environment)?;
+        if !crate::environment::equivalent(&stored.environment, &m.environment)? {
             environment_mismatch =
                 Some(json!({"baselines":stored.environment,"capture":m.environment}));
         }
@@ -445,6 +450,7 @@ fn compare_inner(
         baseline_state: state,
         environment: m.environment,
         environment_mismatch,
+        provenance_difference,
         results,
         errors,
         passed,

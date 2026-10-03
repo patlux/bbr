@@ -8,6 +8,8 @@ pub mod compare;
 mod comparison_view;
 pub mod config;
 pub mod diagnostic;
+pub mod environment;
+pub mod environment_migration;
 mod gallery;
 #[cfg(unix)]
 pub mod gate;

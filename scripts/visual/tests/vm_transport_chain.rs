@@ -110,7 +110,7 @@ def _exchange(session,script,workspace):
     p=json.loads((share/'payload.json').read_text())
     digest=hashlib.sha256((share/'payload.json').read_bytes()).hexdigest()
     guest=dict(schema=1,origin='tart-guest',os='guest',os_build='guest-build',arch='arm64',model='VirtualMac-fixture',
-        displays=[dict(synthetic=True)],fonts={{'/System/Library/Fonts/fixture.ttf':'c'*64}},console_user='admin',
+        displays=[dict(origin='guest-coregraphics-metal',screens=[dict(id=1,width_px=6400,height_px=3600,width_pt=3200,height_pt=1800)],metal=dict(name='Synthetic Metal',registry_id=100))],fonts={{'/System/Library/Fonts/fixture.ttf':'c'*64}},console_user='admin',
         on_console=True,screen_locked=False,window_server=True,timezone='UTC',locale='C')
     receipt=dict(schema=1,payload_sha256=('f'*64 if {swapped} else digest),sources=p['sources'],
         installed={{f['guest']:f['sha256'] for f in p['files']}},environment_before=guest,environment_after=guest)
@@ -201,10 +201,15 @@ report="report"
 runs="runs"
 story_catalog="scripts/visual/catalogs/stories.json"
 [source_policy]
-scopes=["fixture.rs","scripts/visual","visual-gallery.toml"]
-suffixes=[".rs",".py",".json",".toml"]
+scopes=["fixture.rs","scripts/visual","visual-gallery.toml","vendor/cargo-gpui-visual"]
+suffixes=[".rs",".py",".json",".toml",".lock"]
 "#;
         fs::write(repo.join("visual-gallery.toml"), config_text).unwrap();
+        for path in bbr_visual::vm_rendering::TOOL_INPUTS {
+            let path = repo.join("vendor/cargo-gpui-visual").join(path);
+            fs::create_dir_all(path.parent().unwrap()).unwrap();
+            fs::write(path, "synthetic capture input").unwrap();
+        }
         let config = Config::from_toml(config_text).unwrap();
         let catalogs = repo.join("scripts/visual/catalogs");
         fs::create_dir(&catalogs).unwrap();

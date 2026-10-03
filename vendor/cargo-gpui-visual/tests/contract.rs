@@ -13,6 +13,8 @@ use std::{
 };
 #[path = "support/baselines.rs"]
 mod baselines;
+#[path = "support/environment.rs"]
+mod environment;
 #[path = "support/presentation.rs"]
 mod presentation;
 #[path = "support/sequences.rs"]

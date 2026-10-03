@@ -111,6 +111,7 @@ impl Baseline {
             (stored.schema == 3) == stored.image_format.is_some(),
             "Only schema 3 baselines declare an image format"
         );
+        crate::environment::validate(&stored.environment)?;
         let mut baseline = Self::new(stored.environment);
         baseline.schema = stored.schema.max(2);
         baseline.image_format = stored.image_format;

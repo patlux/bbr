@@ -12,7 +12,12 @@ fn fixture(workspace: &Path) -> (Payload, HostBuild, Value) {
     let raw = workspace.join("raw");
     fs::create_dir(&raw).unwrap();
     let repo = workspace.join("compiled");
-    let sources = [("fixture.rs".into(), "a".repeat(64))].into();
+    let mut sources: store::Hashes = [("fixture.rs".into(), "a".repeat(64))].into();
+    sources.extend(
+        bbr_visual::vm_rendering::TOOL_INPUTS
+            .iter()
+            .map(|p| (format!("vendor/cargo-gpui-visual/{p}"), "f".repeat(64))),
+    );
     let files = vec![
         Entry {
             payload: "source/fixture.rs".into(),
@@ -58,7 +63,7 @@ fn fixture(workspace: &Path) -> (Payload, HostBuild, Value) {
         os_build: "guest-build".into(),
         arch: "arm64".into(),
         model: "VirtualMac-fixture".into(),
-        displays: json!([{"synthetic":true}]),
+        displays: json!([{"origin":"guest-coregraphics-metal","screens":[{"id":1,"width_px":6400,"height_px":3600,"width_pt":3200,"height_pt":1800}],"metal":{"name":"Synthetic Metal","registry_id":100}}]),
         fonts: [("/System/Library/Fonts/fixture.ttf".into(), "c".repeat(64))].into(),
         console_user: "admin".into(),
         on_console: true,
@@ -123,9 +128,12 @@ fn returned_bytes_receipt_and_host_build_bind_without_claiming_pixels_or_coverag
     )
     .unwrap();
     assert_eq!(captured.raw, root.join("raw"));
-    assert_eq!(captured.environment["host_build"]["os_build"], "host-build");
     assert_eq!(
-        captured.environment["guest_rendering"]["os_build"],
+        captured.environment["rendering"]["host_build"]["os_build"],
+        "host-build"
+    );
+    assert_eq!(
+        captured.environment["rendering"]["guest_rendering"]["os_build"],
         "guest-build"
     );
     assert!(!captured.raw.join("capture.json").exists());

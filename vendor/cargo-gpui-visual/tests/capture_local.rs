@@ -17,6 +17,7 @@ fn local_producer_is_sealed_and_drift_cancel_or_invalid_pixels_never_publish() {
         "none",
         "source",
         "environment",
+        "provenance",
         "cancel",
         "pixels",
         "producer",
@@ -67,6 +68,13 @@ fn local_producer_is_sealed_and_drift_cancel_or_invalid_pixels_never_publish() {
             },
             || {
                 probes += 1;
+                if failure == "provenance" {
+                    return cargo_gpui_visual::environment::partition(
+                        &json!({"layer":"gpui","os":"same","instance":probes}),
+                        json!({"id":"fixture"}),
+                        &["/instance".into()],
+                    );
+                }
                 Ok(json!({"layer":"gpui","probe":if failure=="environment" {probes} else {0}}))
             },
         );
