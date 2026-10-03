@@ -31,7 +31,7 @@ no Git lock or holder of the repository/GPUI Visual capture locks was found.
 
 | ID | Slice | Status | Worktree | Owner | Contract | Next gate |
 |---|---|---|---|---|---|---|
-| VISUAL-RUST | Standalone GPUI Visual consumer migration | `running` | main, activation base above | session `01a0f8f4` | [visual tooling](../roadmap/tasks/visual-snapshot-tooling.md) | Two fresh source-identical 66-image Tart captures verified: 28 approved references unchanged, 38 unapproved candidates. Rendering matches, provenance remains visible, seven withheld families keep coverage FAIL. Complete coverage, interactive/framing pilot, public cutover and stable aggregate remain open; latest checkpoint below |
+| VISUAL-RUST | Standalone GPUI Visual consumer migration | `running` | main, activation base above | session `01a0f8f4` | [visual tooling](../roadmap/tasks/visual-snapshot-tooling.md) | Two source-identical 66-image Tart captures verified; Patrick explicitly approved the additional38 references. Official acceptance preserves the original28 and environment; fresh stored-run reviews show66/66 exact. Seven withheld families keep coverage FAIL. Complete coverage, interactive/framing pilot, public cutover and stable aggregate remain open; latest checkpoint below |
 
 Historical reuse evidence is read-only Git/session metadata, not a takeover of
 `/Users/patwoz/dev/Personal/macos/bbr-visual-snapshots`: its five migration commits
@@ -2754,6 +2754,58 @@ endpoint guards, interactive/framing pilot, full application/native coverage, Py
 cutover and fresh canonical functional aggregate remain open. No full real-app
 E2E/performance aggregate or migration checkbox is claimed. New references still
 need explicit approval; historical approval covers only the original28.
+
+### Explicit application-state reference approval (2026-10-03)
+
+Patrick answered “ja” to accepting exactly the38 new images from
+`/Users/patwoz/dev/Personal/macos/bbr/reports/visual/app-states3-20261003-b/index.html`.
+On clean `main@329449861d836ca538e9f377e4e11b993184efe1`, the existing pinned
+90-file export was checked and its official CLI rebuilt through bounded mbx.
+Before acceptance, all1,526 current sources,66 original PNGs,124 report-sealed
+files and the original28 baseline images/records were independently verified.
+No capture, producer, environment probe, tool-source edit or VM operation occurs
+in this reference-only slice. Same sole writer; no agent, lane or publication.
+
+Official `accept-collection` succeeds with exactly38 explicit `browser:case` IDs
+and all seven exact `browser:base` withheld acknowledgements, **without environment
+adoption**. Its completed schema-2 journal names only browser. All38 stored PNGs
+match the approved originals byte-for-byte and point to capture
+`be24502243c33902768ed9d443591fde6a5d6f378bb703a6e90a9fbc0091644f`.
+The original28 PNGs, case/capture records and complete approved environment are
+unchanged. Historical report/seal bytes remain unchanged; only the official
+acceptance journal is added to the approved report. Baseline metadata SHA256:
+`593f2ad806c8065915c7b5247e74423bbe4250a05ffe3b69f878be5981488bc4` →
+`f324a93f983da0ff7518a9d8a07182332155e39b9c3f182eabac74f11dfc3d79`.
+
+New comparisons of the two still-valid existing captures:
+- `/Users/patwoz/dev/Personal/macos/bbr/reports/visual/app-states-accepted-20261003-a/index.html`
+- `/Users/patwoz/dev/Personal/macos/bbr/reports/visual/app-states-accepted-20261003-b/index.html`
+
+Both prove66/66 `same`, no image/comparison errors and exact rendering equality.
+Provenance differences stay visible. Collection exit1/FAIL remains solely the
+seven unchanged withheld families. These are **fresh stored-run comparisons, not
+new guest captures**. No unrecorded acceptance-time recapture or historical reseal.
+
+The first CLI invocation supplied unnecessary global `--repo`; collection routing
+rejected it before writes. Baseline hashes and absent journal were checked before
+removing only that flag. The exact same approved report supplies suite authorities;
+no guard was bypassed. Rejected invocation and successful attempt are retained.
+Measured tooling time: pinned build21.85s, acceptance1.700s, reviews2.021s/1.982s.
+Self-review verifies exact selection, journal, unchanged unselected references and
+environment, new PNG/source provenance, report integrity and still-red coverage.
+`RUST_TEST_THREADS=1 CARGO_NET_OFFLINE=true just visual-test` passes in237.48s,
+including Python, immutable upstream, consumer and explicit real-CLI acceptance
+fixtures. No production source changed; roadmap/index/whitespace and post-adoption
+source/report/baseline revalidation precede the local commit. No new product E2E
+or performance execution is claimed by this baseline-only operation.
+
+Evidence is preserved at
+`/Users/patwoz/dev/Personal/macos/bbr/reports/visual/evidence/app-states-acceptance-20261003/`;
+scratch originals at `/private/tmp/bbr-visual-states-acceptance`.
+No broader migration, Gallery/native coverage, public capture/Python cutover or
+canonical functional/performance completion is implied. Earlier “unapproved38”
+statements remain accurate historical checkpoints, superseded only by this explicit
+reference approval. No push or additional work is activated.
 
 ## Status vocabulary
 

@@ -150,6 +150,13 @@ Retained failures, exact identities, measured timings and evidence paths are in
 This intermediate result does not check broader migration completion boxes or
 claim a fresh canonical functional/performance aggregate.
 
+Patrick subsequently approved exactly the38 new images in report B. Official
+collection acceptance adds those references without environment adoption or
+rewriting the original28; all seven withheld families remain unchanged. New
+comparisons of both stored captures show66/66 exact. The [approval record](../../delivery/current.md#explicit-application-state-reference-approval-2026-10-03)
+binds the precise report/capture, unchanged historical records and verification.
+This approval does not close any broader migration or coverage requirement.
+
 ## Non-goals
 
 - No browser appearance or behavior changes, portal capture, native WKWebView
