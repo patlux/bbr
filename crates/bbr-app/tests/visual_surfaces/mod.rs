@@ -1,4 +1,7 @@
 //! Additional stills use actual application actions and windows, never Gallery.
+mod history;
+mod library;
+mod settings;
 use super::e2e_common::{deadline, Client, Instant};
 use bbr_persistence::{CommandHistoryEntry, Repository};
 use bbr_testkit::protocol::{HistoryInput, Request, SettingsInput, Snapshot};
@@ -77,6 +80,11 @@ fn save(
     settings: bool,
     before: Snapshot,
 ) {
+    let scroll_before = settings.then(|| {
+        client
+            .request(&Request::ScrollSettings { delta_y: 0 })
+            .expect("Settings scroll observation")
+    });
     let temporary = format!(
         "/tmp/bbr-surface-{case}-{appearance}-{}.png",
         std::process::id()
@@ -114,7 +122,11 @@ fn save(
         serde_json::to_value(&after.history).unwrap(),
         serde_json::to_value(&before.history).unwrap()
     );
-    assert_eq!(after.library.open, before.library.open);
+    assert_eq!(
+        serde_json::to_value(&after.library).unwrap(),
+        serde_json::to_value(&before.library).unwrap(),
+        "readback preserves exact Library state"
+    );
     assert_eq!(after.shell_modes.theme, appearance);
     let destination = output.join(format!("{case}--{appearance}.png"));
     assert!(!destination.exists(), "never overwrite surface capture");
@@ -125,7 +137,22 @@ fn save(
         .create_new(true)
         .open(metadata)
         .expect("fresh metadata");
-    serde_json::to_writer_pretty(file, &after).expect("write semantic evidence");
+    let mut metadata = serde_json::to_value(&after).unwrap();
+    if let Some(scroll) = scroll_before {
+        assert!(matches!(
+            scroll,
+            bbr_testkit::protocol::Response::SettingsScroll { .. }
+        ));
+        assert_eq!(
+            client
+                .request(&Request::ScrollSettings { delta_y: 0 })
+                .unwrap(),
+            scroll,
+            "readback preserves measured scroll state"
+        );
+        metadata["visual_settings_scroll"] = serde_json::to_value(scroll).unwrap();
+    }
+    serde_json::to_writer_pretty(file, &metadata).expect("write semantic evidence");
 }
 
 pub fn capture(client: &mut Client, output: &Path, appearance: &str) {
@@ -137,6 +164,13 @@ pub fn capture(client: &mut Client, output: &Path, appearance: &str) {
         .expect_err("closed Settings cannot capture the browser instead");
     assert_eq!(absent.code, "settings_closed");
     assert!(!Path::new(&absent_path).exists());
+    assert_eq!(
+        client
+            .send_ok(&Request::ScrollSettings { delta_y: 0 })
+            .unwrap_err()
+            .code,
+        "settings_closed"
+    );
     key(client, "cmd-y");
     let history = wait(client, |s| s.history.is_some());
     let page = history.history.as_ref().unwrap();
@@ -152,6 +186,7 @@ pub fn capture(client: &mut Client, output: &Path, appearance: &str) {
         .any(|id| id.starts_with("bbr-native-web-slot")));
     save(client, output, "history", appearance, false, history);
 
+    history::filters(client, output, appearance);
     key(client, "cmd-shift-backspace");
     let sheet = wait(client, |s| {
         s.history.as_ref().is_some_and(|h| h.clear.is_some())
@@ -177,6 +212,26 @@ pub fn capture(client: &mut Client, output: &Path, appearance: &str) {
     );
     client
         .send_ok(&Request::HistoryInput {
+            input: HistoryInput::ClearRangeMenu,
+        })
+        .unwrap();
+    let range = wait(client, |s| {
+        s.history
+            .as_ref()
+            .and_then(|h| h.clear.as_ref())
+            .is_some_and(|c| c.range_open)
+    });
+    save(
+        client,
+        output,
+        "history-clear-range-menu",
+        appearance,
+        false,
+        range,
+    );
+    key(client, "escape");
+    client
+        .send_ok(&Request::HistoryInput {
             input: HistoryInput::ClearCancel,
         })
         .expect("cancel without deleting data");
@@ -191,6 +246,39 @@ pub fn capture(client: &mut Client, output: &Path, appearance: &str) {
     assert_eq!(library.library.total, 0);
     assert!(library.library.rows.is_empty());
     save(client, output, "library-empty", appearance, false, library);
+    for (url, title) in [
+        ("https://docs.example.test/gpui", "GPUI documentation"),
+        (
+            "https://reading.example.test/browser",
+            "Browser architecture notes",
+        ),
+        (
+            "https://weekend.example.test/reading",
+            "Weekend reading list",
+        ),
+    ] {
+        client
+            .send_ok(&Request::SaveSavedPage {
+                url: url.into(),
+                title: title.into(),
+            })
+            .expect("seed through production Saved Pages authority without navigation");
+    }
+    let populated = wait(client, |s| {
+        s.library.total == 3 && s.library.rows.len() == 3
+    });
+    assert_eq!(populated.store.saved_pages_count, 3);
+    assert!(populated.library.selected.is_empty());
+    assert!(populated.library.collections.is_empty());
+    save(
+        client,
+        output,
+        "library-populated",
+        appearance,
+        false,
+        populated,
+    );
+    library::extended(client, output, appearance);
     client
         .send_ok(&Request::CloseSavedPagesLibrary)
         .expect("close Library");
@@ -204,6 +292,15 @@ pub fn capture(client: &mut Client, output: &Path, appearance: &str) {
         })
         .expect_err("Settings shares the confined path contract");
     assert_eq!(invalid.code, "invalid_capture_path");
+    for delta_y in [i32::MIN, -2001, 2001, i32::MAX] {
+        assert_eq!(
+            client
+                .send_ok(&Request::ScrollSettings { delta_y })
+                .unwrap_err()
+                .code,
+            "invalid_scroll"
+        );
+    }
     for pane in PANES {
         client
             .send_ok(&Request::SettingsInput {
@@ -225,8 +322,10 @@ pub fn capture(client: &mut Client, output: &Path, appearance: &str) {
             snapshot,
         );
     }
+    settings::extended(client, output, appearance);
     client
         .send_ok(&Request::CloseSettings)
         .expect("close actual Settings window");
     wait(client, |s| s.settings.is_none());
+    history::closed(client, output, appearance);
 }

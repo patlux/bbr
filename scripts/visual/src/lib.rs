@@ -50,10 +50,11 @@ impl Suite {
 }
 
 /// Required additional application stills, separate from the historical shell pairs.
-pub const BROWSER_SURFACES: [&str; 10] = [
+pub const BROWSER_SURFACES: [&str; 29] = [
     "history",
     "history-clear-data",
     "library-empty",
+    "library-populated",
     "settings-general",
     "settings-profiles",
     "settings-search",
@@ -61,6 +62,24 @@ pub const BROWSER_SURFACES: [&str; 10] = [
     "settings-downloads",
     "settings-appearance",
     "settings-shortcuts",
+    "library-collections",
+    "library-selection-single",
+    "library-selection-multiple",
+    "library-move-sheet",
+    "library-remove-sheet",
+    "library-collection-create",
+    "history-search",
+    "history-search-empty",
+    "history-clear-range-menu",
+    "history-recently-closed",
+    "settings-general-menu",
+    "settings-search-menu",
+    "settings-motion-menu",
+    "settings-profile-create",
+    "settings-profile-edit",
+    "settings-shortcuts-scroll-1",
+    "settings-shortcuts-scroll-2",
+    "settings-shortcuts-scroll-3",
 ];
 
 pub fn browser_cases() -> Vec<String> {

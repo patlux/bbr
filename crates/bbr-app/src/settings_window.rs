@@ -20,6 +20,8 @@ pub const SETTINGS_SIZE: [f32; 2] = [780.0, 620.0];
 pub struct SettingsView {
     app: Entity<BbrApp>,
     focus: gpui::FocusHandle,
+    #[cfg(feature = "visual-capture")]
+    pub(crate) scroll: gpui::ScrollHandle,
     _observe: Subscription,
 }
 
@@ -33,7 +35,11 @@ impl Render for SettingsView {
                 view.on_settings_event(event, Some(window), cx)
             });
         });
-        settings_surface(&model, &self.focus, events)
+        #[cfg(feature = "visual-capture")]
+        let observer = Some(&self.scroll);
+        #[cfg(not(feature = "visual-capture"))]
+        let observer = None;
+        settings_surface(&model, &self.focus, events, observer)
     }
 }
 
@@ -87,6 +93,8 @@ pub fn open(
                 SettingsView {
                     app: app.clone(),
                     focus,
+                    #[cfg(feature = "visual-capture")]
+                    scroll: gpui::ScrollHandle::new(),
                     _observe: observe,
                 }
             })

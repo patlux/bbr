@@ -891,16 +891,18 @@ pub(crate) fn dispatch(
         // Routed by `dispatch_u2` before this match (the §11.3 sidebar swipe
         // arms); reaching one here is a routing bug.
         #[cfg(feature = "visual-capture")]
-        Request::CaptureChrome { .. } | Request::CaptureSettings { .. } => {
+        Request::CaptureChrome { .. }
+        | Request::CaptureSettings { .. }
+        | Request::ScrollSettings { .. } => {
             unreachable!("visual capture requests route through dispatch_capture")
         }
         #[cfg(not(feature = "visual-capture"))]
-        Request::CaptureChrome { .. } | Request::CaptureSettings { .. } => {
-            Response::Error(Error::new(
-                "capture_unavailable",
-                "visual readback requires the explicit visual-capture feature",
-            ))
-        }
+        Request::CaptureChrome { .. }
+        | Request::CaptureSettings { .. }
+        | Request::ScrollSettings { .. } => Response::Error(Error::new(
+            "capture_unavailable",
+            "visual readback requires the explicit visual-capture feature",
+        )),
 
         Request::SwipeScroll { .. } | Request::SwipeCancel => {
             unreachable!("sidebar-swipe requests route through dispatch_u2")

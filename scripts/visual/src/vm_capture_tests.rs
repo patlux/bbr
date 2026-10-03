@@ -231,6 +231,21 @@ impl Fixture {
                 .save(raw.join("settings-general--light.png"))
                 .unwrap(),
             "settings-missing" => fs::remove_file(raw.join("settings-privacy--dark.png")).unwrap(),
+            "closed-missing" => {
+                fs::remove_file(raw.join("history-recently-closed--dark.png")).unwrap()
+            }
+            "scroll-dimensions" => image::RgbaImage::new(2160, 2814)
+                .save(raw.join("settings-shortcuts-scroll-3--light.png"))
+                .unwrap(),
+            "library-metadata-missing" => {
+                fs::remove_file(raw.join("library-selection-multiple--light.snapshot.json"))
+                    .unwrap()
+            }
+            "scroll-metadata-invalid" => fs::write(
+                raw.join("settings-shortcuts-scroll-2--dark.snapshot.json"),
+                "not json",
+            )
+            .unwrap(),
             "rgb" => image::RgbImage::new(2400, 2000).save(&image).unwrap(),
             "duplicate" => {
                 let p = raw.join("live-inventory.tsv");
@@ -304,7 +319,7 @@ fn fresh_selected_full_gallery_and_browser_reuse_upstream_seals_without_pixel_re
     for (suite, selected, count) in [
         (Suite::Gallery, true, 4),
         (Suite::Gallery, false, 4),
-        (Suite::Browser, false, 28),
+        (Suite::Browser, false, 66),
     ] {
         let f = Fixture::new(suite, selected);
         let run = f.run();
@@ -399,6 +414,10 @@ fn invalid_or_changed_return_never_gets_a_capture_seal() {
         (Suite::Browser, "rgb"),
         (Suite::Browser, "settings-dimensions"),
         (Suite::Browser, "settings-missing"),
+        (Suite::Browser, "closed-missing"),
+        (Suite::Browser, "scroll-dimensions"),
+        (Suite::Browser, "library-metadata-missing"),
+        (Suite::Browser, "scroll-metadata-invalid"),
     ] {
         let f = Fixture::new(suite, suite == Suite::Gallery);
         let run = f.run();
@@ -414,8 +433,10 @@ fn invalid_or_changed_return_never_gets_a_capture_seal() {
             "range" => "pages",
             "missing" | "extra" | "metadata" => "unexpected Gallery output",
             "sealed" | "inventory" | "sequences" => "must not supply",
-            "dimensions" | "settings-dimensions" => "dimensions",
-            "settings-missing" => "browser inventory differs",
+            "dimensions" | "settings-dimensions" | "scroll-dimensions" => "dimensions",
+            "settings-missing" | "closed-missing" => "browser inventory differs",
+            // Metadata regular-file validation precedes the aggregate inventory.
+            "library-metadata-missing" => "No such file or directory",
             "rgb" => "RGBA8",
             "duplicate" => "duplicate live case",
             "bytes" | "receipt" | "hardlink" => "invalid returned file",
@@ -423,7 +444,7 @@ fn invalid_or_changed_return_never_gets_a_capture_seal() {
             "symlink" => "Symlink path refused",
             "environment" | "scope" => "captured identity changed",
             "payload" => "source/payload changed",
-            "snapshot" => "expected ident",
+            "snapshot" | "scroll-metadata-invalid" => "expected ident",
             _ => unreachable!(),
         };
         let expected =

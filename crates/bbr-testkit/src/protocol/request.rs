@@ -1728,6 +1728,11 @@ pub enum Request {
     CaptureSettings {
         path: String,
     },
+    /// Visual-feature-only wheel dispatch to the real Settings content. Zero
+    /// observes without input; returns measured viewport/offset, never pixels.
+    ScrollSettings {
+        delta_y: i32,
+    },
     /// Full app snapshot.
     GetSnapshot,
     /// Force the effective production `ThemeMode` regardless of the host

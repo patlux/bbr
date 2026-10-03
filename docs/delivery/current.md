@@ -31,7 +31,7 @@ no Git lock or holder of the repository/GPUI Visual capture locks was found.
 
 | ID | Slice | Status | Worktree | Owner | Contract | Next gate |
 |---|---|---|---|---|---|---|
-| VISUAL-RUST | Standalone GPUI Visual consumer migration | `running` | main, activation base above | session `01a0f8f4` | [visual tooling](../roadmap/tasks/visual-snapshot-tooling.md) | Rendering/provenance correction, explicit metadata-only migration and two fresh 28-image Tart repeats verified; pixels and rendering compare exactly, provenance remains visible, coverage remains FAIL. Complete coverage, interactive/framing pilot, public cutover and stable aggregate remain open; latest checkpoint below |
+| VISUAL-RUST | Standalone GPUI Visual consumer migration | `running` | main, activation base above | session `01a0f8f4` | [visual tooling](../roadmap/tasks/visual-snapshot-tooling.md) | Two fresh source-identical 66-image Tart captures verified: 28 approved references unchanged, 38 unapproved candidates. Rendering matches, provenance remains visible, seven withheld families keep coverage FAIL. Complete coverage, interactive/framing pilot, public cutover and stable aggregate remain open; latest checkpoint below |
 
 Historical reuse evidence is read-only Git/session metadata, not a takeover of
 `/Users/patwoz/dev/Personal/macos/bbr-visual-snapshots`: its five migration commits
@@ -2625,6 +2625,135 @@ Command p95 failures remain open. No full verify/E2E/performance pass, broader
 migration checkbox, automatic reference acceptance or push. Total implementation/
 self-review time was not instrumented. Do not silently extend into other queue
 items or repeat unrelated aggregates to turn this bounded evidence into closeout.
+
+### Application-state extension activated (2026-10-03)
+
+Patrick's “ja lets go” authorizes the proposed real-app state extension, starting
+with populated Saved Pages, recently closed History and Settings menus/sheets/
+scroll positions. Clean base `main@3a60ef367120aa14430ec725632a6021c8e22bee`;
+same sole local visual writer. Entire delivery queue reread at restoration.
+Both capture locks have no observed holder; no foreign process was signalled.
+No workflow/subagent/new lane, foreign worktree, publication or baseline approval.
+
+The tooling packet owns the bounded matrix and gates. Runnable now: one populated
+Saved Pages Light/Dark pair using existing production save actions and real views,
+then a fresh supervised Tart proof before extending the matrix. Other product
+queue items, Gallery interaction/framing and public/Python cutover are outside
+this request; downstream expanded stills depend on that first runtime proof.
+Territory is the existing capture test/helpers, consumer browser catalog/contracts,
+necessary visual-only testkit support and documentation, serial on this worktree.
+Shared integration points have one writer and no merge conflict/parallel lane.
+The approved 28 PNGs and all historical reports stay unchanged. New images are
+review candidates only; coverage remains incomplete and independently red.
+
+### Application-state extension verified (2026-10-03)
+
+The bounded real-app matrix now contains **66 Light/Dark PNGs**: all 28 approved
+references remain byte-identical, with **38 new unapproved candidates**. A 30-image
+populated-Library pilot passed before expansion. Saved Pages adds collections,
+single/multiple selection, move/removal sheets and a cancelled collection draft.
+History adds real keyboard filtering, empty results, Clear Data range menu and two
+actually opened/closed fixed data documents. Settings adds General/Search/Motion
+menus, cancelled New/Edit Profile sheets and three overlapping Shortcuts viewports.
+No product design, settings choice, profile deletion or real user data is changed.
+
+The authenticated visual-only wheel request draws the actual Settings window,
+dispatches production GPUI wheel input at its measured content center, then reads
+its existing Div's ScrollHandle. Normal rendering supplies no observer. Zero only
+observes; closed/unmeasured Settings and out-of-bound deltas fail. Measured viewport
+is `[0,96,780,524]`, scroll extent1002, offsets0/−400/−800/−1002, reset0. Every
+capture preserves its semantic and scroll state. This proves that finite scroll
+journey, not arbitrary nested paint, accessibility or typography completeness.
+
+Final same-source evidence:
+- Reports: `/Users/patwoz/dev/Personal/macos/bbr/reports/visual/app-states3-20261003-a/index.html`
+  and `/Users/patwoz/dev/Personal/macos/bbr/reports/visual/app-states3-20261003-b/index.html`.
+- Payload `fd460773f4b2c1cdd583a2665bb267a45a0c1e7accc6752c25c4726d53de6d66`,
+  **1,526 identical current source hashes**, same cases/policy and rendering identity.
+  Capture A `17de882c8e143cff90012bf0dee5c289fcfd6de3b22f79196e80fdaccd898c85`;
+  B `be24502243c33902768ed9d443591fde6a5d6f378bb703a6e90a9fbc0091644f`.
+- All66 actual PNG hashes match across A/B. Every original/reference/report seal
+  is rechecked, including124 sealed report files per run. Zero comparison errors
+  or rendering drift;28 `same`,38 `missing-baseline`, baseline writes false.
+  Metal registry IDs4294967743/4294967710 remain explicit run provenance.
+- Independent coverage still fails on seven named families: remaining transients,
+  Library, History, Settings, portals, permissions/native dialogs and welcome/About.
+  Native WebKit/AppKit exclusions remain; no synthesized page or portal pixels.
+- Both clones repeat the existing frozen-payload/offline-runtime/private-NAT/key-only
+  SSH route and original identity checks. Final independent resource rechecks cover
+  all **six** transports (pilot, failed expansion, expanded2 A/B, expanded3 A/B):
+  clones/keys/disks/owned processes absent and former SSH unreachable. No host
+  producer, Golden Image mutation, foreign-worktree change or new exposure.
+
+Measured tooling times: pilot prepare493.03s/caller319.544s; final expanded3
+prepare102.48s, A caller114.365s/outer116.80s, B caller109.192s/outer110.55s.
+Final integrity/cleanup audit13.95s. These are not product-performance measurements;
+implementation and self-review wall time was not instrumented.
+
+Retained failures and narrow corrections:
+- Invalid integer Page metadata was replaced by explicit Shortcuts still moments,
+  never guessed page ranges. The expanded guest exposed the exact production
+  primary-tab recency increment after real close/reactivation; expected `last_used`
+  advances3 while all other tab/session assertions remain. Data-document spaces
+  are percent-encoded to satisfy persistence validation. Failed clone cleanup is
+  independently verified, not hidden by subsequent success.
+- The full gate caught the retained Python inventory still at28; its compatibility
+  inventory now requires66. Missing-metadata negative tests assert the actual
+  earlier regular-file failure, not the later aggregate inventory error. No guard
+  or assertion was weakened. The first focused app command used nonexistent
+  `--lib`; corrected `--bin bbr` executes the intended one test (not zero).
+- Expanded2 PNGs also match all66 final images, supporting prior pixel inspection
+  reuse only. Its different source seal is retained as historical evidence; source
+  changes triggered fresh expanded3 preparation/captures, never stale resealing.
+
+Verification:
+- `RUST_TEST_THREADS=1 CARGO_NET_OFFLINE=true just visual-test`: pass,219.80s;
+  171 Python discoveries (170 pass, one integration skip separately passed),
+  immutable upstream188 top-level passes plus nested fixtures, consumer116
+  top-level passes plus nested fixtures; two normally ignored inert protocol
+  fixtures are explicitly exercised. Injected failure transcripts are retained.
+- Bounded mbx protocol17/17 and app capture-path1/1 pass; strict all-target Clippy
+  passes for visual-capture, testkit, normal app/UI and the consumer,98.96s combined.
+- Fresh full **mbx-equivalent `just verify` passes**,79.25s, including the unchanged
+  Command50ms benchmark, workspace checks/tests/Clippy, roadmap, UI boundaries and
+  49 script tests14.449s. The external recipe substitutes only compiler Cargo calls
+  with mbx, preserving targets/order/budgets. Earlier aggregate p95 failures remain
+  historical evidence; this pass is not canonical real-app performance acceptance.
+- Final source/protected-input audit confirms immutable upstream/export90 files at
+  `e3050c78cc1347ea0164218d7bcd0d74addcdb8a`, unchanged GPUI/dependency graph,
+  all29 baseline-store files unchanged and exact metadata hash
+  `593f2ad806c8065915c7b5247e74423bbe4250a05ffe3b69f878be5981488bc4`.
+
+All new Light/Dark original state pairs were visually inspected across proven
+byte-identical runs. Existing duplicate-position Library selection-box appearance
+is retained, not repaired or accepted as a side effect of tooling work. Original
+HTML B was inspected in the existing managed Chrome task tab at1672×963 and390×844.
+All66 unique nonempty image sources load at their exact original dimensions; the
+initial244 unloaded elements were all lazy.82 navigation rows show no measured
+label overflow/overlap, broken anchors, duplicate IDs or horizontal overflow.
+A navigation/decode batch timed out without evidence output; a separate readback
+and screenshot confirm the final Dark Shortcuts anchor and image are visible.
+The red verdict, missing references and withheld coverage stay visible. Viewport
+and report-top position were restored; report files/styles were never edited.
+
+Logs, retained failures, safe transport/cleanup records, original report screenshots
+and hash inventory are preserved at
+`/Users/patwoz/dev/Personal/macos/bbr/reports/visual/evidence/app-states-20261003/`.
+Scratch originals remain at `/private/tmp/bbr-visual-states`; the evidence bundle
+excludes keys, known-host files, payload executables and runtime archives. Final
+format, roadmap/index-roadmap and whitespace checks precede local commit; only
+documentation changes after source-bound captures. Self-review checked feature
+boundaries, real-input/real-window routing, exact state preservation, independent
+inventory/negative cases, source/rendering/provenance separation and no acceptance.
+No independent agent was requested or used.
+
+Queue/ownership audit: same sole local writer on the recorded base; no other lane,
+workflow, subagent, push or publication is activated. This is a verified intermediate
+capture-tooling slice, **not stable migration closeout**. Public capture and Gallery
+endpoint guards, interactive/framing pilot, full application/native coverage, Python
+cutover and fresh canonical functional aggregate remain open. No full real-app
+E2E/performance aggregate or migration checkbox is claimed. New references still
+need explicit approval; historical approval covers only the original28.
 
 ## Status vocabulary
 

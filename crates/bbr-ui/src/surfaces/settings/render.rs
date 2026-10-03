@@ -17,6 +17,7 @@ pub fn settings_surface(
     model: &SettingsModel,
     focus: &gpui::FocusHandle,
     events: SettingsCallback,
+    scroll_observer: Option<&gpui::ScrollHandle>,
 ) -> impl IntoElement {
     let theme = &model.theme;
     let p = theme.palette;
@@ -191,6 +192,9 @@ pub fn settings_surface(
                 .flex_1()
                 .min_h_0()
                 .overflow_y_scroll()
+                // Only the visual harness supplies an observer. It tracks the
+                // real Div/wheel state; ordinary rendering is unchanged.
+                .when_some(scroll_observer, |el, handle| el.track_scroll(handle))
                 .px(px(40.0))
                 .py(px(24.0))
                 .flex()

@@ -108,6 +108,48 @@ and coverage stays red. Every historical file except the authorized environment
 metadata is unchanged. This closes the requested correction only, not any broader
 migration checkbox, full application/native coverage or stable aggregate gate.
 
+### Application-state extension (authorized 2026-10-03)
+
+Patrick's “ja lets go” activates populated Saved Pages, recently closed History
+and additional Settings states. Start from `main@3a60ef367120aa14430ec725632a6021c8e22bee`.
+Retain the existing 28 stills and references. First prove one additional populated
+Saved Pages pair end to end in supervised Tart, then expand deterministic fixtures:
+collections, single/multiple selection and cancel-only move/removal sheets; History
+recently closed, search/empty results and range menu; Settings select menus, profile
+sheets (cancel only) and additional Shortcuts scroll positions. Use production
+state/actions/views, not Gallery replicas. Add a narrowly feature-gated Settings
+input/geometry observation only if the existing harness cannot prove real scrolling.
+
+Own only capture fixtures, required/withheld browser inventory, their contracts,
+necessary authenticated visual-only harness seams and supporting documentation.
+No production appearance or behavior changes, other worktree, portable vendor
+patch, host GUI, new runtime/exposure route or baseline acceptance. New PNGs remain
+unapproved. Preserve exact dimensions, RGBA8, rendering identity, provenance,
+source binding, original report seals and independent cleanup checks. Replace the
+catch-all coverage prose with explicit remaining families without dropping any
+requirement or claiming all-state/native coverage.
+
+Evidence gates: negative-first independent catalog/output contracts; bounded mbx
+feature Clippy/format; smallest actual optimized guest capture early; complete
+expanded Light/Dark capture and fresh same-source repeat; exact preserved-reference
+and repeat checks, original PNG/HTML review, source/report/teardown revalidation,
+portable visual suite and roadmap. This is another intermediate tooling slice,
+not stable migration closeout or a product-performance gate. Keep failed attempts.
+Stop on an unresolved runtime/integrity/determinism failure rather than weakening
+checks, resealing stale output, adopting references or falling back to the host.
+
+The bounded extension is verified: a30-image pilot preceded the66-image matrix;
+two final source-identical Tart captures match all66 PNGs and the exact rendering
+identity. The28 approved references remain unchanged;38 new candidates are not
+accepted. Real wheel input covers the measured Shortcuts extent with overlapping
+viewports, not all nested paint. Seven explicit withheld families keep coverage
+red. Portable visual contracts, feature/normal Clippy, current non-GUI verify,
+original PNG/HTML inspection and independent source/report/cleanup checks pass.
+Retained failures, exact identities, measured timings and evidence paths are in
+[Current delivery](../../delivery/current.md#application-state-extension-verified-2026-10-03).
+This intermediate result does not check broader migration completion boxes or
+claim a fresh canonical functional/performance aggregate.
+
 ## Non-goals
 
 - No browser appearance or behavior changes, portal capture, native WKWebView

@@ -151,6 +151,68 @@ fn authored_catalogs_cover_required_pairs_and_keep_unproven_coverage_visible() {
 }
 
 #[test]
+fn populated_library_is_required_independently_of_producer_output() {
+    let repo = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let browser: Catalog =
+        store::read_json(&repo.join("scripts/visual/catalogs/browser.json")).unwrap();
+    let entry = browser
+        .snapshots
+        .iter()
+        .find(|s| s.base == "library-populated")
+        .expect("populated production Saved Pages must be an independent requirement");
+    assert_eq!(entry.state, State::Required);
+    for base in [
+        "library-collections",
+        "library-selection-single",
+        "library-selection-multiple",
+        "library-move-sheet",
+        "library-remove-sheet",
+        "library-collection-create",
+        "history-search",
+        "history-search-empty",
+        "history-clear-range-menu",
+        "history-recently-closed",
+        "settings-general-menu",
+        "settings-search-menu",
+        "settings-motion-menu",
+        "settings-profile-create",
+        "settings-profile-edit",
+        "settings-shortcuts-scroll-1",
+        "settings-shortcuts-scroll-2",
+        "settings-shortcuts-scroll-3",
+    ] {
+        assert!(
+            browser
+                .snapshots
+                .iter()
+                .any(|s| s.base == base && s.state == State::Required),
+            "{base}"
+        );
+    }
+    for base in [
+        "remaining-app-surfaces",
+        "library-remaining-states",
+        "history-remaining-states",
+        "settings-remaining-states",
+        "portal-surfaces",
+        "permission-surfaces",
+        "welcome-about",
+    ] {
+        let entry = browser
+            .snapshots
+            .iter()
+            .find(|s| s.base == base)
+            .expect("explicit missing family");
+        assert_eq!(entry.state, State::Withheld);
+        assert!(!entry.reason.as_ref().unwrap().is_empty());
+    }
+    assert_eq!(browser_cases().len(), 66);
+    for mode in ["light", "dark"] {
+        assert!(browser_cases().contains(&format!("library-populated--{mode}")));
+    }
+}
+
+#[test]
 fn newly_registered_gallery_stories_remain_explicitly_withheld_until_audited() {
     let repo = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
     let gallery: Catalog =

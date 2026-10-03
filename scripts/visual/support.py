@@ -20,10 +20,17 @@ CASES = tuple(
     for appearance in ("light", "dark")
 ) + tuple(
     f"{surface}--{appearance}"
-    for surface in ("history", "history-clear-data", "library-empty",
+    for surface in ("history", "history-clear-data", "library-empty", "library-populated",
                     "settings-general", "settings-profiles", "settings-search",
                     "settings-privacy", "settings-downloads", "settings-appearance",
-                    "settings-shortcuts")
+                    "settings-shortcuts", "library-collections", "library-selection-single",
+                    "library-selection-multiple", "library-move-sheet", "library-remove-sheet",
+                    "library-collection-create", "history-search", "history-search-empty",
+                    "history-clear-range-menu", "history-recently-closed",
+                    "settings-general-menu", "settings-search-menu", "settings-motion-menu",
+                    "settings-profile-create", "settings-profile-edit",
+                    "settings-shortcuts-scroll-1", "settings-shortcuts-scroll-2",
+                    "settings-shortcuts-scroll-3")
     for appearance in ("light", "dark")
 )
 

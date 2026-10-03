@@ -20,6 +20,9 @@ pub(crate) fn dispatch_capture(
     app: &Entity<BbrApp>,
     cx: &mut App,
 ) -> Option<Response> {
+    if let Request::ScrollSettings { delta_y } = req {
+        return Some(scroll_settings(*delta_y, app, cx));
+    }
     let path = match req {
         Request::CaptureChrome { path } | Request::CaptureSettings { path } => path,
         _ => return None,
@@ -59,6 +62,67 @@ pub(crate) fn dispatch_capture(
         .map(|()| Response::Ok)
         .unwrap_or_else(|message| Response::Error(Error::new("capture_failed", message))),
     )
+}
+
+fn scroll_settings(delta_y: i32, app: &Entity<BbrApp>, cx: &mut App) -> Response {
+    if !(-2000..=2000).contains(&delta_y) {
+        return Response::Error(Error::new(
+            "invalid_scroll",
+            "wheel delta exceeds bounded Settings input",
+        ));
+    }
+    let Some(handle) = app.read(cx).settings.read().window else {
+        return Response::Error(Error::new(
+            "settings_closed",
+            "open Settings before wheel input",
+        ));
+    };
+    let result = handle
+        .update(cx, |view, _, _| view.scroll.clone())
+        .and_then(|scroll| {
+            gpui::AnyWindowHandle::update(handle.into(), cx, |_root, window, cx| {
+                // Draw without leasing SettingsView, exactly like readback above.
+                let _clear = window.draw(cx);
+                let bounds = scroll.bounds();
+                if bounds.size.width <= gpui::px(0.0) || bounds.size.height <= gpui::px(0.0) {
+                    return Response::Error(Error::new(
+                        "settings_scroll_unmeasured",
+                        "no rendered content viewport",
+                    ));
+                }
+                if delta_y != 0 {
+                    window.dispatch_event(
+                        gpui::PlatformInput::ScrollWheel(gpui::ScrollWheelEvent {
+                            position: bounds.center(),
+                            delta: gpui::ScrollDelta::Pixels(gpui::point(
+                                gpui::px(0.0),
+                                gpui::px(delta_y as f32),
+                            )),
+                            modifiers: gpui::Modifiers::default(),
+                            touch_phase: gpui::TouchPhase::Moved,
+                        }),
+                        cx,
+                    );
+                    let _clear = window.draw(cx);
+                }
+                let offset = scroll.offset();
+                let max = scroll.max_offset();
+                let bounds = scroll.bounds();
+                Response::SettingsScroll {
+                    offset: [offset.x.into(), offset.y.into()],
+                    max_offset: [max.x.into(), max.y.into()],
+                    viewport: [
+                        bounds.origin.x.into(),
+                        bounds.origin.y.into(),
+                        bounds.size.width.into(),
+                        bounds.size.height.into(),
+                    ],
+                }
+            })
+        });
+    result.unwrap_or_else(|error| {
+        Response::Error(Error::new("settings_scroll_failed", error.to_string()))
+    })
 }
 
 fn valid_capture_path(path: &Path) -> bool {

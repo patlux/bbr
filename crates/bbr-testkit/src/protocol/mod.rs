@@ -192,6 +192,12 @@ pub enum Response {
     /// and `Remove Bookmark` for the probed URL through the one app-owned
     /// command authority, without mutating source state.
     SavedPageAvailability { can_save: bool, can_remove: bool },
+    /// Measured Settings Div scroll state after a production draw.
+    SettingsScroll {
+        offset: [f32; 2],
+        max_offset: [f32; 2],
+        viewport: [f32; 4],
+    },
     /// Failure carrying a human-readable reason.
     Error(Error),
 }
@@ -495,6 +501,23 @@ mod tests {
                 .unwrap(),
             request
         );
+    }
+
+    #[test]
+    fn settings_wheel_observation_has_exact_wire_shape() {
+        let request = Request::ScrollSettings { delta_y: -400 };
+        let value = json!({ "ScrollSettings": { "delta_y": -400 } });
+        assert_eq!(serde_json::to_value(&request).unwrap(), value);
+        assert_eq!(serde_json::from_value::<Request>(value).unwrap(), request);
+        let response = Response::SettingsScroll {
+            offset: [0.0, -400.0],
+            max_offset: [0.0, 1134.0],
+            viewport: [0.0, 96.0, 780.0, 524.0],
+        };
+        let value = json!({ "SettingsScroll": { "offset": [0.0, -400.0],
+            "max_offset": [0.0, 1134.0], "viewport": [0.0, 96.0, 780.0, 524.0] } });
+        assert_eq!(serde_json::to_value(&response).unwrap(), value);
+        assert_eq!(serde_json::from_value::<Response>(value).unwrap(), response);
     }
 
     #[test]
