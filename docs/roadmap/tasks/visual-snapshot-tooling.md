@@ -205,10 +205,50 @@ contains the exact selection, capture/journal identities and fresh verification.
 This reference-only approval does not accept the uncommitted implementation or
 resolve its recorded Command maximum-latency failure and broader migration gates.
 
+### Serial Palette closeout → Find → Downloads → Peek (authorized 2026-10-03)
+
+Patrick activated this sequence with “lets goal”. First assess the recorded
+Command benchmark and commit the coherent Palette capture intermediate slice
+when its relevant checks are proven. Source/dependency assessment confirms that
+the dependency-free benchmark and its build configuration are byte-identical to
+the last passing base; it never links the app/testkit/capture seam. The recorded
+maximum failures remain open, with no proven load attribution or further unchanged
+retry. Relevant protocol/capture/Clippy/visual gates and two source-equal Tart runs
+support the intermediate commit, not stable aggregate or migration acceptance.
+Details: [Palette closeout](../../delivery/current.md#palette-intermediate-closeout-and-serial-continuation-2026-10-03).
+
+Next bounded Find matrix: opened with empty query, query with actual WebKit matches,
+and query without matches, each Light/Dark. Use an isolated deterministic local
+page, actual production Cmd-F/input and typed find readiness/counts. Read the real
+production Find child renderer only; never composite the native webpage or parent.
+First prove the smallest opened pair through the existing frozen-payload/offline
+Tart route before expanding the query matrix. Keep exact geometry/transparency,
+closed/wrong-presentation/path refusal, feature-off behavior, semantic preservation
+and independent required/withheld coverage. A narrowly authenticated visual-only
+readback is allowed if required; no product lifecycle/rendering change.
+
+After Find, define each minimally meaningful Downloads and Peek matrix from actual
+production capabilities before implementation, and prove its smallest real capture
+before expansion. No synthetic download engine, Gallery page stand-in or fabricated
+native pixels. A necessary product change beyond observation/fixture scope is a
+blocker for that slice, not permission to rewrite the product.
+
+For each expanded matrix: two independent same-source Tart captures, exact repeat
+and preserved72-reference checks, real PNG/HTML inspection, original payload/build/
+source binding and independent resource cleanup; negative-first protocol/catalog/
+output tests, feature-on/off strict Clippy, serial offline visual contracts,
+format/roadmap and the applicable intermediate/stable gates. Preserve historical
+reports/seals and all72 approved reference bytes/records/environment. New images
+remain candidates pending explicit approval. Same sole local writer, no subagents,
+new worktrees, host GUI, exposure change, publication or upstream/GPUI pin change.
+Stop on a genuine unresolved runtime/integrity/determinism or relevant-gate failure
+with retained evidence and the minimal prerequisite; do not manufacture a permission
+blocker or treat an agent-authored precaution as a user restriction.
+
 ## Non-goals
 
 - No browser appearance or behavior changes, portal capture beyond the bounded
-  Command Palette child-window follow-up above, native WKWebView
+  Command Palette/Find/Downloads/Peek follow-ups above, native WKWebView
   pixels, AppKit traffic-light pixels, animation-frame or full UI-state matrix.
 - No renderer helper dependency, GPUI migration, registry publication, server,
   browser launch, automatic baseline acceptance, tolerance or masking.
@@ -239,7 +279,7 @@ second, followed by fresh captures and an explicit baseline review.
 Use the real optimized app with isolated test profiles and real WKWebViews.
 Keep capture behind visual-capture; no production runtime capture API. The
 bounded application-surface follow-ups may add only the explicit Settings-window
-and Command Palette child-window testkit readbacks described above.
+and production child-window testkit readbacks described above.
 Drive readiness through typed state and deadlines, never pixel stability or
 fixed sleeps. Preserve mandatory functional E2E and performance budgets.
 All compiler commands use mbx. GUI/Gallery/browser captures execute only in

@@ -892,12 +892,14 @@ pub(crate) fn dispatch(
         // arms); reaching one here is a routing bug.
         #[cfg(feature = "visual-capture")]
         Request::CaptureChrome { .. }
+        | Request::CaptureCommandPalette { .. }
         | Request::CaptureSettings { .. }
         | Request::ScrollSettings { .. } => {
             unreachable!("visual capture requests route through dispatch_capture")
         }
         #[cfg(not(feature = "visual-capture"))]
         Request::CaptureChrome { .. }
+        | Request::CaptureCommandPalette { .. }
         | Request::CaptureSettings { .. }
         | Request::ScrollSettings { .. } => Response::Error(Error::new(
             "capture_unavailable",

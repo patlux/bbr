@@ -1,6 +1,7 @@
 //! Production-chrome PNG producer for the shared cargo-gpui-visual comparator.
 //! Real optimized app, real WKWebViews, fresh profiles and typed readiness.
-//! Native WebKit/AppKit/portal pixels are deliberately not composited.
+//! Native WebKit/AppKit pixels are excluded. Command Palette stills read only
+//! the actual transparent portal child; no layers are composited.
 //! `just visual-check` sets the binary/output and takes the host GUI lock.
 //! Pixel comparison is a separate regression gate, never synchronization.
 
@@ -37,6 +38,12 @@ fn ordinary_current_data_capture() {
     for appearance in [ThemeModeOverride::Light, ThemeModeOverride::Dark] {
         capture(CaptureKind::Ordinary, appearance);
     }
+}
+
+#[test]
+#[ignore = "visual evidence: optimized app and Tart guest only"]
+fn command_palette_production_child_capture() {
+    visual_surfaces::command::capture();
 }
 
 #[derive(Clone, Copy)]

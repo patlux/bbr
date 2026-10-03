@@ -1723,6 +1723,12 @@ pub enum Request {
     CaptureChrome {
         path: String,
     },
+    /// Read only the existing centered Command Palette's portal-child scene.
+    /// Visual-feature-only; preserves transparency, never composites the parent
+    /// or native webpage and refuses closed/other portal presentations.
+    CaptureCommandPalette {
+        path: String,
+    },
     /// Read the existing Settings window's production GPUI scene. Requires
     /// visual-capture; never opens a window and accepts only a direct /tmp PNG.
     CaptureSettings {

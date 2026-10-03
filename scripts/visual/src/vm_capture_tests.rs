@@ -231,6 +231,16 @@ impl Fixture {
                 .save(raw.join("settings-general--light.png"))
                 .unwrap(),
             "settings-missing" => fs::remove_file(raw.join("settings-privacy--dark.png")).unwrap(),
+            "palette-missing" => {
+                fs::remove_file(raw.join("command-palette-open--dark.png")).unwrap()
+            }
+            "palette-dimensions" => image::RgbaImage::new(1560, 1240)
+                .save(raw.join("command-palette-actions-match--light.png"))
+                .unwrap(),
+            "palette-metadata-missing" => {
+                fs::remove_file(raw.join("command-palette-actions-empty--dark.snapshot.json"))
+                    .unwrap()
+            }
             "closed-missing" => {
                 fs::remove_file(raw.join("history-recently-closed--dark.png")).unwrap()
             }
@@ -319,7 +329,7 @@ fn fresh_selected_full_gallery_and_browser_reuse_upstream_seals_without_pixel_re
     for (suite, selected, count) in [
         (Suite::Gallery, true, 4),
         (Suite::Gallery, false, 4),
-        (Suite::Browser, false, 66),
+        (Suite::Browser, false, 72),
     ] {
         let f = Fixture::new(suite, selected);
         let run = f.run();
@@ -415,6 +425,9 @@ fn invalid_or_changed_return_never_gets_a_capture_seal() {
         (Suite::Browser, "settings-dimensions"),
         (Suite::Browser, "settings-missing"),
         (Suite::Browser, "closed-missing"),
+        (Suite::Browser, "palette-missing"),
+        (Suite::Browser, "palette-dimensions"),
+        (Suite::Browser, "palette-metadata-missing"),
         (Suite::Browser, "scroll-dimensions"),
         (Suite::Browser, "library-metadata-missing"),
         (Suite::Browser, "scroll-metadata-invalid"),
@@ -433,10 +446,14 @@ fn invalid_or_changed_return_never_gets_a_capture_seal() {
             "range" => "pages",
             "missing" | "extra" | "metadata" => "unexpected Gallery output",
             "sealed" | "inventory" | "sequences" => "must not supply",
-            "dimensions" | "settings-dimensions" | "scroll-dimensions" => "dimensions",
-            "settings-missing" | "closed-missing" => "browser inventory differs",
+            "dimensions" | "settings-dimensions" | "scroll-dimensions" | "palette-dimensions" => {
+                "dimensions"
+            }
+            "settings-missing" | "closed-missing" | "palette-missing" => {
+                "browser inventory differs"
+            }
             // Metadata regular-file validation precedes the aggregate inventory.
-            "library-metadata-missing" => "No such file or directory",
+            "library-metadata-missing" | "palette-metadata-missing" => "No such file or directory",
             "rgb" => "RGBA8",
             "duplicate" => "duplicate live case",
             "bytes" | "receipt" | "hardlink" => "invalid returned file",

@@ -31,7 +31,7 @@ no Git lock or holder of the repository/GPUI Visual capture locks was found.
 
 | ID | Slice | Status | Worktree | Owner | Contract | Next gate |
 |---|---|---|---|---|---|---|
-| VISUAL-RUST | Standalone GPUI Visual consumer migration | `running` | main, activation base above | session `01a0f8f4` | [visual tooling](../roadmap/tasks/visual-snapshot-tooling.md) | Exactly six Command Palette images explicitly approved and adopted; both stored captures now compare72/72 exact. Prior66 references, rendering environment and historical evidence preserved. Reference-only verification passes; capture implementation remains uncommitted, and the unchanged50ms Command maximum still fails its recorded aggregate/isolated checks. Seven withheld families, complete coverage, public cutover and stable aggregate remain open; latest checkpoint below |
+| VISUAL-RUST | Standalone GPUI Visual consumer migration | `running` | main, activation base above | session `01a0f8f4` | [visual tooling](../roadmap/tasks/visual-snapshot-tooling.md) | Palette capture implementation settled as a verified intermediate slice;72 approved references and historical evidence preserved. Benchmark sources/config match the last passing base and have no dependency on the capture seam; both recorded50ms maximum failures remain unresolved, not reclassified as passes. Patrick activated serial Find → Downloads → Peek, each pilot-first with two same-source runs and no automatic adoption. Seven withheld families, public cutover and stable aggregate remain open; latest checkpoint below |
 
 Historical reuse evidence is read-only Git/session metadata, not a takeover of
 `/Users/patwoz/dev/Personal/macos/bbr-visual-snapshots`: its five migration commits
@@ -2981,6 +2981,57 @@ acceptance. Roadmap/index/whitespace and final adoption/comparison integrity che
 precede the reference-only local commit. The source-bound capture implementation
 is deliberately not staged with these approved references; its bytes are preserved.
 No migration checkbox, stable-slice completion, benchmark repair or push is implied.
+
+### Palette intermediate closeout and serial continuation (2026-10-03)
+
+Patrick activated “lets goal” for Palette closeout followed by Find, Downloads
+and Peek, serially. Starting `main@df136e6b46ccc31b0065884b6b9dea7c64d1256c`:
+12 modified tracked implementation files plus the owned Command fixture, empty
+index and no index lock. Complete delivery queue reread; unrelated mbx processes
+belong to other projects and remain untouched. One local writer, no additional
+lane/workflow/subagent, foreign-worktree access or publication. The older blanket
+“red aggregate means no implementation commit” stop is superseded by this explicit
+intermediate-slice decision, not by a weakened gate or a claimed benchmark pass.
+
+Benchmark assessment checks every tracked Command source/test and the root
+manifest/lock/config/recipe against last passing `329449861d836ca538e9f377e4e11b993184efe1`:
+all bytes match. The benchmark's crate has no dependencies; its timed body calls
+only core Query/rank with a prebuilt500-tab/10,000-history corpus, not GPUI, app,
+testkit or capture code. Recorded aggregate has2/400 samples over50ms; isolated
+has13/400. Most are query-index7 (`example.com`), but isolated outliers also occur
+at indices2/3/5. Both maximum failures remain valid. This establishes source and
+dependency separation, **not** host-load causation, a product-performance pass or
+proof that all possible build/runtime conditions were identical. No further
+benchmark rerun, workload termination or Command optimization is performed.
+
+Self-review of the complete pending diff confirms real child routing, released
+app/root leases before draw, exact presentation/path refusal, feature-off rejection,
+deterministic production state and before/after invariants. The already retained
+same-source Tart72/72 repeats directly execute the affected real-app capture test;
+protocol18/18, capture-path1/1, feature/normal/consumer strict Clippy and serial
+visual contracts pass on the unchanged implementation. The newer adoption gate
+also passed all171 Python discoveries (one separately passing integration),188
+upstream and117 consumer top-level tests. These are relevant intermediate gates;
+no fresh canonical functional aggregate, performance gate or stable handoff is
+claimed. Failed attempts and both aggregate/isolated benchmark logs stay intact.
+
+Fresh read-only revalidation checks all1,527 captured sources, both72-image runs,
+20 historical collection directories,218 sealed files in each accepted report,
+72 approved references and the immutable90-file export. Baseline metadata remains
+`d9b23b6161cabf9b84525c3392d5f70c86a8a36fc6662783efc476112bef649a`.
+The119-file implementation and36-file adoption evidence inventories rehash exactly.
+Assessment/check outputs are under `/private/tmp/bbr-visual-palette-closeout`;
+original evidence bundles are unchanged. Final format/roadmap/index/whitespace
+checks precede the local coherent implementation commit. No captured source was
+edited during this closeout, so no stale image is resealed or represented as fresh.
+
+Scheduling: Find is next, first one production opened/empty pair, then match and
+no-match Light/Dark only after real Tart proof. Downloads and Peek wait for their
+own bounded matrices and runtime dependency assessment. Existing72 references stay
+unchanged; new images remain candidates. Full application/native coverage, Gallery
+interaction/framing, public capture/Python cutover and stable aggregate remain open.
+No broader checkbox is completed. Assessment time is not product performance;
+implementation/review wall time was not instrumented.
 
 ## Status vocabulary
 

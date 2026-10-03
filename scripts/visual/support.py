@@ -30,7 +30,8 @@ CASES = tuple(
                     "settings-general-menu", "settings-search-menu", "settings-motion-menu",
                     "settings-profile-create", "settings-profile-edit",
                     "settings-shortcuts-scroll-1", "settings-shortcuts-scroll-2",
-                    "settings-shortcuts-scroll-3")
+                    "settings-shortcuts-scroll-3", "command-palette-open",
+        "command-palette-actions-match", "command-palette-actions-empty")
     for appearance in ("light", "dark")
 )
 

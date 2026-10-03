@@ -24,7 +24,9 @@ pub(crate) fn dispatch_capture(
         return Some(scroll_settings(*delta_y, app, cx));
     }
     let path = match req {
-        Request::CaptureChrome { path } | Request::CaptureSettings { path } => path,
+        Request::CaptureChrome { path }
+        | Request::CaptureSettings { path }
+        | Request::CaptureCommandPalette { path } => path,
         _ => return None,
     };
     let path = Path::new(path);
@@ -35,7 +37,35 @@ pub(crate) fn dispatch_capture(
         )));
     }
 
-    let target = if matches!(req, Request::CaptureSettings { .. }) {
+    let target = if matches!(req, Request::CaptureCommandPalette { .. }) {
+        let target = crate::window_seam::with_app(window, app, cx, |view, window, _cx| {
+            let snapshot = view.snapshot(window);
+            (
+                snapshot.command_surface,
+                snapshot.portal.presentation,
+                view.portal_frame_handle(),
+            )
+        });
+        match target {
+            Ok((bbr_testkit::protocol::CommandSurface::Palette, Some(id), Some(handle)))
+                if id == crate::app::palette::PALETTE_PRESENTATION_ID.0 =>
+            {
+                handle
+            }
+            Ok(_) => {
+                return Some(Response::Error(Error::new(
+                    "palette_closed",
+                    "open the centered Command Palette before child-window readback",
+                )))
+            }
+            Err(error) => {
+                return Some(Response::Error(Error::new(
+                    "capture_failed",
+                    error.to_string(),
+                )))
+            }
+        }
+    } else if matches!(req, Request::CaptureSettings { .. }) {
         let Some(handle) = app.read(cx).settings.read().window else {
             return Some(Response::Error(Error::new(
                 "settings_closed",
@@ -48,8 +78,8 @@ pub(crate) fn dispatch_capture(
     };
     Some(
         gpui::AnyWindowHandle::update(target, cx, |_root, window, cx| {
-            // Settings is a separate hidden harness window: explicitly draw
-            // its real view, not the browser's last scene or a reconstruction.
+            // Separate Settings/Portal windows are drawn without leasing their
+            // roots or BbrApp. Read their actual scene, never the parent frame.
             let _clear = window.draw(cx);
             window
                 .render_to_image()
