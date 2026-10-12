@@ -31,6 +31,11 @@ The complete alpha feature set receives a deliberate product-wide quality pass a
 
 ## Release safety
 
+Build-host portability is owned by the bounded
+[Linux-to-macOS cross-build](../tasks/linux-macos-cross-build.md) packet.
+It preserves the macOS product target and does not imply release/distribution
+or performance acceptance.
+
 - [ ] Complete the deferred [native Portal host hardening](../tasks/native-portal-hardening.md) for focus/key routing, multi-window ownership, display lifecycle, teardown, and packaged-app behavior.
 - [ ] Reject test-only flags in non-testkit builds.
 - [ ] Verify release binaries contain no test socket startup path.

@@ -1,9 +1,122 @@
-# Linux-to-macOS generator preparation
+# Linux-to-macOS build tooling
 
-This directory is **inactive preparation**, not a BBR cross-build command.
-It does not modify the application Cargo graph, native defaults, flake, package
-recipe or VM runner. Full acceptance belongs to the
+Opt-in cross-build of the complete ARM64 macOS app on x86_64 Linux. This is not
+a Linux browser port. All graph edits occur in fresh committed-source snapshots;
+the native checkout, root flake/justfile and shared VM runner stay unchanged.
+Full acceptance belongs to the
 [cross-build packet](../../docs/roadmap/tasks/linux-macos-cross-build.md).
+
+## Full build route
+
+Python 3.11+, Git and existing mbx are required. SDK unpacking requires Python's
+`tarfile` data filter. Compiler builds use the pinned Nix closure without system
+activation. Resolve applicable SDK terms before exporting; no Apple content,
+credentials or distribution signing identity is included here.
+
+1. On macOS, export only the selected installed Xcode SDK:
+
+   ```sh
+   python3 /Users/patwoz/dev/Personal/macos/bbr-linux-macos-cross/scripts/cross_macos/apple_sdk.py export \
+     --developer-dir /Applications/Xcode-27.0.0-Beta.6.app/Contents/Developer \
+     --output /private/tmp/bbr-sdk-export
+   ```
+
+   The archive and adjacent manifest record Xcode version/build, SDK settings,
+   all regular-file hashes and bounded relative links. Hardlinked SDK headers
+   are materialized as separate regular entries. Existing outputs are refused.
+
+2. Export an explicit **committed** BBR revision and complete pinned GPUI tree:
+
+   ```sh
+   python3 /Users/patwoz/dev/Personal/macos/bbr-linux-macos-cross/scripts/cross_macos/source.py export \
+     --repo /Users/patwoz/dev/Personal/macos/bbr-linux-macos-cross \
+     --upstream /absolute/pinned/gpui-checkout \
+     --revision FULL_COMMIT_SHA --output /private/tmp/bbr-source.tar.gz
+   ```
+
+   Dirty/staged work is deliberately not exported. Retain the printed archive
+   hash independently. Transfer only these explicit artifacts and the tooling
+   through the established SSH route, never an entire home/worktree or SDK from
+   an unverified third-party download.
+
+3. On Linux, realize the task-local tools, unpack the SDK, and prepare a fresh
+   source snapshot. Use a `/tmp/bbr-cross-<unique-id>` root so compiled absolute
+   fixture/executable paths can be reproduced inside Tart:
+
+   ```sh
+   timeout --kill-after=15s 900s nix build --impure --file /absolute/tooling/toolchain.nix --no-link --print-out-paths
+   python3 /absolute/tooling/apple_sdk.py unpack --archive /absolute/MacOSX.sdk.tar.gz \
+     --manifest /absolute/MacOSX.sdk.manifest.json --destination /absolute/sdks
+   python3 /absolute/tooling/source.py unpack --archive /absolute/bbr-source.tar.gz \
+     --sha256 INDEPENDENT_ARCHIVE_SHA --root /tmp/bbr-cross-example
+   ```
+
+4. Build the production release bundle with the resulting `/nix/store/...` tool
+   closure and an existing mbx executable. No testkit feature is permitted in
+   this production output:
+
+   ```sh
+   timeout --kill-after=30s 2100s python3 /absolute/tooling/build.py \
+     --root /tmp/bbr-cross-example --output /absolute/new-release \
+     --tools /nix/store/TOOL_CLOSURE --sdk /absolute/sdks/MacOSX.sdk \
+     --mbx /absolute/existing/mbx
+   ```
+
+   The snapshot redirects every GPUI Git package and the crates.io override to
+   one patched export. Offline metadata validates one GPUI type world and exact
+   registry versions/checksums, then compilation is locked/offline. A fresh Linux
+   Cargo cache must first fetch the locked sources explicitly with `cargo fetch
+   --locked --target aarch64-apple-darwin --manifest-path
+   /tmp/bbr-cross-example/bbr/Cargo.toml`; this downloads dependencies, not an SDK.
+   Target is
+   `aarch64-apple-darwin`, deployment target 13.0 (existing package minimum),
+   runtime shaders enabled. Source and SDK hashes are checked before/after.
+   LLVM inspects ARM64/macOS load commands and system-only dependencies.
+   Existing packaging creates the bundle; credential-free `rcodesign` ad-hoc
+   signing disables default config and network timestamps. Apple signature
+   validation happens separately on macOS, never by rebuilding/resigning.
+
+5. Compile E2E executables with the same command and a **new output directory**,
+   adding repeated `--test e2e_smoke --test e2e_profiles` selectors; tests are
+   compiled with testkit but never run on Linux. `--gallery` separately compiles
+   the existing Gallery harness. `--release` optimizes test artifacts only.
+   Capture each artifact before an incompatible feature build overwrites it;
+   staging refuses stale/mixed byte identities. No managed target override.
+
+6. Stage source/executable/bundle bytes from explicit build receipts:
+
+   ```sh
+   python3 /absolute/tooling/payload.py --root /tmp/bbr-cross-example \
+     --build /absolute/test-build --build /absolute/release-build \
+     --output /absolute/new-payload
+   ```
+
+   Retain the printed manifest hash independently and transfer the three payload
+   files to a fresh canonical Mac directory. Never include an SDK, build cache,
+   SSH key or unrelated data in the VM share.
+
+7. Validate on macOS through the existing hardened disposable Tart lifecycle:
+
+   ```sh
+   timeout --kill-after=120s 900s python3 /Users/patwoz/dev/Personal/macos/bbr-linux-macos-cross/scripts/cross_macos/verify_vm.py \
+     --payload /private/tmp/bbr-cross-payload --sha256 INDEPENDENT_MANIFEST_SHA \
+     --artifacts /private/tmp/bbr-cross-evidence e2e-smoke e2e-profiles
+   ```
+
+   For a payload containing every functional executable plus Gallery, use
+   `--functional` instead of recipes with a 2100s outer limit. This derives the
+   canonical sequence plus Peek/Gallery, explicitly excluding deferred perf.
+   It is not full performance acceptance. The guest rehashes files before/after,
+   verifies Apple signatures, exercises the optional production bundle's
+   liveness/clean shutdown, then executes each unchanged recipe's test arguments
+   with bounded deadlines. Zero/ignored/failed tests cannot pass. Run records are
+   published only after clone/key/process/disk/SSH cleanup is observed. No host
+   GUI, Xcode installation, baseline adoption or automatic networking fallback.
+
+Logs and `build-receipt.json` distinguish source, toolchain, SDK, linker, binary,
+bundle and runtime evidence. `verified.json` is functional evidence, not a
+byte-reproducibility, distribution signing, performance or review certificate.
+Normal native builds retain their original graph and static shaders.
 
 ## What the patch changes
 
@@ -23,10 +136,9 @@ recipe or VM runner. Full acceptance belongs to the
 - One redundant upstream formatting borrow is removed for strict Rust 1.98
   Clippy. No renderer, shader source, type declaration or binding allowlist changes.
 
-Do not apply this patch to Cargo's shared dependency cache. A later active
-integration must preserve a single GPUI source/type world and test the complete
-native and cross-target graphs. Sibling source discovery is intentionally for
-this pinned Git workspace, not a claim about independently published crates.
+Do not apply this patch to Cargo's shared dependency cache. The opt-in snapshot
+route preserves a single GPUI source/type world and validates it before compiling.
+Sibling source discovery is intentionally for this pinned Git workspace, not a claim about independently published crates.
 
 ## Reproduce the isolated probe
 
@@ -106,25 +218,19 @@ cd /Users/patwoz/dev/Personal/macos/bbr-linux-macos-cross
 timeout --kill-after=3s 30s python3 -m unittest scripts/cross_macos/test_prepare.py -v
 ```
 
-## Remaining prerequisite and acceptance gap
+## Verification and remaining acceptance
 
-`ms-a2-dev` has working Linux Clang/LLD capable of emitting and linking a
-header-free ARM64 macOS Mach-O control. That control has no framework/libSystem
-links and was not launched; it is not an application or runtime proof. The real
-GPUI media header fails at missing `CoreMedia/CMFormatDescription.h`.
+Run portable contracts without compiler, SDK or VM operations:
 
-The next input is a macOS SDK/sysroot with established origin and permitted use
-on this Linux host. The installed Xcode agreement raised a use-rights question;
-this is not proof that cross-compilation is technically impossible. No SDK was
-copied or unofficial archive fetched. The existing Rust toolchain also lacks
-`aarch64-apple-darwin` standard libraries; provision those declaratively only
-when the SDK path is actionable. LLD is already available, so it is not an
-installation blocker.
+```sh
+cd /Users/patwoz/dev/Personal/macos/bbr-linux-macos-cross
+timeout --kill-after=3s 60s python3 -m unittest discover -s scripts/cross_macos -p 'test_*.py' -v
+```
 
-Then prove a minimal framework/libSystem link, wire the pinned patch and opt-in
-runtime shaders into the application, build the real bundle on Linux, inspect
-its architecture/dependencies, and exercise the checksum-bound Linux artifact
-through disposable Tart. Ordinary Mac-rebuilding VM preparation cannot prove
-that artifact. Startup/rendering measurements, existing functional gates and
-independent review remain required. Neither the preparation tests nor native
-binding parity close these requirements.
+The [evidence report](../../docs/delivery/linux-macos-cross-evidence.md) records
+actual full Linux build, ad-hoc production launch and 59-program functional
+Tart execution. A retained intermittent Hover readiness failure is not erased
+by successful focused/full rechecks. Runtime-shader startup/rendering budgets,
+canonical performance evidence, independent review, supported-minimum-OS testing
+and repeat-byte release reproducibility remain separate, unpassed claims.
+SDK provenance and technical success are not legal advice or a licensing grant.

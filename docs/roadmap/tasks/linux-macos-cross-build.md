@@ -19,8 +19,14 @@ it does not activate a new application dependency graph or claim an app build.
   patched build script and original shader/type sources.
 - Make media generation require explicit SDK input on a non-Mac host and pass
   the Cargo target to libclang. Preserve native xcrun discovery.
-- After SDK feasibility is established, connect an opt-in build environment,
-  application dependency patch, unsigned bundling and exact-artifact VM tests.
+- Connect an opt-in pinned Nix tool closure and committed-source snapshot,
+  preserving the native checkout. Redirect all GPUI consumers to one patched
+  export and verify registry lock versions/checksums remain unchanged.
+- Export the selected installed macOS SDK with full provenance/hash checks,
+  including hardlinked header aliases. Reject unsafe archive members and drift.
+- Build a production release bundle and explicitly selected test executables
+  through mbx on Linux. Use credential-free ad-hoc rcodesign with no timestamp
+  service; verify Apple's signature validation and exact bytes in Tart.
 
 ## Non-goals
 
@@ -33,7 +39,7 @@ acceptance; taking over the separate Visual migration.
 ```text
 Base condition:          existing pinned GPUI-CE application graph
 Depends on:              usable macOS SDK/sysroot and Linux Darwin linker
-Provides/API:            inactive pinned generator patch and portable proof
+Provides/API:            opt-in Linux build/bundle and exact-artifact Tart verification
 Exclusive paths:         scripts/cross_macos; this task packet
 Shared integration points: roadmap links and Current delivery; later Cargo/flake/runner changes
 Integration order:       Visual owner settles main before any serial integration
@@ -64,15 +70,17 @@ product code until native and cross-build verification are possible.
 
 Preparation evidence: [generator and native parity report](../../delivery/linux-macos-cross-evidence.md).
 
-- [ ] Complete Linux build records source, toolchain, SDK provenance, commands,
+- [x] Complete Linux build records source, toolchain, SDK provenance, commands,
       checksums, ARM64 Mach-O platform and dynamic library dependencies.
 
 ### Real-app E2E
 
-- [ ] The checksum-verified Linux-built artifact presents GPUI and navigates
+- [x] The checksum-verified Linux-built artifact presents GPUI and navigates
       real WKWebView fixtures in a disposable headless Tart guest.
-- [ ] Affected native regressions and the canonical sequential suite pass;
+- [x] Native verify/testkit-Clippy and affected Linux-artifact regressions pass;
       rebuilding on the Mac does not count as Linux-artifact evidence.
+- [x] Canonical functional order plus Peek/Gallery passes on exact Linux artifacts.
+      The deferred performance suite is not included or claimed green.
 
 ### Performance
 
@@ -115,5 +123,8 @@ SDK/toolchain or runtime prerequisite, and minimal input needed to resume.
 
 Detailed evidence: [generator and native parity report](../../delivery/linux-macos-cross-evidence.md).
 Runtime state is linked from [Current delivery](../../delivery/current.md).
-Preparation is not compilation, linking, bundling, signing, launch or performance
-acceptance of BBR. Timings are measured only for instrumented commands.
+The initial SDK-free preparation is retained as historical evidence. Subsequent
+SDK-backed build, ad-hoc bundle and exact-artifact functional evidence are recorded
+in the same report. Repeatable tooling is not byte-reproducible release acceptance,
+notarization or performance approval. Timings are measured only for instrumented
+commands; independent review remains required before final task acceptance.

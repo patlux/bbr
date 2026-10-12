@@ -10,7 +10,7 @@ Repository workflow and mandatory verification: [AGENTS.md](AGENTS.md).
 
 ## Current execution
 
-- **Isolated build preparation:** [Linux-to-macOS cross-build](docs/roadmap/tasks/linux-macos-cross-build.md) prepares the existing pinned GPUI generators without changing native defaults. Complete app/link/runtime acceptance remains open pending SDK feasibility; this does not take over Visual work.
+- **Isolated build tooling:** [Linux-to-macOS cross-build](docs/roadmap/tasks/linux-macos-cross-build.md) builds and ad-hoc signs the ARM64 macOS app on Linux, with checksum-bound Tart functional evidence. Native defaults and Visual ownership remain unchanged; performance and independent acceptance remain open.
 
 - **Portal lifecycle fix:** [Portal window lifecycle](docs/roadmap/tasks/portal-window-lifecycle.md) binds the Command Palette to its owning window; locally integrated with fresh combined-tree Tart verification, including the Titlebar reload-synchronization repair.
 
