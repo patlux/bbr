@@ -1,0 +1,131 @@
+--- a/crates/gpui_macos/build.rs
++++ b/crates/gpui_macos/build.rs
+@@ -1,11 +1,11 @@
+ #![allow(clippy::disallowed_methods, reason = "build scripts are exempt")]
+
+ fn main() {
+-    #[cfg(target_os = "macos")]
+-    macos_build::run();
++    if std::env::var("CARGO_CFG_TARGET_OS").as_deref() == Ok("macos") {
++        macos_build::run();
++    }
+ }
+
+-#[cfg(target_os = "macos")]
+ mod macos_build {
+     use std::{
+         env,
+@@ -15,6 +15,11 @@
+     use cbindgen::Config;
+
+     pub fn run() {
++        #[cfg(not(feature = "runtime_shaders"))]
++        assert!(
++            env::var("HOST").is_ok_and(|host| host.ends_with("-apple-darwin")),
++            "cross-host macOS shader generation requires the runtime_shaders feature"
++        );
+         let header_path = generate_shader_bindings();
+
+         #[cfg(feature = "runtime_shaders")]
+@@ -98,7 +103,15 @@
+
+     /// Locate the gpui crate directory relative to this crate.
+     fn find_gpui_crate_dir() -> PathBuf {
+-        gpui::GPUI_MANIFEST_DIR.into()
++        // These crates are siblings in the pinned GPUI-CE Git workspace.
++        // Depending on gpui as a build dependency compiles the host graphics
++        // stack merely to read its source path, and is unnecessary for cbindgen.
++        let dir = PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap()).join("../gpui");
++        assert!(
++            dir.join("src/gpui.rs").is_file(),
++            "shader generation requires sibling gpui sources from the same workspace"
++        );
++        dir
+     }
+
+     /// To enable runtime compilation, we need to "stitch" the shaders file with the generated header
+@@ -117,7 +130,7 @@
+         let shader_source_path = "./src/shaders.metal";
+         let shader_path = PathBuf::from(shader_source_path);
+         stitch_header(header_path, &shader_path).unwrap();
+-        println!("cargo:rerun-if-changed={}", &shader_source_path);
++        println!("cargo:rerun-if-changed={}", shader_source_path);
+     }
+
+     #[cfg(not(feature = "runtime_shaders"))]
+--- a/crates/gpui_macos/Cargo.toml
++++ b/crates/gpui_macos/Cargo.toml
+@@ -59,9 +59,8 @@
+ util.workspace = true
+ uuid.workspace = true
+
+-[target.'cfg(target_os = "macos")'.build-dependencies]
++[build-dependencies]
+ cbindgen = { version = "0.28.0", default-features = false }
+-gpui.workspace = true
+
+ # When this crate is itself being tested (cargo test -p gpui_macos), its own
+ # cfg(test) flag enables impls of test-only traits like PlatformHeadlessRenderer
+--- a/crates/gpui_media/build.rs
++++ b/crates/gpui_media/build.rs
+@@ -1,22 +1,39 @@
+ #![allow(clippy::disallowed_methods, reason = "build scripts are exempt")]
+-#[cfg(target_os = "macos")]
++
+ fn main() {
+     use std::{env, path::PathBuf, process::Command};
+
+-    let sdk_path = String::from_utf8(
+-        Command::new("xcrun")
+-            .args(["--sdk", "macosx", "--show-sdk-path"])
+-            .output()
+-            .unwrap()
+-            .stdout,
+-    )
+-    .unwrap();
+-    let sdk_path = sdk_path.trim_end();
++    if env::var("CARGO_CFG_TARGET_OS").as_deref() != Ok("macos") {
++        return;
++    }
++    println!("cargo:rerun-if-env-changed=SDKROOT");
++    let sdk_path = match env::var_os("SDKROOT") {
++        Some(path) if !path.is_empty() => PathBuf::from(path),
++        _ if env::var("HOST").is_ok_and(|host| host.ends_with("-apple-darwin")) => {
++            let output = Command::new("xcrun")
++                .args(["--sdk", "macosx", "--show-sdk-path"])
++                .output()
++                .expect("unable to discover macOS SDK with xcrun; set SDKROOT");
++            assert!(output.status.success(), "macOS SDK discovery failed");
++            PathBuf::from(String::from_utf8(output.stdout).unwrap().trim())
++        }
++        _ => panic!("macOS media generation on a non-Mac host requires explicit SDKROOT"),
++    };
++    assert!(
++        sdk_path.is_absolute()
++            && sdk_path
++                .join("System/Library/Frameworks/CoreMedia.framework/Headers/CoreMedia.h")
++                .is_file(),
++        "SDKROOT must be an absolute macOS SDK path containing CoreMedia headers"
++    );
++    let target = env::var("TARGET").expect("Cargo TARGET is required for media generation");
+
+     println!("cargo:rerun-if-changed=src/bindings.h");
+     let bindings = bindgen::Builder::default()
+         .header("src/bindings.h")
+-        .clang_arg(format!("-isysroot{}", sdk_path))
++        .clang_arg(format!("--target={target}"))
++        .clang_arg("-isysroot")
++        .clang_arg(sdk_path.to_str().expect("SDKROOT must be UTF-8"))
+         .clang_arg("-xobjective-c")
+         .allowlist_type("CMItemIndex")
+         .allowlist_type("CMSampleTimingInfo")
+@@ -37,8 +54,5 @@
+     let out_path = PathBuf::from(env::var("OUT_DIR").unwrap());
+     bindings
+         .write_to_file(out_path.join("bindings.rs"))
+-        .expect("couldn't write dispatch bindings");
++        .expect("couldn't write media bindings");
+ }
+-
+-#[cfg(not(target_os = "macos"))]
+-fn main() {}

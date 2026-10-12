@@ -18,6 +18,40 @@ Start at [ROADMAP.md](../../ROADMAP.md), then read this file completely before c
 
 UI-CONFORMANCE, FOLDER-PIN-INVARIANT, DESIGN-CARD, DESIGN-ADDRESS and DESIGN-FAVORITES are integrated on `main` (2026-09-27, through `d51a4b52`), each independently reviewed with the review findings remediated. Their performance evidence is deferred with the rest of performance execution until the end of the queue (Patrick, 2026-09-27). RA-MEDIA integrated its portable `bbr-web` contract as `ec5e0bad` and is paused there (macOS adapter not started, no owner). Since 2026-09-28 the serial work on `main` is the V2 visual refresh and motion program (DESIGN §18), preflighted clean at `main@ec5e0bad368179b669983a60a22a7b47b152ebfb` with no other BBR writer process. Historical lane worktrees retain evidence or abandoned experiments but own no current queue state. The stale Split worktree remains explicitly untouched.
 
+## Isolated Linux-to-macOS preparation
+
+Patrick requested the complete macOS application build on `ms-a2-dev` and
+activated SDK-independent preparation in a separate worktree with “lets goal”.
+The sole local writer owns `/Users/patwoz/dev/Personal/macos/bbr-linux-macos-cross`,
+branch `linux-macos-cross`, from committed base
+`70f6026aea8bcb51a6f7595b884649cdd9981bce`. It was clean at activation. The main
+Visual checkout and its uncommitted work remain untouched; historical serial
+restrictions below do not transfer that checkout's ownership to this writer.
+
+| ID | Slice | Status | Worktree | Owner | Contract | Next gate |
+|---|---|---|---|---|---|---|
+| LINUX-MACOS-CROSS | SDK-free pinned generator preparation | `blocked` | `/Users/patwoz/dev/Personal/macos/bbr-linux-macos-cross` | local goal writer, no delegation | [cross-build packet](../roadmap/tasks/linux-macos-cross-build.md) | preparation verified; SDK provenance/use input required before complete app cross-build and runtime acceptance |
+
+Parallelism audit: only this isolated preparation is authorized here. No new
+agents/workflows/lanes, main mutation, merge or publication. Exclusive changes
+are the cross-build preparation directory and packet; roadmap links and this
+branch-local control addition require semantic integration after the Visual
+owner settles. Root Cargo/flake, product code, baselines and VM runner remain
+unchanged in preparation. Read-only metadata confirms one GPUI type/source
+world at the existing pin. No SDK has been transferred. Full cross-build needs
+a usable SDK and Darwin target standard libraries, then exact-artifact Tart
+execution. Existing Linux Clang/LLD passed a header-free Mach-O control; the
+actual GPUI media header fails at missing CoreMedia. Independent review is
+outstanding.
+
+[Preparation evidence](linux-macos-cross-evidence.md): the same generator
+regression fails on upstream Linux scripts and passes with the inactive patch;
+Linux/Mac shader sources and before/after native media bindings are byte-identical.
+Runtime/static strict Clippy, formatting and portable contracts pass. No app
+graph, runtime, SDK transfer, VM, baseline, main integration or publication
+change. No further authorized SDK-free queue work is needed; full app acceptance
+stays open at the SDK input boundary.
+
 ## GPUI Visual migration activation (2026-10-01)
 
 Patrick activated the current plan as goal `1790884867215-ea6dba478fa758`.

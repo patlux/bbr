@@ -63,6 +63,10 @@ Parent phases: [Phase 0](../phases/00-foundation.md), [Phase 4](../phases/04-ui-
 
 ## Release safety
 
+Build-host preparation: [Linux-to-macOS cross-build](../tasks/linux-macos-cross-build.md)
+owns its generator, artifact and runtime evidence; it does not prove signed
+release reproducibility or introduce a Linux browser target.
+
 - [ ] Non-testkit binaries reject test-only flags.
 - [ ] Release validation proves no test socket is created.
 - [ ] Signed/notarized `.app` build is reproducible.
