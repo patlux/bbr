@@ -80,16 +80,6 @@ impl CardInsets {
     }
 }
 
-/// The `elev:1.content.shadow` token for the shell's mode: two short, dark,
-/// low-alpha layers that seat the card; on dark a 1 px white ring because a
-/// pure shadow is invisible on a dark chassis. Static — painted once per
-/// frame with the card, never animated.
-///
-/// ```text
-/// Light: 0 1 2 rgba(23,26,29,0.06), 0 8 20 rgba(23,26,29,0.10)
-/// Dark:  0 0 0 1px rgba(255,255,255,0.05), 0 1 2 rgba(0,0,0,0.45),
-///        0 10 24 rgba(0,0,0,0.38)
-/// ```
 /// Blueprint D09 (DESIGN §11.17): the Peek frame's horizontal inset inside
 /// the card (`sp6`).
 pub const PEEK_INSET_X: f32 = 24.0;
@@ -163,6 +153,31 @@ impl PeekFrame {
     }
 }
 
+/// The card's 1 pt rim: the inner ring of the seated edge, painted
+/// directly outside the native slot (DESIGN §2).
+pub const CARD_RIM: f32 = 1.0;
+/// The card's 1 pt seam: the outer ring of the seated edge, one rim further
+/// out on the chassis. `CARD_SEAM` is the ring's outer spread.
+pub const CARD_SEAM: f32 = CARD_RIM + 1.0;
+
+/// The `elev:1.content.shadow` token for the shell's mode: the seated edge
+/// (DESIGN §2). Two crisp 1 pt rings sit outside the native slot — a dark
+/// seam on the chassis and, inside it, a light rim — over two short,
+/// downward seat layers. The rings are spread-only shadows, so the slot
+/// keeps the whole `sp:content-inset` frame and radius and GPUI never
+/// paints over web content; the chassis gap beyond the seam is
+/// `sp:content-inset − 2`. Static — painted once per frame with the card,
+/// never animated.
+///
+/// ```text
+/// Light: 0 0 0 1px rgba(255,255,255,1.00), 0 0 0 2px rgba(23,26,29,0.12),
+///        0 1 2 rgba(23,26,29,0.06), 0 3 10 rgba(23,26,29,0.10)
+/// Dark:  0 0 0 1px rgba(255,255,255,0.08), 0 0 0 2px rgba(0,0,0,0.55),
+///        0 1 2 rgba(0,0,0,0.45), 0 4 12 rgba(0,0,0,0.38)
+/// ```
+///
+/// The token lists layers CSS-style (first on top); GPUI paints the vector
+/// back to front, so the returned order is seat, seam, rim.
 pub fn content_card_shadow(theme: &Theme) -> Vec<BoxShadow> {
     let shadow = |color, y: f32, blur: f32, spread: f32| BoxShadow {
         color,
@@ -173,13 +188,16 @@ pub fn content_card_shadow(theme: &Theme) -> Vec<BoxShadow> {
     };
     match theme.mode {
         ThemeMode::Light => vec![
+            shadow(hsla(0.58, 0.12, 0.10, 0.10), 3.0, 10.0, 0.0),
             shadow(hsla(0.58, 0.12, 0.10, 0.06), 1.0, 2.0, 0.0),
-            shadow(hsla(0.58, 0.12, 0.10, 0.10), 8.0, 20.0, 0.0),
+            shadow(hsla(0.58, 0.12, 0.10, 0.12), 0.0, 0.0, CARD_SEAM),
+            shadow(hsla(0.0, 0.0, 1.0, 1.0), 0.0, 0.0, CARD_RIM),
         ],
         ThemeMode::Dark => vec![
-            shadow(hsla(0.0, 0.0, 1.0, 0.05), 0.0, 0.0, 1.0),
+            shadow(hsla(0.0, 0.0, 0.0, 0.38), 4.0, 12.0, 0.0),
             shadow(hsla(0.0, 0.0, 0.0, 0.45), 1.0, 2.0, 0.0),
-            shadow(hsla(0.0, 0.0, 0.0, 0.38), 10.0, 24.0, 0.0),
+            shadow(hsla(0.0, 0.0, 0.0, 0.55), 0.0, 0.0, CARD_SEAM),
+            shadow(hsla(0.0, 0.0, 1.0, 0.08), 0.0, 0.0, CARD_RIM),
         ],
     }
 }
@@ -279,16 +297,38 @@ mod tests {
 
     #[test]
     fn the_shadow_follows_the_documented_tokens_per_mode() {
-        let light = Theme::new(ThemeMode::Light, ContrastMode::Standard, Density::Normal);
-        let light = content_card_shadow(&light);
-        assert_eq!(light.len(), 2);
-        assert_eq!(light[1].offset, point(px(0.0), px(8.0)));
-        assert_eq!(light[1].blur_radius, px(20.0));
-        let dark = Theme::new(ThemeMode::Dark, ContrastMode::Standard, Density::Normal);
-        let dark = content_card_shadow(&dark);
-        assert_eq!(dark.len(), 3, "dark adds the 1 px ring");
-        assert_eq!(dark[0].spread_radius, px(1.0));
-        assert_eq!(dark[2].blur_radius, px(24.0));
-        assert!(dark.iter().chain(light.iter()).all(|shadow| !shadow.inset));
+        for mode in [ThemeMode::Light, ThemeMode::Dark] {
+            let theme = Theme::new(mode, ContrastMode::Standard, Density::Normal);
+            let stack = content_card_shadow(&theme);
+            let [far, near, seam, rim] = stack.as_slice() else {
+                panic!(
+                    "{mode:?}: seat (far, near), seam, rim — got {}",
+                    stack.len()
+                );
+            };
+            // The seat: two short downward layers, the far one still short.
+            assert_eq!(near.offset, point(px(0.0), px(1.0)));
+            assert_eq!(near.blur_radius, px(2.0));
+            assert!(far.offset.y >= px(3.0) && far.offset.y <= px(4.0));
+            assert!(far.blur_radius <= px(12.0), "the seat does not glow");
+            // The edge: crisp rings, the rim one pt inside the seam, painted
+            // last so it covers the seam's inner pt.
+            for ring in [seam, rim] {
+                assert_eq!(ring.offset, point(px(0.0), px(0.0)));
+                assert_eq!(ring.blur_radius, px(0.0));
+            }
+            assert_eq!(seam.spread_radius, px(CARD_SEAM));
+            assert_eq!(rim.spread_radius, px(CARD_RIM));
+            assert_eq!(CARD_SEAM, CARD_RIM + 1.0);
+            // The seam is darker than the rim in both modes (one bevel, never
+            // two light lines), and the light rim is opaque white.
+            assert!(seam.color.l < rim.color.l);
+            match mode {
+                ThemeMode::Light => assert_eq!(rim.color, hsla(0.0, 0.0, 1.0, 1.0)),
+                ThemeMode::Dark => assert!(rim.color.a < 0.2 && seam.color.a > rim.color.a),
+            }
+            // Nothing is inset: the slot owns the card's whole inner box.
+            assert!(stack.iter().all(|shadow| !shadow.inset));
+        }
     }
 }

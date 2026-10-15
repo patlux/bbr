@@ -133,13 +133,17 @@ untinted and every tinted rail before computing a ratio.
   same material family. No shadow on rows (list paint budget), with exactly
   one exception (D2): `elev:lift` on the one selected row and the active
   space chip — static, painted with the surface, never animated or on hover.
-- `elev:1.content` — the seated content card. One static shadow, painted with
-  the card, never animated and never re-evaluated per scroll frame.
+- `elev:1.content` — the seated content card. One static shadow stack,
+  painted with the card, never animated and never re-evaluated per scroll
+  frame: a 1 pt **rim** directly outside the native slot, a 1 pt **seam**
+  outside the rim, and two short downward seat layers. The rings are
+  spread-only layers, so the slot keeps the whole `sp:content-inset` frame
+  and the chassis gap beyond the seam is `sp:content-inset − 2` (8).
 - `elev:2` — floating. Shadow tokens (GPUI `box_shadow`, bounded blur):
 
 | Token | Light | Dark |
 |---|---|---|
-| `elev:1.content.shadow` | `0 1 2 rgba(23,26,29,0.06), 0 8 20 rgba(23,26,29,0.10)` | `0 0 0 1px rgba(255,255,255,0.05), 0 1 2 rgba(0,0,0,0.45), 0 10 24 rgba(0,0,0,0.38)` |
+| `elev:1.content.shadow` | `0 0 0 1px white, 0 0 0 2px rgba(23,26,29,0.12), 0 1 2 rgba(23,26,29,0.06), 0 3 10 rgba(23,26,29,0.10)` | `0 0 0 1px rgba(255,255,255,0.08), 0 0 0 2px rgba(0,0,0,0.55), 0 1 2 rgba(0,0,0,0.45), 0 4 12 rgba(0,0,0,0.38)` |
 | `elev:2.shadow` | `0 0 0 1px ink 7 %, 0 2 4 ink 5 %, 0 16 36 −6 ink 18 %` | `0 0 0 1px white 8 %, 0 16 32 black 45 %` |
 | `elev:lift` | `0 1 3 ink 10 %, 0 0 0 1px ink 4 %` | `0 1 2 black 35 %, 0 0 0 1px white 4 %` |
 
@@ -156,14 +160,21 @@ seated in the chassis.
 | Inset | `sp:content-inset` top / trailing / bottom; `0` leading |
 | Radius | 10, all four corners (= `sp:content-inset`; independent of `radius:lg`, which v2 moved to 12) |
 | Elevation | `elev:1.content` |
+| Edge | 1 pt rim + 1 pt seam outside the slot (`elev:1.content.shadow`); the slot's own radius stays 10 |
 | Behind it | `material:chassis` |
 | Inside it | the native WKWebView (its backing layer clips to the radius); `material:canvas` only before attach / empty / crash |
 
 1. **The card is the content, not a card over content.** The card's inner
    box is the native slot; nothing floats above the glass because of it.
 2. **The leading edge is never inset** while the rail is visible.
-3. **The shadow seats, it does not glow:** short, dark, low-alpha layers; on
-   dark a 1 px `rgba(255,255,255,0.05)` ring.
+3. **The edge is a bevel, the shadow seats:** a light rim inside a dark seam
+   (light: opaque white inside ink 12 %; dark: white 8 % inside black 55 %
+   — never two light lines, which would merge into one 2 pt border), then
+   short, low-alpha seat layers that reach no further than ~12 pt. On a
+   white page the rim merges with the page and the seam alone reads; on a
+   dark page the rim shows as the glass edge. The rings also sit on the
+   rail's last 2 pt along the flush leading edge (rail rows stay 4 pt
+   clear, §10.2).
 4. **The rail loses its right hairline**, and the resize divider is empty
    paint at rest (accent only under keyboard focus).
 5. **The inset is chrome, so it disappears with chrome.** Native full screen

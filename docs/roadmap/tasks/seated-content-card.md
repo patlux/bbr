@@ -78,6 +78,27 @@ Integration order:       before address-field-space-identity
       budgets with the card; execution follows the active performance
       override in Current delivery.
 
+### Follow-up — seated edge (2026-10-12)
+
+Patrick compared the card against macOS Tahoe's inset content panels
+(Terminal, Sessions): a 1 pt dark seam outside a 1 pt light rim, then a
+short seat shadow — instead of one soft glow. Paper board W-10 · Content
+card — seated edge (page 20 — Window & shell) holds the proposal. The rings
+are spread-only layers of `elev:1.content.shadow`, so the native slot keeps
+the whole `sp:content-inset` frame and radius 10 and no geometry contract
+changes; the visible chassis gap beyond the seam becomes 8 pt.
+
+- [x] `elev:1.content.shadow` is the rim + seam + seat stack in both modes
+      (DESIGN §2 token and card rule 3); `bbr-ui` card tests pin the stack
+      order, spreads and the dark-seam/light-rim relation.
+- [x] Real-app `just e2e-vm e2e-shell-sidebar` and
+      `e2e-shell-titlebar-navigation` stay green on the unchanged
+      geometry contract (card frame, native radius 10 → 0 → 10, slot rect).
+- [ ] Visual baselines that show the card edge (`representative-full`,
+      Library/History/Settings pages) are re-captured and reviewed in the
+      visual-snapshots lane after integration; the paint change is not
+      provable without them.
+
 ## Completion gates
 
 ```bash
