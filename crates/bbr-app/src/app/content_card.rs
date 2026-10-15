@@ -13,7 +13,10 @@
 
 use gpui::{div, prelude::*, px, AnyElement, Context, MouseButton, Window};
 
-use bbr_ui::card::{content_card_shadow, CardInsets, CHASSIS_BAND_ID, CONTENT_CARD_ID};
+use bbr_ui::card::{
+    content_card_edge, content_card_shadow, corner_covers, edge_layer, CardInsets, CARD_SEAM,
+    CHASSIS_BAND_ID, CONTENT_CARD_ID,
+};
 use bbr_ui::theme::Theme;
 
 use super::BbrApp;
@@ -98,8 +101,40 @@ impl BbrApp {
                     .when(card.shadow, |card| card.shadow(content_card_shadow(theme)))
                     .bg(theme.palette.surface_canvas)
                     .overflow_hidden()
-                    .child(content),
+                    .child(content)
+                    // §2: GPUI clips to rectangles, so a GPUI surface in the
+                    // card would paint its corners over the arc; the covers
+                    // paint the chassis back over those four wedges, above
+                    // every GPUI child and beneath the self-clipping native
+                    // view. The chassis-corner wedges follow the D4 tint
+                    // cross-fade exactly like the chassis itself.
+                    .when(card.radius > 0.0, |card_el| {
+                        card_el
+                            .child(corner_covers(card.radius, self.active_chrome_tint()))
+                            .children(bbr_ui::components::tint_fade::tint_fade_painted(
+                                theme,
+                                "chassis-corners",
+                                self.tint_fade(),
+                                |from| corner_covers(card.radius, from),
+                            ))
+                    }),
             )
+            // §2: the rim and seam as exact concentric rings, laid out as the
+            // card dilated by the edge and painted after the card so they
+            // sit above its children and corner covers (and on the rail's
+            // last 2 pt along the flush leading edge). Full screen has no
+            // edge; the card's `shadow` flag carries that state.
+            .when(card.shadow && card.radius > 0.0, |chassis| {
+                chassis.child(
+                    div()
+                        .absolute()
+                        .top(px(card.top - CARD_SEAM))
+                        .left(px(card.leading - CARD_SEAM))
+                        .right(px(card.trailing - CARD_SEAM))
+                        .bottom(px(card.bottom - CARD_SEAM))
+                        .child(edge_layer(card.radius, content_card_edge(theme))),
+                )
+            })
             .into_any()
     }
 }

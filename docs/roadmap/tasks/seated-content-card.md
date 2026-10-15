@@ -83,14 +83,17 @@ Integration order:       before address-field-space-identity
 Patrick compared the card against macOS Tahoe's inset content panels
 (Terminal, Sessions): a 1 pt dark seam outside a 1 pt light rim, then a
 short seat shadow — instead of one soft glow. Paper board W-10 · Content
-card — seated edge (page 20 — Window & shell) holds the proposal. The rings
-are spread-only layers of `elev:1.content.shadow`, so the native slot keeps
-the whole `sp:content-inset` frame and radius 10 and no geometry contract
-changes; the visible chassis gap beyond the seam becomes 8 pt.
+card — seated edge (page 20 — Window & shell) holds the proposal, not an
+implementation-matched reference. The initial spread-shadow rings were
+replaced by exact concentric border quads after the Saved Pages review
+exposed square GPUI child backgrounds at the card corners. The native slot
+keeps the whole `sp:content-inset` frame and radius 10; no geometry contract
+changes, and the visible chassis gap beyond the seam remains 8 pt.
 
-- [x] `elev:1.content.shadow` is the rim + seam + seat stack in both modes
-      (DESIGN §2 token and card rule 3); `bbr-ui` card tests pin the stack
-      order, spreads and the dark-seam/light-rim relation.
+- [x] `elev:1.content.shadow` supplies the two seat layers and
+      `elev:1.content.edge` the rim/seam in both modes (DESIGN §2).
+      `bbr-ui` tests pin concentric geometry, transparent-fill RGB and the
+      dark-seam/light-rim relation.
 - [x] Real-app `just e2e-vm e2e-shell-sidebar` and
       `e2e-shell-titlebar-navigation` stay green on the unchanged
       geometry contract (card frame, native radius 10 → 0 → 10, slot rect).
@@ -101,9 +104,42 @@ changes; the visible chassis gap beyond the seam becomes 8 pt.
       6 missing-baseline (the visual lane's pending Find candidates). The
       Prüfstand diff marks only the card perimeter and the old glow's bleed
       onto the rail.
-- [ ] Patrick reviews that report and accepts the 36 changed cases
+- [x] GPUI page corners follow the card's rounded silhouette, with the
+      seam/rim preserved above chassis-coloured covers; multi-selection
+      fills are inset rounded rows. Card/row contracts, Saved Pages +
+      sidebar/titlebar behavioral E2E, and sealed light/dark
+      multiple-selection and History captures prove the bounded fix.
+      Native web pixels are excluded from the visual report; native
+      geometry remains covered by behavioral E2E.
+- [ ] Patrick reviews the latest sealed report and accepts changed cases
       explicitly (`just visual-accept`); until then the baselines show the
-      previous edge.
+      previous edge. Missing Find baselines remain separately unapproved.
+
+### Corner correction evidence (2026-10-16)
+
+- `just verify`, strict UI/app-testkit Clippy and all 228 UI unit tests pass.
+- Targeted Tart suites: sidebar 21/21, titlebar 7/7, Library 12/12, History 1/1.
+- Sequential functional aggregate: 59 executables / 348 tests pass, including
+  Peek and Gallery. Only `e2e-perf` is excluded under the existing execution
+  deferral; no performance acceptance is claimed. Suite-reported elapsed
+  times sum to 318 s (rounded, excluding build/boot/transfer).
+- Behavioral invocation: `python3 /tmp/bbr-edge-safe-e2e.py functional-aggregate`.
+  The temporary wrapper calls the repository planner/executor unchanged,
+  applies the existing visual Tart hardening/audit, imports only declared
+  host dylib closures offline, and aborts on timeout instead of entering
+  the legacy broad-name process-stop path. The first preparation attempt
+  failed because guest DNS could not fetch libiconv. Offline transfer fixed
+  preparation; no golden-image or host setup changes. Logs and observed
+  clone/key/process/disk/SSH cleanup:
+  `/tmp/bbr-e2e-vm/run-20261016-010234-28265/`.
+- Official `just visual-check` batch `1792105204757191000-14165`, report
+  `reports/visual/batches/1792105204757191000-14165/review/index.html`:
+  78 captures, 36 changed / 36 same / 6 missing baselines; all 78 PNGs are
+  byte-identical to the preceding inspected run. The seven existing withheld
+  coverage families remain. Host-build OS metadata also differs from the
+  baseline (27.0/26A428 → 27.0.1/26A434); this is not silently adopted.
+- No baseline accepted, no merge/push. Paper remains a proposal: its MCP
+  connection was unavailable, so implementation parity is not claimed.
 
 ## Completion gates
 

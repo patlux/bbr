@@ -75,8 +75,12 @@ pub fn library_row(
         .gap(Spacing::sp2())
         .px(Spacing::sp3())
         .py(Spacing::sp1())
+        .relative()
         .cursor_pointer()
-        .when(row.selected, |el| el.bg(selected_row_fill(&p)))
+        // §10.4: the selection paints an inset rounded row surface behind
+        // the content, never a full-bleed band whose square corners would
+        // reach the card's edges.
+        .when(row.selected, |el| el.child(selected_row_surface(theme)))
         .child(selection_box(theme, row.selected))
         .child(favicon_tile(theme, row.favicon.clone()))
         .when(editing, |el| {
@@ -269,7 +273,23 @@ pub fn favicon_tile(theme: &Theme, spec: FaviconSpec) -> Div {
         .child(SharedString::from(spec.letter.to_string()))
 }
 
-/// The §10.4/§18.4 selection surface of a selected Library row. Children
+/// The §10.4 selection surface of a selected Library row: inset
+/// `density:row-inset` from the row's edges, radius `density:radius`,
+/// painted behind the content (the same inset surface as the sidebar's
+/// tab rows, without their D2 lift — Library selection is a set, not the
+/// one lifted row).
+fn selected_row_surface(theme: &Theme) -> Div {
+    div()
+        .absolute()
+        .left(theme.density.row_inset())
+        .right(theme.density.row_inset())
+        .top(px(0.0))
+        .bottom(px(0.0))
+        .rounded(theme.density.density_radius())
+        .bg(selected_row_fill(&theme.palette))
+}
+
+/// The §10.4/§18.4 selection fill of a selected Library row. Children
 /// keep their own ink colors, so the fill is the quiet `tint.accent`
 /// surface — never an accent fill, which drops ink and URL text below §3.1.
 fn selected_row_fill(p: &crate::palette::Palette) -> gpui::Rgba {
@@ -355,6 +375,24 @@ mod tests {
             Palette::dark_standard(),
             Palette::dark_increased(),
         ]
+    }
+
+    #[test]
+    fn selected_surface_is_inset_and_rounded_without_changing_row_layout() {
+        use crate::theme::{ContrastMode, Density, ThemeMode};
+        for density in [Density::Small, Density::Normal, Density::ExtraLarge] {
+            let theme = Theme::new(ThemeMode::Light, ContrastMode::Standard, density);
+            let mut surface = selected_row_surface(&theme);
+            let style = surface.style();
+            assert_eq!(style.position, Some(gpui::Position::Absolute));
+            assert_eq!(style.inset.left, Some(density.row_inset().into()));
+            assert_eq!(style.inset.right, Some(density.row_inset().into()));
+            assert_eq!(
+                style.corner_radii.top_left,
+                Some(density.density_radius().into())
+            );
+            assert_eq!(style.corner_radii.bottom_right, style.corner_radii.top_left);
+        }
     }
 
     #[test]

@@ -10,7 +10,10 @@
 //! shadow. GPUI paints the chassis and the static `elev:1.content` shadow
 //! outside the slot; the platform adapter clips the web view to the radius.
 
-use gpui::{hsla, point, px, BoxShadow};
+use gpui::{
+    canvas, hsla, point, prelude::*, px, quad, size, AnyElement, BorderStyle, Bounds, BoxShadow,
+    ContentMask, Corners, Edges, Hsla, PaintQuad, Pixels, Rgba,
+};
 
 use crate::theme::{Theme, ThemeMode};
 
@@ -153,53 +156,182 @@ impl PeekFrame {
     }
 }
 
-/// The card's 1 pt rim: the inner ring of the seated edge, painted
-/// directly outside the native slot (DESIGN §2).
+/// The card's 1 pt rim: the inner ring of the seated edge, directly
+/// outside the native slot (DESIGN §2).
 pub const CARD_RIM: f32 = 1.0;
-/// The card's 1 pt seam: the outer ring of the seated edge, one rim further
-/// out on the chassis. `CARD_SEAM` is the ring's outer spread.
+/// The outer extent of the seated edge: the 1 pt seam sits outside the rim,
+/// so the edge reaches `CARD_SEAM` beyond the card's rounded rect.
 pub const CARD_SEAM: f32 = CARD_RIM + 1.0;
 
-/// The `elev:1.content.shadow` token for the shell's mode: the seated edge
-/// (DESIGN §2). Two crisp 1 pt rings sit outside the native slot — a dark
-/// seam on the chassis and, inside it, a light rim — over two short,
-/// downward seat layers. The rings are spread-only shadows, so the slot
-/// keeps the whole `sp:content-inset` frame and radius and GPUI never
-/// paints over web content; the chassis gap beyond the seam is
-/// `sp:content-inset − 2`. Static — painted once per frame with the card,
-/// never animated.
+/// The `elev:1.content.shadow` token for the shell's mode: the seat under
+/// the card (DESIGN §2) — two short, low-alpha, downward layers. Static —
+/// painted once per frame with the card, never animated. The edge rings
+/// are not shadows; see [`content_card_edge`].
 ///
 /// ```text
-/// Light: 0 0 0 1px rgba(255,255,255,1.00), 0 0 0 2px rgba(23,26,29,0.12),
-///        0 1 2 rgba(23,26,29,0.06), 0 3 10 rgba(23,26,29,0.10)
-/// Dark:  0 0 0 1px rgba(255,255,255,0.08), 0 0 0 2px rgba(0,0,0,0.55),
-///        0 1 2 rgba(0,0,0,0.45), 0 4 12 rgba(0,0,0,0.38)
+/// Light: 0 1 2 rgba(23,26,29,0.06), 0 3 10 rgba(23,26,29,0.10)
+/// Dark:  0 1 2 rgba(0,0,0,0.45), 0 4 12 rgba(0,0,0,0.38)
 /// ```
 ///
-/// The token lists layers CSS-style (first on top); GPUI paints the vector
-/// back to front, so the returned order is seat, seam, rim.
+/// GPUI paints the vector back to front: far seat first, near seat last.
 pub fn content_card_shadow(theme: &Theme) -> Vec<BoxShadow> {
-    let shadow = |color, y: f32, blur: f32, spread: f32| BoxShadow {
+    let shadow = |color, y: f32, blur: f32| BoxShadow {
         color,
         offset: point(px(0.0), px(y)),
         blur_radius: px(blur),
-        spread_radius: px(spread),
+        spread_radius: px(0.0),
         inset: false,
     };
     match theme.mode {
         ThemeMode::Light => vec![
-            shadow(hsla(0.58, 0.12, 0.10, 0.10), 3.0, 10.0, 0.0),
-            shadow(hsla(0.58, 0.12, 0.10, 0.06), 1.0, 2.0, 0.0),
-            shadow(hsla(0.58, 0.12, 0.10, 0.12), 0.0, 0.0, CARD_SEAM),
-            shadow(hsla(0.0, 0.0, 1.0, 1.0), 0.0, 0.0, CARD_RIM),
+            shadow(hsla(0.58, 0.12, 0.10, 0.10), 3.0, 10.0),
+            shadow(hsla(0.58, 0.12, 0.10, 0.06), 1.0, 2.0),
         ],
         ThemeMode::Dark => vec![
-            shadow(hsla(0.0, 0.0, 0.0, 0.38), 4.0, 12.0, 0.0),
-            shadow(hsla(0.0, 0.0, 0.0, 0.45), 1.0, 2.0, 0.0),
-            shadow(hsla(0.0, 0.0, 0.0, 0.55), 0.0, 0.0, CARD_SEAM),
-            shadow(hsla(0.0, 0.0, 1.0, 0.08), 0.0, 0.0, CARD_RIM),
+            shadow(hsla(0.0, 0.0, 0.0, 0.38), 4.0, 12.0),
+            shadow(hsla(0.0, 0.0, 0.0, 0.45), 1.0, 2.0),
         ],
     }
+}
+
+/// The `elev:1.content.edge` token: the two crisp 1 pt rings around the
+/// card's rounded rect — a light rim directly outside the slot and a dark
+/// seam outside the rim — one bevel, never two light lines.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct CardEdge {
+    pub rim: Hsla,
+    pub seam: Hsla,
+}
+
+/// The edge colours for the shell's mode.
+///
+/// ```text
+/// Light: rim white, seam rgba(23,26,29,0.12)
+/// Dark:  rim rgba(255,255,255,0.08), seam rgba(0,0,0,0.55)
+/// ```
+pub fn content_card_edge(theme: &Theme) -> CardEdge {
+    match theme.mode {
+        ThemeMode::Light => CardEdge {
+            rim: hsla(0.0, 0.0, 1.0, 1.0),
+            seam: hsla(0.58, 0.12, 0.10, 0.12),
+        },
+        ThemeMode::Dark => CardEdge {
+            rim: hsla(0.0, 0.0, 1.0, 0.08),
+            seam: hsla(0.0, 0.0, 0.0, 0.55),
+        },
+    }
+}
+
+/// A ring quad: the band between a rounded rect and the same rect deflated
+/// by `width` (concentric corners). The fill is the ring colour at alpha 0
+/// so the quad pipeline's straight-alpha edge blend cannot darken the
+/// anti-aliased inner edge.
+fn ring(bounds: Bounds<Pixels>, radius: Pixels, width: Pixels, color: Hsla) -> PaintQuad {
+    let mut fill = color;
+    fill.a = 0.0;
+    quad(
+        bounds,
+        Corners::all(radius),
+        fill,
+        Edges::all(width),
+        color,
+        BorderStyle::Solid,
+    )
+}
+
+fn corner_cover(bounds: Bounds<Pixels>, radius: Pixels, chassis: Rgba) -> PaintQuad {
+    ring(dilate(bounds, radius), radius * 2.0, radius, chassis.into())
+}
+
+fn dilate(bounds: Bounds<Pixels>, amount: Pixels) -> Bounds<Pixels> {
+    Bounds::new(
+        point(bounds.left() - amount, bounds.top() - amount),
+        size(
+            bounds.size.width + amount * 2.0,
+            bounds.size.height + amount * 2.0,
+        ),
+    )
+}
+
+/// The card's corner covers (DESIGN §2): GPUI clips children to rectangles
+/// only, so a GPUI surface hosted in the card — Library, History, the
+/// error/crash/recovery/welcome/empty panes — paints its square corners over
+/// the card's arc. The covers paint the chassis back over exactly those four
+/// wedges: one ring whose inner edge *is* the card's rounded rect (outer
+/// radius `2r`, width `r`), masked to the four `r × r` corner squares; the
+/// quad pipeline anti-aliases that edge the way it draws the card's own
+/// background. Painted as the card's last child: above every GPUI child,
+/// beneath the native web view (which clips itself through its layer).
+/// `chassis` is the chassis paint at this moment; the wedges carry the tint
+/// but not the D6 grain (4 × ~21 pt²). A `radius` of `0` (full screen)
+/// paints nothing.
+pub fn corner_covers(radius: f32, chassis: Rgba) -> AnyElement {
+    canvas(
+        |_, _, _| {},
+        move |bounds, _, window, _| {
+            if radius <= 0.0 {
+                return;
+            }
+            let r = px(radius);
+            let corners = [
+                point(bounds.left(), bounds.top()),
+                point(bounds.right() - r, bounds.top()),
+                point(bounds.left(), bounds.bottom() - r),
+                point(bounds.right() - r, bounds.bottom() - r),
+            ];
+            for origin in corners {
+                let mask = ContentMask {
+                    bounds: Bounds::new(origin, size(r, r)),
+                };
+                window.with_content_mask(Some(mask), |window| {
+                    window.paint_quad(corner_cover(bounds, r, chassis));
+                });
+            }
+        },
+    )
+    .absolute()
+    .top_0()
+    .left_0()
+    .size_full()
+    .into_any_element()
+}
+
+/// The edge layer (DESIGN §2): the rim and seam as exact concentric 1 pt
+/// rings around the card's rounded rect. Spread box shadows keep the
+/// element radius and run ~0.4 pt thicker on the corner diagonal; rings
+/// painted as quads are concentric to the pixel. The layer is a chassis
+/// child laid out as the card dilated by [`CARD_SEAM`] and painted after the
+/// card, so it sits above the card's children and the corner covers,
+/// beneath the self-clipping native view, and on the flush leading edge on
+/// the rail's last 2 pt. A `radius` of `0` (full screen) paints nothing.
+pub fn edge_layer(radius: f32, edge: CardEdge) -> AnyElement {
+    canvas(
+        |_, _, _| {},
+        move |bounds, _, window, _| {
+            if radius <= 0.0 {
+                return;
+            }
+            let r = px(radius);
+            let card = dilate(bounds, px(-CARD_SEAM));
+            window.paint_quad(ring(
+                dilate(card, px(CARD_SEAM)),
+                r + px(CARD_SEAM),
+                px(CARD_SEAM - CARD_RIM),
+                edge.seam,
+            ));
+            window.paint_quad(ring(
+                dilate(card, px(CARD_RIM)),
+                r + px(CARD_RIM),
+                px(CARD_RIM),
+                edge.rim,
+            ));
+        },
+    )
+    .absolute()
+    .top_0()
+    .left_0()
+    .size_full()
+    .into_any_element()
 }
 
 #[cfg(test)]
@@ -296,39 +428,75 @@ mod tests {
     }
 
     #[test]
-    fn the_shadow_follows_the_documented_tokens_per_mode() {
+    fn the_seat_and_the_edge_follow_the_documented_tokens_per_mode() {
         for mode in [ThemeMode::Light, ThemeMode::Dark] {
             let theme = Theme::new(mode, ContrastMode::Standard, Density::Normal);
             let stack = content_card_shadow(&theme);
-            let [far, near, seam, rim] = stack.as_slice() else {
-                panic!(
-                    "{mode:?}: seat (far, near), seam, rim — got {}",
-                    stack.len()
-                );
+            let [far, near] = stack.as_slice() else {
+                panic!("{mode:?}: seat (far, near) — got {}", stack.len());
             };
-            // The seat: two short downward layers, the far one still short.
+            // The seat: two short downward layers, the far one still short,
+            // no spread (the rings are not shadows), nothing inset.
             assert_eq!(near.offset, point(px(0.0), px(1.0)));
             assert_eq!(near.blur_radius, px(2.0));
             assert!(far.offset.y >= px(3.0) && far.offset.y <= px(4.0));
             assert!(far.blur_radius <= px(12.0), "the seat does not glow");
-            // The edge: crisp rings, the rim one pt inside the seam, painted
-            // last so it covers the seam's inner pt.
-            for ring in [seam, rim] {
-                assert_eq!(ring.offset, point(px(0.0), px(0.0)));
-                assert_eq!(ring.blur_radius, px(0.0));
-            }
-            assert_eq!(seam.spread_radius, px(CARD_SEAM));
-            assert_eq!(rim.spread_radius, px(CARD_RIM));
-            assert_eq!(CARD_SEAM, CARD_RIM + 1.0);
-            // The seam is darker than the rim in both modes (one bevel, never
-            // two light lines), and the light rim is opaque white.
-            assert!(seam.color.l < rim.color.l);
+            assert!(stack
+                .iter()
+                .all(|shadow| !shadow.inset && shadow.spread_radius == px(0.0)));
+            // The edge: the seam is darker than the rim in both modes (one
+            // bevel, never two light lines); the light rim is opaque white.
+            let edge = content_card_edge(&theme);
+            assert!(edge.seam.l < edge.rim.l);
             match mode {
-                ThemeMode::Light => assert_eq!(rim.color, hsla(0.0, 0.0, 1.0, 1.0)),
-                ThemeMode::Dark => assert!(rim.color.a < 0.2 && seam.color.a > rim.color.a),
+                ThemeMode::Light => assert_eq!(edge.rim, hsla(0.0, 0.0, 1.0, 1.0)),
+                ThemeMode::Dark => assert!(edge.rim.a < 0.2 && edge.seam.a > edge.rim.a),
             }
-            // Nothing is inset: the slot owns the card's whole inner box.
-            assert!(stack.iter().all(|shadow| !shadow.inset));
+            assert_eq!(CARD_SEAM, CARD_RIM + 1.0);
         }
+    }
+
+    #[test]
+    fn corner_cover_inner_edge_matches_the_card_not_the_edge_rings() {
+        let bounds = Bounds::new(point(px(100.0), px(50.0)), size(px(300.0), px(200.0)));
+        let chassis = gpui::rgb(0xe5e5e2);
+        let cover = corner_cover(bounds, px(CARD_RADIUS), chassis);
+        assert_eq!(dilate(cover.bounds, px(-CARD_RADIUS)), bounds);
+        assert_eq!(
+            cover.corner_radii.top_left - cover.border_widths.left,
+            px(CARD_RADIUS)
+        );
+        assert_eq!(cover.border_widths, Edges::all(px(CARD_RADIUS)));
+        assert_eq!(cover.border_color, Hsla::from(chassis));
+        let fill = cover.background.as_solid().expect("solid fill");
+        assert_eq!(
+            (fill.h, fill.s, fill.l),
+            (
+                cover.border_color.h,
+                cover.border_color.s,
+                cover.border_color.l
+            )
+        );
+        assert_eq!(fill.a, 0.0, "no dark fringe along the card arc");
+    }
+
+    #[test]
+    fn rings_are_concentric_bands_with_a_non_darkening_fill() {
+        let bounds = Bounds::new(point(px(100.0), px(50.0)), size(px(300.0), px(200.0)));
+        let color = hsla(0.58, 0.12, 0.10, 0.12);
+        let band = ring(dilate(bounds, px(2.0)), px(12.0), px(1.0), color);
+        assert_eq!(
+            band.bounds,
+            Bounds::new(point(px(98.0), px(48.0)), size(px(304.0), px(204.0)))
+        );
+        assert_eq!(band.corner_radii, Corners::all(px(12.0)));
+        assert_eq!(band.border_widths, Edges::all(px(1.0)));
+        assert_eq!(band.border_color, color);
+        // The fill is the ring colour at alpha 0, never transparent black.
+        let fill = band.background.as_solid().expect("solid fill");
+        assert_eq!(
+            (fill.h, fill.s, fill.l, fill.a),
+            (color.h, color.s, color.l, 0.0)
+        );
     }
 }
