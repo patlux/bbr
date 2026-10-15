@@ -152,6 +152,37 @@ python3 scripts/e2e_vm.py e2e-shell-persistence --filter favicons
   report the blocker with `prepare.log`/`tart-run.log` instead of falling
   back to the host.
 
+### Visual evidence is official only (Patrick, 2026-10-16)
+
+Chrome pixels are proven exclusively by the sealed visual route:
+
+```bash
+just visual-check                      # browser suite: payload → Tart guest → seal → review
+just visual-check gallery browser      # explicit suites, in this order
+just visual-gate-recover <sha256> <reason>   # after a failed/killed run, once inspected
+```
+
+- Standing authorization: the sealed visual capture runs in the same
+  disposable Tart profile as `just e2e-vm` (existing golden image, private
+  NAT clone, per-run key, no host GUI, clone removed afterwards) without
+  per-run approval, from the main clone or any `bbr-<lane>` sibling
+  worktree. Host capture stays refused; the authorization covers neither
+  baseline acceptance nor golden-image changes.
+- A change that touches chrome paint (tokens, shadows, surfaces, layout
+  of GPUI-drawn chrome) runs `just visual-check` before its intermediate
+  commit and cites the batch path
+  (`reports/visual/batches/<stamp>/review/index.html`) in the commit body.
+  Review happens in that Prüfstand report; exit 1 means review required.
+- Baselines change only through `just visual-accept` after Patrick's
+  explicit per-case approval (a case list in chat is enough). Agents never
+  accept, import, reseal or hand-build a `capture.json`.
+- No unofficial stills: no contact sheets, no `--collect`-style guest PNG
+  returns, no debug-build captures, no ImageMagick diffs as evidence. If
+  the route is blocked, report the batch's `<suite>-error.txt` and the
+  transport diagnostics under `/private/tmp/bbr-visual/<stamp>-*`.
+- The host side needs `python3` ≥ 3.10 on `PATH` (the dev shell's Xcode
+  placeholder is 3.9); pinning it in the dev shell is an open follow-up.
+
 ### Required gates
 
 Use targeted feedback during implementation. Before an intermediate commit inside one exclusively owned slice, run the affected unit/contract tests, Clippy targets, real-app E2E suites, and optimized performance scenarios needed to prove that commit. Intermediate commits must remain coherent and must not claim roadmap completion.
@@ -163,6 +194,7 @@ just verify
 cargo clippy -p bbr --features testkit --all-targets -- -D warnings
 just e2e-vm e2e-<affected-suite>
 just e2e-vm e2e-perf   # when user-visible interaction or timing changed
+just visual-check      # when chrome paint changed; review the batch report
 just e2e-vm e2e        # once after the complete slice is stable
 ```
 

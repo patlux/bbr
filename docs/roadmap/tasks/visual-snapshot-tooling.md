@@ -337,6 +337,32 @@ current portable green gates do not prove actual guest captures or Python parity
 - [ ] Fresh current-tree functional gates pass; reviewed baseline approval remains
   a separate explicit user decision, never inferred from tooling success.
 
+### Route activation (Patrick, 2026-10-16: visual evidence is official only)
+
+The composed internal route had no repository caller: every report so far
+came from out-of-repo scripts, and `just visual-check` pointed at the refused
+host adapter. Patrick's rule that chrome pixels are proven only through the
+sealed route made the route itself the deliverable. AGENTS.md now records the
+standing Tart authorization for it (same profile as `just e2e-vm`).
+
+- [x] `check <suite>…` (`just visual-check`) runs prepare → supervised Tart
+      transport → upstream seal → Collection review per explicit suite; the
+      host producer stays refused and the `--dry-run` preview is unchanged
+      apart from reporting `tart_vm` execution.
+- [x] The guest bootstrap binds the payload's compiled checkout to the main
+      clone **or** a `bbr-<lane>` sibling worktree under the same fixed
+      ancestor (never a remap), so lanes capture before integration.
+- [x] `gate-recover` (`just visual-gate-recover`) exposes upstream's attested
+      host-gate recovery after a failed/killed run.
+- [x] First official run from a lane worktree: batch
+      `1792102072680971000-69492` (seated card edge), sealed, 78 results,
+      clone removed, gate finished.
+- [ ] Pin a host `python3` ≥ 3.10 in the dev shell; the route currently
+      depends on the caller's PATH (mise 3.12 on Patrick's shell).
+- [ ] Retire the legacy host producers still reachable through `just visual`
+      (`batch.py`/`capture.py`) and `tool.py check` as part of the Python
+      cutover.
+
 ### Real-app E2E
 
 - [x] Both fixtures pass semantic readiness/geometry/session checks in both

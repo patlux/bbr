@@ -94,10 +94,16 @@ changes; the visible chassis gap beyond the seam becomes 8 pt.
 - [x] Real-app `just e2e-vm e2e-shell-sidebar` and
       `e2e-shell-titlebar-navigation` stay green on the unchanged
       geometry contract (card frame, native radius 10 → 0 → 10, slot rect).
-- [ ] Visual baselines that show the card edge (`representative-full`,
-      Library/History/Settings pages) are re-captured and reviewed in the
-      visual-snapshots lane after integration; the paint change is not
-      provable without them.
+- [x] Official sealed capture from this lane worktree (`just visual-check`,
+      batch `1792102072680971000-69492`): 36 changed = exactly the
+      card-bearing cases (Ordinary/Representative full+rail, Library,
+      History, light and dark), 36 same (Settings windows, Palette child),
+      6 missing-baseline (the visual lane's pending Find candidates). The
+      Prüfstand diff marks only the card perimeter and the old glow's bleed
+      onto the rail.
+- [ ] Patrick reviews that report and accepts the 36 changed cases
+      explicitly (`just visual-accept`); until then the baselines show the
+      previous edge.
 
 ## Completion gates
 
