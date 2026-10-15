@@ -13,16 +13,9 @@ canonical `just e2e` order. Nothing appears on the host screen.
     python3 scripts/e2e_vm.py e2e-shell-organize e2e-shell-persistence
     python3 scripts/e2e_vm.py e2e              # every suite of `just e2e`
     python3 scripts/e2e_vm.py e2e-shell-persistence --filter favicons
-    python3 scripts/e2e_vm.py e2e-visual-capture --filter representative \
-        --env BBR_VISUAL_CAPTURE_BIN=<repo>/target/debug/bbr \
-        --env BBR_VISUAL_CAPTURE_DIR=<repo>/reports/visual/vm-capture \
-        --collect <repo>/reports/visual/vm-capture
 
 The exit status is 0 only if every executable passed. Logs per executable
-and `summary.log` land in `/tmp/bbr-e2e-vm/run-<stamp>/`; `--collect`
-copies one guest directory (review stills, never baselines) into
-`collected/` there. `--env` values are guest paths: the tree lives at the
-same absolute path in the guest.
+and `summary.log` land in `/tmp/bbr-e2e-vm/run-<stamp>/`.
 """
 
 from __future__ import annotations
@@ -44,31 +37,6 @@ import tart_vm  # noqa: E402
 REPO = Path(__file__).resolve().parents[1]
 WORK = Path("/tmp/bbr-e2e-vm")
 TEST_LINE = re.compile(r"cargo test (?P<cargo>.*?) -- (?P<test>.*)$")
-ENV_LINE = re.compile(r"^[A-Z_][A-Z0-9_]*=.*$", re.DOTALL)
-
-
-def guest_exports(pairs: list[str]) -> str:
-    """`export K=V; ` for every `--env K=V` (shell-quoted), empty without."""
-    for pair in pairs:
-        if not ENV_LINE.match(pair):
-            raise tart_vm.RunnerError(f"--env expects KEY=VALUE with an upper-case KEY: {pair!r}")
-    return "".join(f"export {k}={shlex.quote(v)}; " for k, v in (p.split("=", 1) for p in pairs))
-
-
-def collect(ssh: list[str], guest_dir: str, destination: Path) -> int:
-    """Copy `guest_dir` into `destination` as a tar stream over the run's SSH
-    session; returns the number of files."""
-    if not guest_dir.startswith("/") or ".." in Path(guest_dir).parts:
-        raise tart_vm.RunnerError("--collect expects an absolute guest path without traversal")
-    stream = subprocess.run(
-        [*ssh, f"tar cf - --no-xattrs --no-mac-metadata -C {shlex.quote(guest_dir)} ."],
-        capture_output=True, timeout=600,
-    )
-    if stream.returncode:
-        raise tart_vm.RunnerError(f"collect failed ({stream.returncode}): {stream.stderr.decode(errors='replace')}")
-    destination.mkdir(parents=True, exist_ok=False)
-    subprocess.run(["tar", "xf", "-"], input=stream.stdout, cwd=destination, check=True, timeout=600)
-    return sum(1 for p in destination.rglob("*") if p.is_file())
 
 
 def recipes() -> tuple[dict[str, list[tuple[str, str]]], list[str]]:
@@ -183,12 +151,7 @@ def main(argv: list[str]) -> int:
     parser.add_argument("--source-vm", default="macos-27-golden-gate")
     parser.add_argument("--display", default="3200x1800", help="e2e_windows needs two windows side by side")
     parser.add_argument("--keep-vm", action="store_true")
-    parser.add_argument("--env", action="append", default=[], metavar="KEY=VALUE",
-                        help="exported in the guest before every executable (guest paths)")
-    parser.add_argument("--collect", metavar="GUEST_DIR",
-                        help="guest directory copied into the run's artifacts after the plan")
     args = parser.parse_args(argv[1:])
-    exports = guest_exports(args.env)
 
     plan = plan_for(args.recipes)
     stamp = time.strftime("%Y%m%d-%H%M%S")
@@ -245,8 +208,8 @@ tar cf - --no-xattrs --no-mac-metadata {" ".join(files)} | (cd {REPO}/target && 
         exe = exes[cargo]
         package = "crates/bbr-gallery" if "bbr-gallery" in cargo else "crates/bbr-app"
         test_args = test + (f" {shlex.quote(args.filter)}" if args.filter else "")
-        command = (f"{exports}cd {REPO}/{package} && CARGO_MANIFEST_DIR={REPO}/{package} "
-                   f"RUST_BACKTRACE=1 {REPO}/{exe} {test_args}")
+        command = (f"cd {REPO}/{package} && CARGO_MANIFEST_DIR={REPO}/{package} RUST_BACKTRACE=1 "
+                   f"{REPO}/{exe} {test_args}")
         started = time.monotonic()
         try:
             result = tart_vm.run([*ssh, command], check=False, timeout=1800)
@@ -262,9 +225,6 @@ tar cf - --no-xattrs --no-mac-metadata {" ".join(files)} | (cd {REPO}/target && 
         with (artifacts / "summary.log").open("a") as handle:
             handle.write(line + "\n")
         print(line, flush=True)
-    if args.collect:
-        count = collect(ssh, args.collect, artifacts / "collected")
-        print(f"collected {count} files from {args.collect} into {artifacts / 'collected'}", flush=True)
     print(f"{'FAILED' if failed else 'ok'}: {failed} of {len(plan)} executables failed; logs in {artifacts}")
     return 1 if failed else 0
 

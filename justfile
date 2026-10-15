@@ -325,14 +325,6 @@ gallery:
 e2e-gallery:
     DEVELOPER_DIR="{{xcode_developer_dir}}" {{gui_gate}} timeout --kill-after=10s {{e2e_timeout}} cargo test -p bbr-gallery --bin bbr-gallery -- --ignored --nocapture
 
-# Production-chrome capture producer (feature-enabled), never host execution:
-# `scripts/e2e_vm.py e2e-visual-capture --env BBR_VISUAL_CAPTURE_BIN=… --env
-# BBR_VISUAL_CAPTURE_DIR=… --collect …` runs it in the Tart guest for review
-# stills. `just visual-check` stays the sealed baseline path; this recipe
-# declares the exact build/test plan only and never accepts images.
-e2e-visual-capture:
-    DEVELOPER_DIR="{{xcode_developer_dir}}" {{gui_gate}} timeout --kill-after=10s {{e2e_timeout}} cargo test -p bbr --features visual-capture --test e2e_visual_shell_capture -- --ignored --nocapture --test-threads=1
-
 # Feature-enabled semantic Gallery suite, never host execution. Use the approved
 # hardened Tart route; this recipe declares the exact build/test plan only.
 # It adds capture-observer wiring evidence, not Metal/pixel or input acceptance.
