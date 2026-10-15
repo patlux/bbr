@@ -11,6 +11,18 @@ import vm_selection
 REPO = Path("/Users/patwoz/dev/Personal/macos/bbr")
 
 
+def compiled(repo):
+    """Same rule as vm_bootstrap.compiled: the canonical clone or a sibling
+    lane worktree (`bbr-<lane>`) under the fixed ancestor; never a remap."""
+    if repo == REPO:
+        return
+    name = repo.name
+    lane = name[len(REPO.name) + 1:]
+    if (repo.parent != REPO.parent or not name.startswith(REPO.name + "-") or not lane
+            or len(name) > 64 or not lane.replace("-", "").isalnum()):
+        raise vm_guest.GuestError("bootstrap compiled repository differs")
+
+
 def identity():
     if (Path.home() != Path("/Users/admin") or pwd.getpwuid(os.getuid()).pw_name != "admin"
             or os.getuid() != 501):
@@ -22,8 +34,7 @@ def identity():
 
 
 def prepare_parent(repo):
-    if repo != REPO:
-        raise vm_guest.GuestError("bootstrap compiled repository differs")
+    compiled(repo)
     vm_install._absolute(repo)
     root = Path("/Users/patwoz")
     if root.exists() or root.is_symlink():
@@ -47,8 +58,7 @@ def run(share, digest, repo, suite, work, selected=None, selected_sha256=None):
     if suite not in {"gallery", "browser", "gallery-semantic"}:
         raise vm_guest.GuestError("unsupported bootstrap suite")
     identity()  # Must precede source probes, sudo and writes.
-    if repo != REPO:
-        raise vm_guest.GuestError("bootstrap compiled repository differs")
+    compiled(repo)
     vm_selection.decode(selected, selected_sha256, digest, suite)
     vm_install.inspect(share, digest, repo, suite)
     if work.exists() or work.is_symlink() or not work.parent.is_dir():

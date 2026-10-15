@@ -61,7 +61,7 @@ fn doctor_and_preview_are_structured_read_only_and_do_not_authorize_execution() 
     assert_eq!(doctor["schema"], 1);
     assert_eq!(doctor["data"]["producer_executed"], false);
     assert_eq!(doctor["data"]["environment_probed"], false);
-    assert_eq!(doctor["data"]["execution"], "blocked_pending_tart_adapter");
+    assert_eq!(doctor["data"]["execution"], "tart_vm");
     assert_eq!(doctor["data"]["suites"].as_array().unwrap().len(), 2);
     assert_eq!(
         doctor["data"]["suites"][0]["coverage"]["current_registry_verified"],
@@ -132,7 +132,7 @@ fn doctor_and_preview_are_structured_read_only_and_do_not_authorize_execution() 
     assert_eq!(preview["data"]["dry_run"], true);
     assert_eq!(preview["data"]["producer_executed"], false);
     assert_eq!(preview["data"]["host_gate"]["acquired"], false);
-    assert_eq!(preview["data"]["execution"], "blocked_pending_tart_adapter");
+    assert_eq!(preview["data"]["execution"], "tart_vm");
     assert!(!run.exists() && !report.exists());
 }
 

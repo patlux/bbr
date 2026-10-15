@@ -381,10 +381,19 @@ visual: visual-test
 visual-update batch +cases:
     timeout --kill-after=10s {{visual_timeout}} python3 scripts/visual/update.py "$@"
 
-# Capture builds via mbx, then takes the GUI lock only for the real app suite.
-# First run exits 1 until its explicitly reviewed cases have baselines.
-visual-check:
-    timeout --kill-after=10s {{visual_timeout}} python3 scripts/visual/tool.py check
+# The official capture route (AGENTS.md §E2E/visual in the Tart VM): per suite
+# a host release payload, one disposable Tart guest, the upstream seal, then one
+# Collection review under reports/visual/batches/<stamp>/review/index.html.
+# Exit 1 = review required (never accepts); baselines change only through
+# visual-accept after Patrick's explicit per-case approval. Default: browser.
+visual-check *suites="browser":
+    timeout --kill-after=30s {{visual_timeout}} mbx run --locked --offline --manifest-path scripts/visual/Cargo.toml -- check {{suites}}
+
+# A failed/killed visual run leaves the shared host gate unfinished on purpose.
+# Inspect /private/tmp/gpui-visual-host-$(id -u).lock (owner PID dead, no
+# groups), then attest its exact sha256 and a reason; nothing is deleted.
+visual-gate-recover sha256 reason:
+    timeout --kill-after=10s {{check_timeout}} mbx run --locked --offline --manifest-path scripts/visual/Cargo.toml -- gate-recover {{quote(sha256)}} {{quote(reason)}}
 
 visual-compare run:
     timeout --kill-after=10s {{check_timeout}} python3 scripts/visual/tool.py compare --run {{quote(run)}}

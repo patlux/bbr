@@ -59,7 +59,7 @@ pub fn doctor(repo: &Path) -> Result<Value> {
     Ok(json!({
         "consumer":"bbr-visual", "tool_revision":export.source_revision,
         "suites":suites, "producer_executed":false,"environment_probed":false,
-        "execution":"blocked_pending_tart_adapter", "baseline_writes":false
+        "execution":"tart_vm", "baseline_writes":false
     }))
 }
 
@@ -105,7 +105,7 @@ pub fn preview(
     )?;
     let mut value = serde_json::to_value(preview)?;
     value["suite"] = json!(suite.id());
-    value["execution"] = json!("blocked_pending_tart_adapter");
-    value["warning"] = json!("Configured legacy commands are diagnostic only; native host capture is forbidden. This preview grants no execution or acceptance permission.");
+    value["execution"] = json!("tart_vm");
+    value["warning"] = json!("Configured legacy commands are diagnostic only; native host capture is forbidden. Live capture runs through `check <suite>` in a disposable Tart guest. This preview grants no execution or acceptance permission.");
     Ok(value)
 }

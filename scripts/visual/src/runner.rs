@@ -16,11 +16,13 @@ use std::{
     time::Duration,
 };
 
-/// This recovered consumer predates the mandatory Tart route. Fail before any
-/// build, directory, lease or native execution until the VM adapter is wired.
-/// There is deliberately no environment-variable bypass for this boundary.
+/// The legacy host producer (`produce`) predates the mandatory Tart route and
+/// stays refused before any build, directory, lease or native execution. The
+/// only live capture is `check <suite>` (`vm_check`), which runs the producer
+/// in a disposable Tart guest. There is deliberately no environment-variable
+/// bypass for this boundary.
 pub fn require_vm_execution() -> Result<()> {
-    anyhow::bail!("Tart visual capture is not wired yet; native host capture is forbidden")
+    anyhow::bail!("native host capture is forbidden; run `check <suite>` for the Tart route")
 }
 
 pub fn options(repo: &Path, cancelled: &AtomicBool) -> Result<Options> {

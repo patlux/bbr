@@ -26,6 +26,20 @@ class BootstrapError(ValueError):
     pass
 
 
+def compiled(repo: Path, error=None) -> None:
+    """The actual compiled checkout: the canonical clone or one of its sibling
+    lane worktrees (`bbr-<lane>`) under the same fixed ancestor. This is not a
+    remap: the payload binds exactly this path and the guest tree lands on it."""
+    error = error or BootstrapError
+    if repo == REPO:
+        return
+    name = repo.name
+    lane = name[len(REPO.name) + 1:]
+    if (repo.parent != REPO.parent or not name.startswith(REPO.name + "-") or not lane
+            or len(name) > 64 or not lane.replace("-", "").isalnum()):
+        raise error("bootstrap compiled repository differs")
+
+
 def _source(share, payload, name):
     relative = "scripts/visual/" + name
     expected = payload["sources"].get(relative)
@@ -42,8 +56,7 @@ def _source(share, payload, name):
 def plan(share: Path, digest: str, repo: Path, suite: str,
          selected: str | None = None, selected_sha256: str | None = None) -> str:
     """Pure/read-only: render shell only for the actual compiled checkout path."""
-    if repo != REPO:
-        raise BootstrapError("bootstrap compiled repository differs")
+    compiled(repo)
     if suite not in {"gallery", "browser", "gallery-semantic"}:
         raise BootstrapError("unsupported bootstrap suite")
     vm_selection.decode(selected, selected_sha256, digest, suite)

@@ -309,6 +309,20 @@ class BootstrapContracts(unittest.TestCase):
         self.assertEqual(calls, [(path, {"mode": 0o700}) for path in (
             "/Users/patwoz/dev", "/Users/patwoz/dev/Personal", "/Users/patwoz/dev/Personal/macos")])
 
+    def test_compiled_checkout_is_the_clone_or_a_sibling_lane_worktree_only(self):
+        parent = vm_bootstrap.REPO.parent
+        for module, error in ((vm_bootstrap, vm_bootstrap.BootstrapError),
+                              (vm_bootstrap_guest, vm_bootstrap_guest.vm_guest.GuestError)):
+            for accepted in (vm_bootstrap.REPO, parent / "bbr-content-card-seated-edge",
+                             parent / "bbr-lane-2"):
+                module.compiled(accepted)
+            for rejected in (parent / "bbrx", parent / "bbr-", parent / "bbr-lane/..",
+                             parent / "bbr-lane.evil", parent / "bbr-la ne", parent / "other-bbr",
+                             parent.parent / "bbr-lane", Path("/private/tmp/bbr-lane"),
+                             parent / ("bbr-" + "x" * 70), self.fixture.repo):
+                with self.assertRaisesRegex(error, "compiled"):
+                    module.compiled(rejected)
+
     def test_guest_tail_rejects_host_before_source_or_sudo_and_foreign_parent(self):
         with patch.object(vm_bootstrap_guest.vm_install, "inspect") as inspect, \
              patch.object(vm_bootstrap_guest, "prepare_parent") as parent:

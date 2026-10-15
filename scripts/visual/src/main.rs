@@ -1,18 +1,10 @@
 use anyhow::{ensure, Context, Result};
-use bbr_visual::{environment, provenance, runner, Suite};
-use cargo_gpui_visual::{
-    capture,
-    collection::{self, Suite as CollectionSuite},
-    config::Config,
-    store,
-};
+use bbr_visual::{environment, provenance, runner, vm_check, Suite};
+use cargo_gpui_visual::collection;
 use std::{
     path::PathBuf,
     process::ExitCode,
-    sync::{
-        atomic::{AtomicBool, Ordering},
-        Arc,
-    },
+    sync::{atomic::AtomicBool, Arc},
     time::{SystemTime, UNIX_EPOCH},
 };
 
@@ -37,7 +29,7 @@ fn run() -> Result<u8> {
         return Ok(code);
     }
     let command = args.first().context(
-        "command required: environment, produce, check, compare, update, doctor, list, inspect",
+        "command required: environment, produce, check, compare, update, gate-recover, doctor, list, inspect",
     )?;
     match command.as_str() {
         "prepare" => {
@@ -68,71 +60,42 @@ fn run() -> Result<u8> {
             runner::produce(&repo, Suite::parse(&args[1])?, &output, &cancelled)?;
         }
         "check" => {
-            ensure!(args.len() == 1, "check takes no arguments");
+            // The official route: explicit suites, each captured in its own
+            // disposable Tart guest and sealed by upstream, then one Collection
+            // review. No host producer, no acceptance, no implicit latest.
+            let suites = vm_check::parse_suites(&args[1..])?;
             provenance::verify(&repo)?;
-            runner::require_vm_execution()?;
             let stamp = format!(
                 "{}-{}",
                 SystemTime::now().duration_since(UNIX_EPOCH)?.as_nanos(),
                 std::process::id()
             );
-            let batch = repo.join("reports/visual/batches").join(stamp);
-            store::no_symlinks(&batch)?;
-            std::fs::create_dir_all(&batch)?;
-            let mut suites = Vec::new();
-            for suite in [Suite::Gallery, Suite::Browser] {
-                let config = Config::load(&repo.join(suite.config()))?;
-                let run = batch.join(suite.id());
-                let report = batch.join(format!("{}-diagnostic", suite.id()));
-                // One supervisor owns build/native groups. Portable sealing
-                // calls local Rust policy without spawning another supervisor.
-                if let Err(error) = capture::capture_local(
-                    capture::Paths {
-                        repo: &repo,
-                        run: &run,
-                        baselines: &repo.join(&config.baselines),
-                        report: &report,
-                    },
-                    &config,
-                    &cancelled,
-                    |output| runner::produce(&repo, suite, output, &cancelled),
-                    || environment::probe(&repo, suite, &cancelled),
-                ) {
-                    eprintln!("{} capture failed: {error:#}", suite.id());
-                    std::fs::write(
-                        batch.join(format!("{}-error.txt", suite.id())),
-                        format!("{error:#}\n"),
-                    )?;
-                }
-                ensure!(
-                    !cancelled.load(Ordering::SeqCst),
-                    "visual check cancelled; partial evidence retained without a review"
-                );
-                suites.push(CollectionSuite {
-                    id: suite.id().into(),
-                    label: match suite {
-                        Suite::Gallery => "Gallery",
-                        Suite::Browser => "Browser chrome",
-                    }
-                    .into(),
-                    repo: repo.clone(),
-                    run,
-                    baselines: repo.join(config.baselines),
-                    catalog: format!("scripts/visual/catalogs/{}.json", suite.id()),
-                });
-            }
-            let report = batch.join("review");
-            let result = collection::compare(&suites, &report)?;
+            let outcome = vm_check::check(&repo, &suites, &stamp, &cancelled)?;
             println!(
                 "{}: {}",
-                if result.passed {
+                if outcome.passed {
                     "PASS"
                 } else {
                     "REVIEW REQUIRED / UNPROVEN COVERAGE"
                 },
-                report.join("index.html").display()
+                outcome.report.join("index.html").display()
             );
-            return Ok(if result.passed { 0 } else { 1 });
+            println!("batch: {}", outcome.batch.display());
+            return Ok(if outcome.passed { 0 } else { 1 });
+        }
+        "gate-recover" => {
+            // The host gate keeps durable unfinished-lease evidence after a
+            // failed or killed run. Recovery is explicit: the caller attests
+            // the exact inspected lock bytes (sha256) and a reason; upstream
+            // proves the recorded owner/groups absent and never deletes the
+            // lock or touches captures/baselines.
+            ensure!(
+                args.len() == 3,
+                "gate-recover requires the inspected lock sha256 and a reason"
+            );
+            let options = runner::options(&repo, &cancelled)?;
+            cargo_gpui_visual::gate::Gate::recover(&options, &args[1], &args[2], &cancelled)?;
+            println!("host gate recovered: {}", options.path.display());
         }
         "update" => {
             ensure!(

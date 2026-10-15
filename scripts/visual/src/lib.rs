@@ -14,6 +14,7 @@ pub mod runner;
 pub mod selected_request;
 pub mod semantic;
 pub mod vm_capture;
+pub mod vm_check;
 pub mod vm_cleanup;
 pub mod vm_environment;
 pub mod vm_rendering;
