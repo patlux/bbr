@@ -17,7 +17,10 @@ use std::sync::{Arc, Mutex};
 use std::thread::JoinHandle;
 
 mod auth;
+mod download_hold;
 mod hang;
+
+pub use download_hold::DownloadHold;
 
 /// An HTTP/1.1 GET-only fixture server on 127.0.0.1.
 pub struct FixtureServer {
@@ -27,6 +30,7 @@ pub struct FixtureServer {
     port: u16,
     root: PathBuf,
     hits: Arc<Mutex<HashMap<String, u32>>>,
+    download_holds: Arc<download_hold::Holds>,
     #[allow(dead_code)]
     thread: Option<JoinHandle<()>>,
 }
@@ -43,6 +47,8 @@ impl FixtureServer {
         let root = root.into();
         let hits = Arc::new(Mutex::new(HashMap::new()));
         let hits_for_thread = hits.clone();
+        let download_holds = Arc::new(download_hold::Holds::default());
+        let holds_for_thread = download_holds.clone();
         let root_for_thread = root.clone();
         let accept_listener = listener.try_clone()?;
         let thread = std::thread::Builder::new()
@@ -53,10 +59,11 @@ impl FixtureServer {
                         Ok(s) => {
                             let hits = hits_for_thread.clone();
                             let root = root_for_thread.clone();
+                            let holds = holds_for_thread.clone();
                             std::thread::Builder::new()
                                 .name("bbr-fixtures-conn".into())
                                 .spawn(move || {
-                                    let _ = handle_connection(s, &root, &hits);
+                                    let _ = handle_connection(s, &root, &hits, &holds);
                                 })
                                 .ok();
                         }
@@ -70,6 +77,7 @@ impl FixtureServer {
             port,
             root,
             hits,
+            download_holds,
             thread,
         })
     }
@@ -94,6 +102,13 @@ impl FixtureServer {
         self.hits.lock().unwrap().get(path).copied().unwrap_or(0)
     }
 
+    /// Withhold one download response until its test observes the initial row.
+    /// Only exact download URLs on this server are accepted; response bytes and
+    /// the native download path remain unchanged after explicit release.
+    pub fn hold_download(&self, url: &str) -> std::io::Result<DownloadHold> {
+        self.download_holds.register(&self.base_url(), url)
+    }
+
     /// The fixture root.
     pub fn root(&self) -> &Path {
         &self.root
@@ -104,6 +119,7 @@ fn handle_connection(
     mut stream: TcpStream,
     root: &Path,
     hits: &Arc<Mutex<HashMap<String, u32>>>,
+    holds: &download_hold::Holds,
 ) -> std::io::Result<()> {
     let mut reader = BufReader::new(stream.try_clone()?);
     let mut request_line = String::new();
@@ -134,6 +150,8 @@ fn handle_connection(
 
     // Path-only target (strip any query string).
     let path = target.split('?').next().unwrap_or("/");
+    let held_path = holds.resolve(path)?;
+    let path = held_path.as_deref().unwrap_or(path);
     // Deterministic download fixtures (the Phase-8 downloads E2E): the
     // download routes need response shapes the static-file path cannot
     // express — known/unknown content length, slow trickle, zero bytes,
