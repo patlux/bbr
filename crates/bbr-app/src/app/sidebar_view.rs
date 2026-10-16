@@ -233,6 +233,7 @@ impl BbrApp {
         SidebarModel {
             sidebar_width,
             chrome_tint,
+            background_in_parent: true,
             tint_fade: self.tint_fade(),
             grain: self.active_space_appearance().paper.grain,
             floating: false,

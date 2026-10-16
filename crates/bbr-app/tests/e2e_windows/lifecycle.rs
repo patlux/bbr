@@ -14,6 +14,26 @@ fn a_new_window_selects_its_own_tab_and_takes_pages_without_reload() {
     let result = catch_unwind(AssertUnwindSafe(|| {
         let mut client = connect(&socket);
         let mut since = ready(&mut client, &token);
+        client
+            .send_ok(&dsl::set_display_accessibility(
+                Some(false),
+                Some(true),
+                Some(false),
+            ))
+            .unwrap();
+        let first_material = settle(&mut client, "first material", |s| {
+            s.content_card
+                .chrome_material
+                .is_some_and(|m| m.attached && m.enabled && m.card_mask_valid)
+        });
+        assert_eq!(
+            first_material
+                .content_card
+                .chrome_material
+                .unwrap()
+                .web_view_opaque,
+            Some(true)
+        );
         let first_view = client.snapshot().unwrap().active_web_view.unwrap();
         let marker_view = open_tab(&mut client, &mut since, &marker, None);
         let loaded = settle(&mut client, "the marker title", |s| {
@@ -30,6 +50,16 @@ fn a_new_window_selects_its_own_tab_and_takes_pages_without_reload() {
         assert_eq!(opened.active_space, space);
         assert_eq!(opened.active_tab_index, None, "the empty state");
         assert_eq!(opened.tabs.len(), 2, "the space's tabs are shared");
+        let second_material = settle(&mut client, "second material without a web view", |s| {
+            s.content_card
+                .chrome_material
+                .is_some_and(|m| m.attached && m.enabled && m.card_mask_valid)
+        })
+        .content_card
+        .chrome_material
+        .unwrap();
+        assert!(second_material.behind_window && !second_material.window_opaque);
+        assert_eq!(second_material.web_view_opaque, None);
         let first = entry(&opened, 0);
         assert_eq!(first.selected_index, Some(1));
         assert_eq!(first.selected_view, Some(marker_view));
@@ -44,6 +74,10 @@ fn a_new_window_selects_its_own_tab_and_takes_pages_without_reload() {
             s.active_web_view == Some(marker_view)
         });
         assert_eq!(entry(&moved, second).selected_root, Some(second));
+        assert_eq!(
+            moved.content_card.chrome_material.unwrap().web_view_opaque,
+            Some(true)
+        );
         assert_eq!(
             entry(&moved, 0).selected_index,
             None,

@@ -71,6 +71,8 @@ canonical owner stays Phase 8 through the
 
 ## Shell and interaction
 
+- [ ] Add [desktop glass to the sidebar and content surround](../tasks/chrome-desktop-glass.md), without changing website or WKWebView opacity.
+
 The bounded [Portal window-lifecycle regression](../tasks/portal-window-lifecycle.md)
 keeps the Command Palette attached to its owning browser window across activation.
 

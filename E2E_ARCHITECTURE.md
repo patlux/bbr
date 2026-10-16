@@ -64,6 +64,30 @@ responder).
   consecutive unchanged window-bounds + native-content observations so any
   remaining late AppKit geometry settles before absolute assertions.
 
+### Chrome-only desktop material coverage
+
+The Sidebar suite exercises light/dark material, live Reduce Transparency and
+Increase Contrast fallbacks, collapse and unchanged WebView/session identity.
+The content-card scenario also checks the installed native mask through resize
+and the existing full-screen presentation override; it does not prove an actual
+AppKit full-screen transition. The Windows lifecycle suite covers a second
+empty browser window and moving an opaque warm WebView into it.
+
+`ContentCardSnapshot::chrome_material` reads native attachment, effect state,
+behind-window blending, activation policy, window opacity, bounds and actual
+mask-path containment. WebView opacity comes from public `NSView::isOpaque()`;
+no test setter changes it. The optional field and the added per-option
+`reduce_transparency` override accept old snapshot/request shapes.
+
+Visual fixtures explicitly disable reduced transparency so the Tart guest's
+system fallback cannot silently replace glass coverage. The official sealed
+Metal readback excludes the native material and Core Animation mask; these
+pixels remain a withheld catalog case, not synthesized evidence. Warm tab and
+sidebar toggle/resize/restore performance drivers now require enabled glass and
+opaque WebViews outside the timed regions. The optimized drivers compile, but
+performance execution remains deferred and unpassed. Exact runs and remaining
+acceptance live in [the glass packet](docs/roadmap/tasks/chrome-desktop-glass.md).
+
 ### Renderer-isolation suite
 
 `just e2e-shell-responsiveness` launches the real optimized-capable `bbr`

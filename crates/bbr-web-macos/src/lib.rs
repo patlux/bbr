@@ -23,6 +23,11 @@
 pub mod accessibility_display;
 
 #[cfg(target_os = "macos")]
+mod chrome_mask;
+#[cfg(target_os = "macos")]
+pub mod chrome_material;
+
+#[cfg(target_os = "macos")]
 pub mod content_gesture;
 
 #[cfg(target_os = "macos")]

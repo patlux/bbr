@@ -1,6 +1,51 @@
 <!-- bbr:current-delivery -->
 # Current delivery
 
+## Chrome-only desktop glass checkpoint
+
+The current local writer owns [desktop glass](../roadmap/tasks/chrome-desktop-glass.md)
+on `/Users/patwoz/dev/Personal/macos/bbr`, based on clean
+`main@2a86e975f7481504507308e20e13abf58fa88be4`. The earlier 110-file candidate
+is now committed in four groups (`ec09ffd7`, `d77ce376`, `b5e8ca1d`, `2a86e975`);
+the historical dirty-tree statements below are not current ownership.
+
+Scope: sidebar and content surround only, public AppKit behind-window material,
+per-window lifecycle and accessibility fallback. No website/WebKit opacity
+changes, baseline acceptance, host GUI, push or unrelated findings. Existing
+functional/visual evidence belongs to the previous candidate, not this change.
+
+Scheduling audit: this request authorizes one local implementation, not delegated
+queue delivery. Other open queue items and sibling worktrees remain untouched;
+no new lanes, workflows or independent review are claimed. Shared integration
+points are browser startup, component Root, chrome paint and testkit appearance.
+Implementation is verified as an intermediate checkpoint, not final product
+acceptance. Full mbx-routed `just verify` and strict testkit all-target Clippy
+pass; the app testkit binary has 381 unit tests. The hardened sequential
+functional aggregate passes **351 tests / 59 executables** at
+`/tmp/bbr-e2e-vm/run-20261016-215841-31674/summary.log`, after the affected
+Sidebar/Windows/Spaces **59 tests / 7 executables** passed. Clone/key/process/
+disk cleanup and former SSH unreachability are verified. No canonical `just e2e`
+claim: Patrick's performance-execution deferral still excludes `e2e-perf`.
+
+Final official sealed report:
+`/Users/patwoz/dev/Personal/macos/bbr/reports/visual/batches/1792182619885735000-78484/review/index.html`.
+It contains **162 images: 74 same / 88 changed**, zero capture errors and no
+rendering-environment mismatch. All images repeat the preceding glass batch
+byte-for-byte; all 1,547 sealed source hashes match. Scoped local review covered
+representative light/dark rails, dark full shell and light History actual/diff.
+Material is attached/enabled with a valid native mask; real WebViews remain
+opaque. Metal readback excludes final native desktop blur and corner masking,
+so this coverage is explicitly withheld; exit 1 remains review required.
+No baseline acceptance or final visual approval is claimed.
+
+Warm-tab and sidebar toggle/resize/restore performance scenarios now assert glass
+and opaque WebViews; optimized short/full executables compile. Execution remains
+deferred under the original 2026-09-27 instruction (not merely a host-only pause).
+Remaining acceptance: final desktop composite/inactive/1×–2× native edges,
+actual full-screen/scale transitions, and performance. Full details, retained
+failed attempts and exact logs: [glass evidence](../roadmap/tasks/chrome-desktop-glass.md#delivery-ledger).
+No unrelated review findings or historical delivery records were changed.
+
 ## Linux-to-macOS local integration checkpoint (2026-10-16)
 
 Patrick requested “ok lass das in main mergen” and explicitly authorized the

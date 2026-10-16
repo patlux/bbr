@@ -100,6 +100,32 @@ hardcoded render colors or a Gallery-local shell.
 
 ## 2. Composition, materials, and elevation
 
+### Desktop-facing chrome material (Patrick, 2026-10-16)
+
+The sidebar and frame around the seated content card use public AppKit
+`NSVisualEffectView` (`Sidebar`, `BehindWindow`, follows window activation).
+This revises the earlier matte-background direction for these two surfaces
+only. Website/WKWebView content remains opaque, unsampled and unchanged;
+internal content pages and floating panels keep their solid surfaces.
+
+One shared tint covers rail and chassis. Its coverage is at least 85%, raised
+per space tint to keep compensated channels in gamut. Light tints compensate
+toward white, dark tints toward black, preserving the existing D3 contrast
+floors even over the worst black/white backdrop. Space transitions interpolate
+one paint rather than stacking translucent layers. Foreground tokens and all
+card geometry stay unchanged. This is native macOS translucency, not a Liquid
+Glass claim.
+
+Reduce Transparency and Increase Contrast select the original opaque tint
+and disable the effect. Unsupported/native-install failure does the same.
+A public Core Animation mask removes only the four inverse card-corner wedges
+from the GPUI layer, revealing the matching material beneath; no web pixels
+enter GPUI. Native material/mask pixels are outside Metal-only visual readback:
+sealed captures prove GPUI paint, typed native observations prove configuration,
+and neither alone proves the final composited desktop appearance.
+
+Scope and acceptance: [chrome desktop glass](docs/roadmap/tasks/chrome-desktop-glass.md).
+
 ### Layers (bottom → top)
 
 ```text

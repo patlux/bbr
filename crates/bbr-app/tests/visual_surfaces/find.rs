@@ -50,7 +50,11 @@ pub fn capture() {
                 .send_ok(&dsl::set_appearance_override(Some(mode)))
                 .unwrap();
             client
-                .send_ok(&dsl::set_accessibility_override(Some(false), Some(true)))
+                .send_ok(&dsl::set_display_accessibility(
+                    Some(false),
+                    Some(true),
+                    Some(false),
+                ))
                 .unwrap();
             client
                 .send_ok(&Request::SetWindowSize {

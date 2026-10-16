@@ -44,6 +44,7 @@ mod benchmarks_pointer;
 mod benchmarks_responsiveness;
 #[cfg(feature = "testkit")]
 mod benchmarks_u2;
+mod chrome_glass;
 mod command_activate;
 #[cfg(feature = "testkit")]
 mod command_benchmark_history;
@@ -507,6 +508,10 @@ pub struct BbrApp {
         Option<bbr_web_macos::accessibility_display::AccessibilityDisplayObserver>,
     /// The foreground task draining accessibility-change signals.
     accessibility_task: Option<gpui::Task<()>>,
+    #[cfg(target_os = "macos")]
+    chrome_material: Rc<RefCell<Option<bbr_web_macos::chrome_material::ChromeMaterial>>>,
+    #[cfg(target_os = "macos")]
+    chrome_material_attempted: bool,
     /// Testkit-only full-screen presentation override (DESIGN §2 full-bleed
     /// card): `None` follows the real window's full-screen state.
     #[cfg(feature = "testkit")]

@@ -201,6 +201,9 @@ pub struct SidebarModel {
     /// §11.3: the active space's resolved chrome tint (or the interpolated
     /// swipe tint while a swipe tracks).
     pub chrome_tint: gpui::Rgba,
+    /// The browser chassis already paints the continuous rail background.
+    /// Gallery standalone rails retain their own paint.
+    pub background_in_parent: bool,
     /// D4: `(source tint, moment key)` while a committed space switch
     /// cross-fades the chrome tint.
     pub tint_fade: Option<(gpui::Rgba, u64)>,

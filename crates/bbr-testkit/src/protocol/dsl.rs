@@ -568,6 +568,19 @@ pub fn set_accessibility_override(
     Request::SetAccessibilityOverride {
         increase_contrast,
         reduce_motion,
+        reduce_transparency: None,
+    }
+}
+
+pub fn set_display_accessibility(
+    increase_contrast: Option<bool>,
+    reduce_motion: Option<bool>,
+    reduce_transparency: Option<bool>,
+) -> Request {
+    Request::SetAccessibilityOverride {
+        increase_contrast,
+        reduce_motion,
+        reduce_transparency,
     }
 }
 

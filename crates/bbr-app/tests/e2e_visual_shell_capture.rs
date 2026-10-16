@@ -160,7 +160,11 @@ fn capture(kind: CaptureKind, appearance: ThemeModeOverride) {
             .send_ok(&dsl::set_appearance_override(Some(appearance)))
             .expect("force capture appearance");
         client
-            .send_ok(&dsl::set_accessibility_override(Some(false), Some(true)))
+            .send_ok(&dsl::set_display_accessibility(
+                Some(false),
+                Some(true),
+                Some(false),
+            ))
             .expect("normal contrast and reduced motion, independent of host");
         client
             .send_ok(&Request::FlushFrame)
@@ -190,6 +194,13 @@ fn capture(kind: CaptureKind, appearance: ThemeModeOverride) {
         wait_for_window_settled(&mut client, deadline());
         let snapshot = wait_for_capture_ready(&mut client);
         assert_capture_state(kind, appearance, &snapshot);
+        let material = snapshot
+            .content_card
+            .chrome_material
+            .expect("native chrome material");
+        assert!(material.attached && material.enabled && material.card_mask_valid);
+        assert!(!material.reduce_transparency);
+        assert_eq!(material.web_view_opaque, Some(true));
         let window_number = snapshot.portal.parent_window_number;
         assert!(window_number > 0, "native parent window number is required");
 

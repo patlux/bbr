@@ -219,6 +219,7 @@ pub struct Root {
     pub(super) focused_input: Option<Entity<InputState>>,
     pub notification: Entity<NotificationList>,
     sheet_size: Option<DefiniteLength>,
+    background: Option<gpui::Hsla>,
     view: AnyView,
 }
 
@@ -245,8 +246,15 @@ impl Root {
             focused_input: None,
             notification: cx.new(|cx| NotificationList::new(window, cx)),
             sheet_size: None,
+            background: None,
             view: view.into(),
         }
+    }
+
+    /// Override only this window's background, without changing the shared theme.
+    pub fn background(mut self, color: impl Into<gpui::Hsla>) -> Self {
+        self.background = Some(color.into());
+        self
     }
 
     pub fn update<F, R>(window: &mut Window, cx: &mut App, f: F) -> R
@@ -406,7 +414,7 @@ impl Render for Root {
                 .relative()
                 .size_full()
                 .font_family(cx.theme().font_family.clone())
-                .bg(cx.theme().background)
+                .bg(self.background.unwrap_or(cx.theme().background))
                 .text_color(cx.theme().foreground)
                 .child(self.view.clone()),
         )

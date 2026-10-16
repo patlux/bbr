@@ -27,6 +27,8 @@ pub(crate) use registry::{Registry, Target, WindowRow};
 pub(crate) fn browser_window_options(bounds: Bounds<gpui::Pixels>, hidden: bool) -> WindowOptions {
     WindowOptions {
         window_bounds: Some(WindowBounds::Windowed(bounds)),
+        #[cfg(target_os = "macos")]
+        window_background: gpui::WindowBackgroundAppearance::Transparent,
         // The production chrome owns the complete top rail. GPUI's
         // public full-size-content titlebar keeps the native traffic
         // lights but lets the light sidebar material continue behind
@@ -252,7 +254,9 @@ fn open_shell(
     let opened = cx.open_window(browser_window_options(bounds, hidden), |window, cx| {
         let app = cx.new(|cx| BbrApp::assemble(parts, cx));
         shell = Some(app.clone());
-        cx.new(|cx| gpui_component::Root::new(app, window, cx))
+        cx.new(|cx| {
+            gpui_component::Root::new(app, window, cx).background(gpui::transparent_black())
+        })
     });
     let (Ok(handle), Some(app)) = (opened, shell) else {
         log::error!("could not open a browser window");
@@ -275,6 +279,8 @@ fn open_shell(
     let _ = with_app(&handle, &app, cx, |view, window, cx| {
         view.observe_system_appearance(window, cx);
         view.observe_system_accessibility(cx);
+        view.prepare_chrome_material(window);
+        cx.notify();
     });
     Some((handle, app))
 }

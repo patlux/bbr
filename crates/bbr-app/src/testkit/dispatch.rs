@@ -667,8 +667,14 @@ pub(crate) fn dispatch(
         Request::SetAccessibilityOverride {
             increase_contrast,
             reduce_motion,
+            reduce_transparency,
         } => with_app(window, app, cx, |view, _window, cx| {
-            view.set_accessibility_override(increase_contrast, reduce_motion, cx);
+            view.set_accessibility_override(
+                increase_contrast,
+                reduce_motion,
+                reduce_transparency,
+                cx,
+            );
             Response::Ok
         })
         .unwrap_or_else(err_response),

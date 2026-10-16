@@ -10,6 +10,8 @@ Repository workflow and mandatory verification: [AGENTS.md](AGENTS.md).
 
 ## Current execution
 
+- **Chrome material:** [Desktop glass for browser chrome](docs/roadmap/tasks/chrome-desktop-glass.md) adds native behind-window material only to the sidebar and content surround; WebKit content remains opaque. Implementation and fresh evidence are pending.
+
 - **Isolated build tooling:** [Linux-to-macOS cross-build](docs/roadmap/tasks/linux-macos-cross-build.md) builds and ad-hoc signs the ARM64 macOS app on Linux, with checksum-bound Tart functional evidence. Native defaults and Visual ownership remain unchanged; performance and independent acceptance remain open.
 
 - **Portal lifecycle fix:** [Portal window lifecycle](docs/roadmap/tasks/portal-window-lifecycle.md) binds the Command Palette to its owning window; locally integrated with fresh combined-tree Tart verification, including the Titlebar reload-synchronization repair.

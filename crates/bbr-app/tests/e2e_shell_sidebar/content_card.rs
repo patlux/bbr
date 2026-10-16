@@ -51,6 +51,13 @@ fn content_card_seats_the_native_slot_through_resize_collapse_and_full_screen() 
         let mut client = connect(&socket);
         client.hello(&token).expect("hello");
         client.attach(None).expect("attach");
+        client
+            .send_ok(&dsl::set_display_accessibility(
+                Some(false),
+                Some(true),
+                Some(false),
+            ))
+            .unwrap();
         let settled = wait_for_window_settled(&mut client, deadline());
         let view = settled.active_web_view.expect("first native view");
         let sessions = settled.engine_sessions;
@@ -91,6 +98,13 @@ fn content_card_seats_the_native_slot_through_resize_collapse_and_full_screen() 
                 && s.content_card.native_radius == Some(10.0)
         });
         assert_view_and_sessions_preserved(&resized, view, sessions);
+        assert!(
+            resized
+                .content_card
+                .chrome_material
+                .unwrap()
+                .card_mask_valid
+        );
 
         // Collapse: the leading inset appears and the native titlebar band
         // stays empty chassis above the card.
@@ -145,6 +159,7 @@ fn content_card_seats_the_native_slot_through_resize_collapse_and_full_screen() 
             ) && s.content_card.native_radius == Some(0.0)
         });
         let card = full.content_card;
+        assert!(card.chrome_material.unwrap().card_mask_valid);
         assert!(card.full_screen && !card.shadow);
         assert_eq!(
             (
@@ -169,6 +184,7 @@ fn content_card_seats_the_native_slot_through_resize_collapse_and_full_screen() 
                 && s.content_card.native_radius == Some(10.0)
         });
         assert_view_and_sessions_preserved(&seated, view, sessions);
+        assert!(seated.content_card.chrome_material.unwrap().card_mask_valid);
 
         client.quit().expect("quit");
         let status = wait_for_exit(&mut harness.child, Instant::now() + Duration::from_secs(10));

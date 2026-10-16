@@ -49,6 +49,11 @@ menu follow-up, which may start after F2 closeout when that territory is free.
 
 ## Shell craft — Phase 4
 
+Desktop-facing sidebar/chassis material is tracked in the bounded
+[chrome glass packet](../tasks/chrome-desktop-glass.md). Native/functional
+implementation evidence exists; final desktop compositing and deferred
+performance acceptance remain open. The packet owns the detailed checks.
+
 - [x] Establish the serial [GPUI-CE + gpui-component Root anchor](../tasks/gpui-ce-components-anchor.md), then compose standard input/menu/button behavior through gpui-component while retaining BBR tokens, geometric icons, native WKWebViews, and browser-specific orchestration. *(Integrated and canonical-E2E green at `f89a479`.)*
 - [x] Collapse address entry into one surface through the [address control and palette packet](../tasks/url-address-control-palette.md). The integrated control is a borderless domain pill with button semantics and no focus ring; the palette covers it with the full URL preselected, leaving one editing authority.
 - [x] Deliver the bounded [browser-MVP sidebar UI packet](../tasks/browser-mvp-sidebar-ui.md) as the compact Zed-inspired BBR hierarchy with Favorites, Folders, tabs, footer controls, and real New Space/New Folder actions. Patrick's later product revision replaced the footer `[Spaces]` toggle through the completed [footer space strip, appearance, and swipe packet](../tasks/space-footer-strip-appearance-ui.md).

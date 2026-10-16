@@ -69,16 +69,7 @@ impl BbrApp {
             .flex_1()
             .min_w_0()
             .h_full()
-            .bg(self.active_chrome_tint())
-            // D4: the chassis shares the rail's tint cross-fade.
-            .when_some(
-                bbr_ui::components::tint_fade::tint_fade_layer(
-                    &self.theme(),
-                    "chassis",
-                    self.tint_fade(),
-                ),
-                |chassis, layer| chassis.child(layer),
-            )
+            // One tint layer in the browser root covers rail and chassis.
             // D6: the chassis shares the rail's static grain (beneath the
             // card, which covers the web content).
             .when(self.active_space_appearance().paper.grain, |chassis| {
@@ -111,7 +102,7 @@ impl BbrApp {
                     // every GPUI child and beneath the self-clipping native
                     // view. The chassis-corner wedges follow the D4 tint
                     // cross-fade exactly like the chassis itself.
-                    .when(card.radius > 0.0, |card_el| {
+                    .when(card.radius > 0.0 && !self.glass_enabled(), |card_el| {
                         card_el
                             .child(corner_covers(card.radius, self.active_chrome_tint()))
                             .children(bbr_ui::components::tint_fade::tint_fade_painted(
@@ -167,6 +158,7 @@ impl BbrApp {
             shadow: card.shadow,
             full_screen: self.is_full_screen(window),
             native_radius: native_radius.map(|radius| radius as f32),
+            chrome_material: self.chrome_material_snapshot(),
         }
     }
 }

@@ -143,12 +143,14 @@ pub fn sidebar_surface(
         // border.
         // Blueprint D02: the floating panel paints the material itself (the
         // notch around the traffic lights stays clear).
-        .when(!model.floating, |el| el.bg(model.chrome_tint))
+        .when(!model.floating && !model.background_in_parent, |el| {
+            el.bg(model.chrome_tint)
+        })
         // D4: the source tint fades out above the committed paint and
         // beneath every child.
         .when_some(
             crate::components::tint_fade::tint_fade_layer(theme, "rail", model.tint_fade)
-                .filter(|_| !model.floating),
+                .filter(|_| !model.floating && !model.background_in_parent),
             |el, layer| el.child(layer),
         )
         // D6: the static grain sits on the tint, beneath every child.

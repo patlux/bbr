@@ -11,7 +11,7 @@ mod card;
 mod footer;
 mod motion;
 mod u2;
-pub use card::ContentCardSnapshot;
+pub use card::{ChromeMaterialSnapshot, ContentCardSnapshot};
 pub use footer::FooterSnapshot;
 pub use motion::{IllustrationSnapshot, MotionMomentSnapshot, MotionSnapshot};
 pub use u2::{

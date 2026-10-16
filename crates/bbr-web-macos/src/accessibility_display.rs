@@ -24,6 +24,8 @@ pub struct AccessibilityDisplayOptions {
     pub increase_contrast: bool,
     /// System Settings → Accessibility → Display → Reduce motion.
     pub reduce_motion: bool,
+    /// System Settings → Accessibility → Display → Reduce transparency.
+    pub reduce_transparency: bool,
 }
 
 /// Read the current system values.
@@ -32,6 +34,7 @@ pub fn current_options() -> AccessibilityDisplayOptions {
     AccessibilityDisplayOptions {
         increase_contrast: workspace.accessibilityDisplayShouldIncreaseContrast(),
         reduce_motion: workspace.accessibilityDisplayShouldReduceMotion(),
+        reduce_transparency: workspace.accessibilityDisplayShouldReduceTransparency(),
     }
 }
 

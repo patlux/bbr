@@ -112,6 +112,7 @@ pub(crate) fn benchmark_select(
     *since = seq;
     assert_eq!(measured.active_web_view, Some(expected_view));
     let snapshot = client.snapshot().expect("selected snapshot");
+    super::chrome_glass::assert_present(&snapshot);
     assert_eq!(snapshot.active_tab_index, Some(index));
     assert_eq!(snapshot.active_web_view, Some(expected_view));
     measured
@@ -156,6 +157,7 @@ pub(crate) fn benchmark_sidebar(
     *since = seq;
     assert_eq!(measured.sidebar_visible, expected_visible);
     let snapshot = client.snapshot().expect("sidebar snapshot");
+    super::chrome_glass::assert_present(&snapshot);
     assert_eq!(snapshot.sidebar_visible, expected_visible);
     measured
 }
@@ -195,6 +197,7 @@ pub(crate) fn benchmark_resize_sidebar(
         measured.content_rect[0]
     );
     let snapshot = client.snapshot().expect("resize snapshot");
+    super::chrome_glass::assert_present(&snapshot);
     assert!(snapshot.sidebar_visible);
     assert!(
         (snapshot.sidebar_width - expected).abs() <= 0.5,
@@ -234,6 +237,7 @@ pub(crate) fn benchmark_restore_sidebar(
         measured.content_rect[0]
     );
     let snapshot = client.snapshot().expect("restore snapshot");
+    super::chrome_glass::assert_present(&snapshot);
     assert!(snapshot.sidebar_visible);
     assert!(
         (snapshot.sidebar_width - collapsed_width).abs() <= 0.5,

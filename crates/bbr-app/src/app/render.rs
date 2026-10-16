@@ -33,7 +33,6 @@ impl Render for BbrApp {
             }
         }
         let theme = self.theme();
-        let p = theme.palette;
         let chrome_focused = self.chrome_handle.is_focused(window);
         let browser = self.controller.read().snapshot();
         #[cfg(feature = "testkit")]
@@ -414,7 +413,7 @@ impl Render for BbrApp {
         self.mark_generation_drawn();
         self.publish_window_row();
         self.publish_window_frame(window);
-        div()
+        let root = div()
             .id("bbr-root")
             .relative()
             // While a portal presentation is open the root tracks that
@@ -456,7 +455,6 @@ impl Render for BbrApp {
             .flex()
             .flex_row()
             .size_full()
-            .bg(p.surface_canvas)
             .on_key_down(cx.listener(Self::on_chrome_key_down))
             // §11.4 plus-menu / §11.12 downloads-panel outside-press
             // dismissal: any GPUI pointer press outside the open surface
@@ -545,7 +543,8 @@ impl Render for BbrApp {
             // (While the rail floats the menu sits in the Portal with it.)
             .when(self.tab_menu.state.open && !self.rail_floating(), |root| {
                 root.child(self.tab_menu_overlay(&theme, window, cx))
-            })
+            });
+        self.chrome_background(root.into_any_element(), card, sidebar_width, cx)
     }
 }
 

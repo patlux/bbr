@@ -30,6 +30,7 @@ use super::BbrApp;
 pub(crate) struct AccessibilityPrefs {
     pub(crate) increase_contrast: bool,
     pub(crate) reduce_motion: bool,
+    pub(crate) reduce_transparency: bool,
 }
 
 /// Testkit-only per-option override: `None` follows the system value.
@@ -37,6 +38,7 @@ pub(crate) struct AccessibilityPrefs {
 pub(crate) struct AccessibilityOverride {
     pub(crate) increase_contrast: Option<bool>,
     pub(crate) reduce_motion: Option<bool>,
+    pub(crate) reduce_transparency: Option<bool>,
 }
 
 /// The effective accessibility options: each overridden option wins over
@@ -53,6 +55,9 @@ pub(crate) fn effective_accessibility(
                 .increase_contrast
                 .unwrap_or(system.increase_contrast),
             reduce_motion: _override.reduce_motion.unwrap_or(system.reduce_motion),
+            reduce_transparency: _override
+                .reduce_transparency
+                .unwrap_or(system.reduce_transparency),
         }
     }
     #[cfg(not(feature = "testkit"))]
@@ -148,6 +153,7 @@ impl BbrApp {
                 .read()
                 .reduce_motion
                 .resolve(self.system_accessibility.read().reduce_motion),
+            reduce_transparency: self.system_accessibility.read().reduce_transparency,
         };
         #[cfg(feature = "testkit")]
         {
@@ -222,11 +228,13 @@ impl BbrApp {
         &mut self,
         increase_contrast: Option<bool>,
         reduce_motion: Option<bool>,
+        reduce_transparency: Option<bool>,
         cx: &mut Context<Self>,
     ) {
         self.accessibility_override.set(AccessibilityOverride {
             increase_contrast,
             reduce_motion,
+            reduce_transparency,
         });
         cx.notify();
     }
@@ -294,6 +302,7 @@ fn prefs_from(
     AccessibilityPrefs {
         increase_contrast: options.increase_contrast,
         reduce_motion: options.reduce_motion,
+        reduce_transparency: options.reduce_transparency,
     }
 }
 
@@ -310,15 +319,15 @@ mod tests {
         );
         let contrast = AccessibilityPrefs {
             increase_contrast: true,
-            reduce_motion: false,
+            ..Default::default()
         };
         assert_eq!(
             theme_modes_for(contrast),
             (ContrastMode::Increased, MotionMode::Standard)
         );
         let motion = AccessibilityPrefs {
-            increase_contrast: false,
             reduce_motion: true,
+            ..Default::default()
         };
         assert_eq!(
             theme_modes_for(motion),
@@ -330,7 +339,8 @@ mod tests {
     fn accessibility_override_wins_per_option() {
         let system = AccessibilityPrefs {
             increase_contrast: true,
-            reduce_motion: false,
+            reduce_transparency: true,
+            ..Default::default()
         };
         // No override: the system decides.
         assert_eq!(
@@ -346,6 +356,7 @@ mod tests {
                 AccessibilityOverride {
                     increase_contrast: None,
                     reduce_motion: Some(true),
+                    reduce_transparency: None,
                 },
             );
             assert_eq!(
@@ -353,6 +364,7 @@ mod tests {
                 AccessibilityPrefs {
                     increase_contrast: true,
                     reduce_motion: true,
+                    reduce_transparency: true,
                 }
             );
             let cleared = effective_accessibility(
@@ -360,10 +372,12 @@ mod tests {
                 AccessibilityOverride {
                     increase_contrast: Some(false),
                     reduce_motion: None,
+                    reduce_transparency: Some(false),
                 },
             );
             assert!(!cleared.increase_contrast);
             assert!(!cleared.reduce_motion);
+            assert!(!cleared.reduce_transparency);
         }
     }
 

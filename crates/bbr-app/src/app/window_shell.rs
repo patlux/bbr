@@ -116,6 +116,8 @@ impl BbrApp {
         row: Option<crate::browser_windows::WindowRow>,
         cx: &mut Context<Self>,
     ) {
+        #[cfg(target_os = "macos")]
+        self.chrome_material.borrow_mut().take();
         let key = self.window_key();
         let layout = self
             .controller

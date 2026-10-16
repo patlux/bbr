@@ -235,6 +235,13 @@ impl WebEngineWk {
         crate::card_clip::corner_radius(&session.web_view)
     }
 
+    /// Public NSView opacity observation only; chrome material never writes it.
+    #[cfg(feature = "testkit")]
+    pub fn web_view_opaque(&self, id: WebViewId) -> Option<bool> {
+        self.assert_main_thread();
+        Some(self.sessions.get(&id)?.web_view.isOpaque())
+    }
+
     /// Whether the dark native cover is currently masking WebKit's
     /// provisional-navigation plane for `id`.
     pub fn navigation_cover_visible(&self, id: WebViewId) -> bool {

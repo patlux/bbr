@@ -107,13 +107,17 @@ objc2-foundation = { workspace = true, features = [
 # workspace's objc2-foundation enables `NSGeometry` + `objc2-core-foundation`).
 objc2-app-kit = { workspace = true, features = [
     "NSApplication",
+    "NSAppearance",
     "NSButton",
     "NSColor",
     "NSControl",
     "NSGraphics",
     "NSResponder",
+    "objc2-core-graphics",
+    "objc2-quartz-core",
     "objc2-core-foundation",
     "NSView",
+    "NSVisualEffectView",
     "NSWindow",
     "NSEvent",
     # Window-geometry persist source (Phase 7 warm-restore): the
@@ -138,6 +142,15 @@ objc2-app-kit = { workspace = true, features = [
     # (unused) graphics context argument.
     "NSGraphicsContext",
     "block2",
+] }
+
+# Public Core Animation shape masks keep internal GPUI content in the existing
+# rounded card without opaque corner covers over the desktop material.
+objc2-core-graphics = { version = "0.3.2", default-features = false, features = [
+    "CGPath", "CGGeometry", "std",
+] }
+objc2-quartz-core = { version = "0.3.2", default-features = false, features = [
+    "CALayer", "CAShapeLayer", "CATransaction", "objc2-core-graphics", "objc2-core-foundation", "std",
 ] }
 
 # objc2-core-foundation: CFBundle (the main-bundle identifier for the

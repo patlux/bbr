@@ -317,6 +317,7 @@ pub fn build_sidebar_fixture_with_theme(
     Some(SidebarModel {
         sidebar_width,
         chrome_tint,
+        background_in_parent: false,
         tint_fade: None,
         grain: false,
         floating: false,

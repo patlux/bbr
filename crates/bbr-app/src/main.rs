@@ -365,6 +365,8 @@ fn main() {
         });
         let options = WindowOptions {
             window_bounds: Some(WindowBounds::Windowed(bounds)),
+            #[cfg(target_os = "macos")]
+            window_background: gpui::WindowBackgroundAppearance::Transparent,
             // The production chrome owns the complete top rail. GPUI's
             // public full-size-content titlebar keeps the native traffic
             // lights but lets the light sidebar material continue behind
@@ -554,7 +556,7 @@ fn main() {
                     app
                 });
                 app_entity = Some(app.clone());
-                cx.new(|cx| gpui_component::Root::new(app, window, cx))
+                cx.new(|cx| gpui_component::Root::new(app, window, cx).background(gpui::transparent_black()))
             })
             .expect("open window");
         let app = app_entity.expect("app entity built with the window root");
@@ -577,6 +579,8 @@ fn main() {
             // live through the same authority (task packet
             // `v2-system-prefs`).
             view.observe_system_accessibility(cx);
+            view.prepare_chrome_material(window);
+            cx.notify();
         });
 
         // macOS-only native seams: the concrete engine handle (the find

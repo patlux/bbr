@@ -490,6 +490,7 @@ fn collapse_reopen_restores_width_and_compact_window_keeps_content_positive() {
 // suite file stays under the ~500-line budget.
 mod accessibility;
 mod appearance;
+mod chrome_glass;
 mod composition;
 mod composition_geometry;
 mod content_card;

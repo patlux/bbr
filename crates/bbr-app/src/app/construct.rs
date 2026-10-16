@@ -410,6 +410,10 @@ impl BbrApp {
             accessibility_override: parts.accessibility_override,
             #[cfg(target_os = "macos")]
             accessibility_observer: None,
+            #[cfg(target_os = "macos")]
+            chrome_material: Rc::new(RefCell::new(None)),
+            #[cfg(target_os = "macos")]
+            chrome_material_attempted: false,
             accessibility_task: None,
             #[cfg(feature = "testkit")]
             full_screen_override: None,

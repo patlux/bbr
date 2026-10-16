@@ -1800,6 +1800,8 @@ pub enum Request {
     SetAccessibilityOverride {
         increase_contrast: Option<bool>,
         reduce_motion: Option<bool>,
+        #[serde(default)]
+        reduce_transparency: Option<bool>,
     },
     /// Present the shell as if the window were in native full screen (or
     /// not), regardless of the AppKit state (DESIGN §2 full-bleed card):

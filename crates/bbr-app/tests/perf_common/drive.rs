@@ -90,6 +90,7 @@ fn drive_matrix_inner(
     let cursor = since;
     let mut since = *cursor;
     let raw = {
+        super::chrome_glass::prepare(client);
         let initial_snapshot = client.snapshot().expect("initial snapshot");
         let first_view = initial_snapshot.active_web_view.expect("first native view");
         if initial_snapshot.title.as_deref() != Some(PAGE_ONE_TITLE) {
