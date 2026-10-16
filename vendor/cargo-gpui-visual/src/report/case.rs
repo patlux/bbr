@@ -99,6 +99,17 @@ pub(crate) fn meta(item: &Finding) -> String {
     }
 }
 
+/// Emphasize dimension drift with the report's existing change color.
+/// Keep other measurements muted and escape text before adding markup.
+fn meta_html(item: &Finding) -> String {
+    let text = escape(&meta(item));
+    if item.reason.as_deref() == Some("dimensions") {
+        format!("<span class=\"dimension-change\">{text}</span>")
+    } else {
+        text
+    }
+}
+
 /// Short status line for the table of contents.
 pub(crate) fn nav_detail(item: &Finding) -> String {
     match item.status.as_str() {
@@ -153,7 +164,7 @@ fn regions(item: &Finding, asset: &str, extents: &[[u32; 2]]) -> String {
     if item.reason.as_deref() == Some("dimensions") {
         return note(&format!(
             "{}. Ein Pixelvergleich ist nicht möglich; das Diff markiert die ganze Fläche.",
-            escape(&meta(item))
+            meta_html(item)
         ));
     }
     let Some([w, h]) = item.actual_size else {
@@ -276,7 +287,7 @@ pub(crate) fn finding_section(
     format!(
         "<section class=\"case finding\" id=\"f-{key}\"><div class=\"case-main\"><header class=\"case-head\"><div class=\"case-title\"><h2>{title}</h2>{tag}{}</div><p class=\"case-meta\">{}</p></header>{}</div><aside class=\"inspector\" aria-label=\"Inspektor\"><div class=\"inspector-body\"><p class=\"inview\"><span>im Blick</span><code>{key}</code></p>{}{accept}</div></aside></section>",
         badge(&item.status, item.reason.as_deref()),
-        escape(&meta(item)),
+        meta_html(item),
         views(item, key, asset, &extents),
         regions(item, asset, &extents),
         key = escape(key),

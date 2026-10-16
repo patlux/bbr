@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "source_project": "GPUI Visual",
-  "source_revision": "e3050c78cc1347ea0164218d7bcd0d74addcdb8a",
+  "source_revision": "56798d79d11be1f4b79dedc9794a597e8c9b42ef",
   "source_path": ".",
   "version": "0.1.1",
   "license": "Apache-2.0",
@@ -20,7 +20,7 @@
     "LICENSE": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
     "NOTICE": "875e0e1db1c36e2b5d120ffdb6a214d025cc07f8b72a30e3b72b2025238e52eb",
     "README.md": "6c736d3706819f39a48504438e7aa8be599694e0c07ab48d2f677f583799a916",
-    "assets/review.css": "c54f66d9eea62eae932bb7aad5f9a5ce7f096b9af4935c44309ab5121c1ef9fb",
+    "assets/review.css": "f9cc6795ae8eac0d13eabd79bab9d95668c23f7ea0b13aa640cf2ebde4a37f61",
     "assets/review.js": "77e2f6abe99644d6dc58f785c96199fce12cf404b82d8521e8753f0f95a7e8d8",
     "docs/agent-interface.md": "40af495e8778c51b74116bfe39618f26d433e94b71d98ed6db3bcc571bab6d6f",
     "docs/agent-output.schema.json": "8f57005e91d3d7c7aec0564a5698acfd89c6db908c126d8317611d5c73d606b6",
@@ -72,7 +72,7 @@
     "src/parallel.rs": "28fdc794e189fed5b7e6e56c006d2c9f30ce1c1fce025271fd5871087b5eca33",
     "src/plan.rs": "2b270b7301214693b44dc9bddc6bd04b0c5df9b49affe182224635d593265fb6",
     "src/process.rs": "bf02be61f39694f44b8785131334ef5bec5c44e328be51828b611b8e636d0da8",
-    "src/report/case.rs": "ed3bf99d23a65273ddee1f3ddff9c20200ffddd12f506d7c5f8db1d8f1687dbb",
+    "src/report/case.rs": "8ea85e3aea0aeece08938417c8e34ee448c1df2332579f39820b073b05f1a166",
     "src/report/collection.rs": "bb4a711110182d7bad0e40ae5353726fd74f8b024d3395648b290297f5319577",
     "src/report.rs": "94440f8890e2361a90f97216be2abfcc2cb53f9a1082ab2e480e8490daa20423",
     "src/selection.rs": "d12b9af1663370b5574ae453783f7196579b71b317755aaf0311bcb5e4a42370",
@@ -100,7 +100,7 @@
     "tests/selection.rs": "b133645270453becb5ede6d8f734aa5dcb5e85b89e1f6797ad62e64013f100fe",
     "tests/support/baselines.rs": "816b9fbc48f993c37e07786b1db2e01b40e8445829219f98c30e18a2551ed411",
     "tests/support/environment.rs": "7d522ec1aebd91dd6308db8948695c2870d34fe82c53ec58fee59b832537b5c3",
-    "tests/support/presentation.rs": "0bf8a0a82adb191e5f5e20d29deee16e7618cf899b06abe0d600f6fa6719e38a",
+    "tests/support/presentation.rs": "7b4435017b360b9fbb47a00cc7337c59768ad98e514f854c084434fa3a16dad2",
     "tests/support/sequences.rs": "c295a9b7817ab8d8d77bac39341dfa8291e455b92566398f4e26ed42c919d434",
     "tests/support/webp.rs": "d70126c0dc2719a1e88abe4f878fad85d5f1ab6ef10c55f4b24d35f2f40fc420"
   }

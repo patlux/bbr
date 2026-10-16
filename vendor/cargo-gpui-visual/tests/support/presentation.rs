@@ -185,6 +185,41 @@ fn sequence_viewer_preserves_modes_placeholders_filter_and_tail() {
 }
 
 #[test]
+fn dimension_changes_highlight_measurements_in_header_and_inspector_only() {
+    let f = Fixture::new();
+    f.compare().unwrap();
+    assert!(!f.doc().contains("class=\"dimension-change\""));
+    f.establish();
+    assert!(!f.doc().contains("class=\"dimension-change\""));
+    f.image(&f.cases[0], 24, 16, [20, 30, 40, 255]);
+    f.image(&f.cases[1], 20, 12, [30, 40, 50, 255]);
+    f.seal();
+    let mut review = f.compare().unwrap();
+    let highlighted = "<span class=\"dimension-change\">Bildgröße 20×12 → 24×16</span>";
+    let doc = f.doc();
+    assert!(doc.contains(&format!("<p class=\"case-meta\">{highlighted}</p>")));
+    assert!(doc.contains(&format!("<p class=\"panel-note\">{highlighted}.")));
+    assert_eq!(doc.matches("class=\"dimension-change\"").count(), 2);
+    assert!(doc.contains(".dimension-change{color:var(--color-changed-text)}"));
+    retain_fixture(&f, &review, "GPUI_DIMENSION_REVIEW_OUTPUT");
+
+    // Missing dimension metadata keeps the semantic highlight without inventing a size.
+    let item = review
+        .results
+        .iter_mut()
+        .find(|i| i.reason.as_deref() == Some("dimensions"))
+        .unwrap();
+    item.expected_size = None;
+    report::write(&f.report, &review).unwrap();
+    assert_eq!(
+        f.doc()
+            .matches("<span class=\"dimension-change\">Bildgröße geändert</span>")
+            .count(),
+        2
+    );
+}
+
+#[test]
 fn inspector_offers_exact_hints_only_for_valid_full_runs() {
     let mut f = Fixture::new();
     f.establish();
