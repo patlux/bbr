@@ -10,6 +10,8 @@ Repository workflow and mandatory verification: [AGENTS.md](AGENTS.md).
 
 ## Current execution
 
+- **Isolated build tooling:** [Linux-to-macOS cross-build](docs/roadmap/tasks/linux-macos-cross-build.md) builds and ad-hoc signs the ARM64 macOS app on Linux, with checksum-bound Tart functional evidence. Native defaults and Visual ownership remain unchanged; performance and independent acceptance remain open.
+
 - **Portal lifecycle fix:** [Portal window lifecycle](docs/roadmap/tasks/portal-window-lifecycle.md) binds the Command Palette to its owning window; locally integrated with fresh combined-tree Tart verification, including the Titlebar reload-synchronization repair.
 
 - **Visual tooling:** [Reusable visual snapshots](docs/roadmap/tasks/visual-snapshot-tooling.md) owns the active standalone GPUI Visual/Rust-consumer migration, retaining the integrated browser capture and [Native Gallery visual coverage](docs/roadmap/tasks/gallery-visual-coverage.md) foundation. Captures move to Tart, beginning with the [Tokens / Checkbox / Sidebar pilot](docs/roadmap/tasks/gallery-visual-pilot.md); story selection, independent coverage and shared review do not imply baseline approval. Combined-tree baseline review and Gallery supported-state/framing remain open; see Current delivery for ownership and evidence.

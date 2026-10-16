@@ -1,0 +1,18 @@
+{
+  "revision": "568271c01c5a9d640d7b091e5bfd136b04035f28",
+  "files": {
+    "crates/gpui/src/color.rs": "ad9067682342c77b7b203b0cdd4a39431d2dbd34e912bf4f71ab1de813767be3",
+    "crates/gpui/src/geometry.rs": "046a044487550895d9627daaad915ac1c67f2faa70611875d204ebe324f65273",
+    "crates/gpui/src/gpui.rs": "89df740c3dd4f0493de792300fdaca36cac1b98e33f5567bc240f0637efd5cd8",
+    "crates/gpui/src/platform.rs": "14a57c01c20f4af80f0d839819892d7736d3981fe4dde86429758d780003301f",
+    "crates/gpui/src/scene.rs": "88c246f1479d1654a142adf9ea40eb7f902cca5dd4821634dde0c0b436120b44",
+    "crates/gpui/src/window.rs": "26a35053b5dc22e9d324b767ee4028db117aa6f3884aea77acb60764b76d88e0",
+    "crates/gpui_macos/Cargo.toml": "b5817a85c97fb497bf8d5246b0beb2ebcd111225abaf9107a0ada8580e32decc",
+    "crates/gpui_macos/build.rs": "efbb4967ec0c0f6e26be6f1e6423ae626955b3167c74fb24f65868d85f83d72f",
+    "crates/gpui_macos/src/metal_renderer.rs": "f0ba855313dde702730a6939c59291b0a51e81552cfc3967fb87e713aaacd1a1",
+    "crates/gpui_macos/src/shaders.metal": "106566dfd7cba4066e4a583c41b76686db5de3713bad21783da1b1c3ab6c399e",
+    "crates/gpui_media/build.rs": "f1189d0bbc150c6c4a8700c19800c0a1cecbfaed874a9e1550faa18dc6a44e9b",
+    "crates/gpui_media/src/bindings.h": "1381fa99e9d1275f72338557a9985e4a6b8407fab41607cdebce242fabc1dca2",
+    "LICENSE.md": "8515b253f740ad80926e77b7dec06938258fd70994564d3846b82a676e15c8ba"
+  }
+}

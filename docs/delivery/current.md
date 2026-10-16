@@ -1,6 +1,74 @@
 <!-- bbr:current-delivery -->
 # Current delivery
 
+## Linux-to-macOS local integration checkpoint (2026-10-16)
+
+Patrick requested “ok lass das in main mergen” and explicitly authorized the
+backup-first takeover with “ja bitte”. Session `01a1313c` owns only this local
+integration of `linux-macos-cross@8bc84ef7a42b650af124ac73880f8e6ffca15dc1`
+into `main@5abccdee8c51f13f2110d946c942f9707de5c062`. This checkpoint supersedes
+the historical source-lane no-main/no-merge restriction below. It does not
+activate further Visual, product, performance or delegated work.
+
+The no-ff merge preserves the existing Visual/Footer/Downloads/dialog candidate:
+**110 dirty files remain uncommitted**. The complete original files, binary diff,
+index bytes/entries/flags and branch identities are hash-verified at
+`/Users/patwoz/dev/Personal/macos/bbr-cross-integration-backup-20261016-191431`.
+109 nonoverlapping files remain byte-identical. The only overlap, this delivery
+file, is a conflict-free three-way union. Four intent-to-add entries are retained;
+Git required temporarily removing only their empty index entries before merge,
+then restoring those flags. No working file was stashed, reset, cleaned or lost.
+Only cross-build tooling, its roadmap/evidence documents and this integration
+checkpoint enter the merge commit. Native Cargo/flake/justfile defaults, product
+sources, shared VM runners and approved references have no committed merge delta.
+
+Fresh **combined working-tree** evidence, not clean-HEAD or new Linux-artifact
+acceptance:
+
+- All **32 cross-tooling contracts** pass using the already installed,
+  repository-declared Python 3.13.11. The first invocation selected Xcode's
+  Python 3.9 and failed imports because `tomllib` is unavailable; that failure
+  remains in the backup. No dependency installation or source workaround.
+- Full mbx-routed `just verify` and strict
+  `mbx clippy -p bbr --features testkit --all-targets -- -D warnings` pass.
+  The initial verify failed the unchanged Command maximum-latency assertion:
+  438.527 ms against 50 ms. Source/dependency separation was checked; one isolated
+  unchanged run passed at 18.930 ms maximum, then the complete verify passed.
+  The initial failure remains evidence, without claiming host-load causation,
+  flake elimination or product-performance acceptance. No assertion was relaxed.
+- The canonical recipe-derived functional sequence, excluding only deferred
+  performance, plus Peek/Gallery passes **350 tests / 59 executables**. Invocation:
+  `python3 /tmp/bbr-main-integration-e2e.py functional-aggregate`. The existing
+  hardened wrapper reuses the repository planner/executor, clone-only key/auth/
+  listener checks, offline declared-dylib transfer and bounded cleanup. No host
+  GUI or Golden Image mutation. Exact logs:
+  `/tmp/bbr-e2e-vm/run-20261016-192450-81134/`. Rounded suite times total324s;
+  the complete command spans453s including builds/boot/transfer/cleanup. These
+  are tooling times, not application-performance measurements.
+- All1,738 allowlisted code/build/document hashes match before/after runtime.
+  Subsequent changes are only this integration documentation. The owned clone,
+  key, disk mount and process are independently absent; former SSH is unreachable.
+  Allowlisted logs and the preservation/cleanup audit are also in the backup.
+- Working-tree roadmap and whitespace checks pass. The raw index roadmap check
+  sees the two preexisting intent-to-add task files as empty and fails; the exact
+  commit-tree check passes using a separate index copy without those noncommitting
+  placeholders. The original flags remain unchanged. Final HEAD roadmap is
+  checked after commit; no validator or task content is weakened.
+
+Self-review checks both parent deltas, tooling isolation, exact preserved bytes,
+intent-to-add flags, delivery union and separation of committed/dirty evidence.
+No independent reviewer is claimed. Historical Linux-built exact-byte evidence
+remains attached to its recorded source/artifacts; this native combined-tree run
+is not a fresh cross-build of the merged revision. Performance, independent final
+acceptance, minimum-OS runtime, clean-build byte reproducibility and distribution
+signing/notarization remain open. No release or full-task completion is claimed.
+
+Scheduling audit: only this explicitly authorized merge is runnable here. Other
+queue work is outside this request; no agents, workflows, new lanes/worktrees or
+foreign-worktree inspection. Integration ownership ends with the verified local
+merge, not a takeover of the remaining Visual implementation. No push, baseline
+adoption, branch/worktree deletion or unrelated cleanup.
+
 ## Content-card integration checkpoint (2026-10-16)
 
 Patrick authorized the merge and preservation repair: “ok dann fix all das ohne
@@ -77,6 +145,78 @@ Start at [ROADMAP.md](../../ROADMAP.md), then read this file completely before c
 | Preserved design checkpoint | `design/browser-shell-paper@414c97c7a5139cf6070a54138969a3bb34403bc2`; design intent only, not runtime acceptance |
 
 UI-CONFORMANCE, FOLDER-PIN-INVARIANT, DESIGN-CARD, DESIGN-ADDRESS and DESIGN-FAVORITES are integrated on `main` (2026-09-27, through `d51a4b52`), each independently reviewed with the review findings remediated. Their performance evidence is deferred with the rest of performance execution until the end of the queue (Patrick, 2026-09-27). RA-MEDIA integrated its portable `bbr-web` contract as `ec5e0bad` and is paused there (macOS adapter not started, no owner). Since 2026-09-28 the serial work on `main` is the V2 visual refresh and motion program (DESIGN §18), preflighted clean at `main@ec5e0bad368179b669983a60a22a7b47b152ebfb` with no other BBR writer process. Historical lane worktrees retain evidence or abandoned experiments but own no current queue state. The stale Split worktree remains explicitly untouched.
+
+## Isolated Linux-to-macOS build
+
+Patrick requested the complete macOS application build on `ms-a2-dev` and
+activated SDK-independent preparation in a separate worktree with “lets goal”.
+The sole local writer owns `/Users/patwoz/dev/Personal/macos/bbr-linux-macos-cross`,
+branch `linux-macos-cross`, from committed base
+`70f6026aea8bcb51a6f7595b884649cdd9981bce`. It was clean at activation. The main
+Visual checkout and its uncommitted work remain untouched; historical serial
+restrictions below do not transfer that checkout's ownership to this writer.
+
+| ID | Slice | Status | Worktree | Owner | Contract | Next gate |
+|---|---|---|---|---|---|---|
+| LINUX-MACOS-CROSS | Linux-built macOS application | `running` | `/Users/patwoz/dev/Personal/macos/bbr-linux-macos-cross` | local goal writer, no delegation | [cross-build packet](../roadmap/tasks/linux-macos-cross-build.md) | opt-in source/SDK/build/bundle/VM tooling verified; 59 Linux-built test programs / 348 tests pass; performance and independent review unpassed |
+
+Parallelism audit: only this isolated build task is authorized here. No new
+agents/workflows/lanes, main mutation, merge or publication. Exclusive changes
+are the cross-build tooling directory and packet; roadmap links and this
+branch-local control addition require semantic integration after the Visual
+owner settles. Root Cargo/flake, product code, baselines and shared VM runner
+remain unchanged. Metadata proves one GPUI type/source world at the existing
+pin; registry versions/checksums are unchanged. The former missing SDK/std
+boundary is resolved technically by the authorized export and pinned Nix build.
+Independent review remains outstanding; performance execution stays deferred.
+
+[Preparation evidence](linux-macos-cross-evidence.md): the same generator
+regression fails on upstream Linux scripts and passes with the inactive patch;
+Linux/Mac shader sources and before/after native media bindings are byte-identical.
+Runtime/static strict Clippy, formatting and portable contracts pass. That
+first preparation did not change the app graph or execute BBR. The initial
+SDK-free boundary was superseded by Patrick's “lets go” after
+reviewing the successful GPUI-Mobile sessions and the proposed macOS SDK export
+plus framework-link test. This explicitly continues the SDK-backed attempt;
+the agent-authored earlier precaution is not a user prohibition. Licensing
+remains an owner/legal question, not a technical impossibility finding.
+
+Continuation evidence (2026-10-12): exported installed Xcode 27.0 Beta 6's macOS
+27.0 SDK, verified 41,543 entries on `ms-a2-dev`, and built Darwin Rust std via
+a pinned Nix expression without activation. The Linux framework control links
+Foundation/WebKit/CoreMedia; the full BBR debug binary then links successfully.
+After fixing the snapshot's direct `bbr-ui` Git dependency redirection, metadata
+proves one GPUI source and all registry package versions/checksums unchanged.
+Linux-built Smoke test and testkit app pass in an exclusive-key, audited Tart
+clone; exact payload hashes and cleanup were verified. Logs:
+`/private/tmp/bbr-cross-active/vm-smoke-20261012-211002`;
+Linux work: `/home/patwoz/dev/bbr-macos-build.5wmwvM`.
+The scratch bootstrap's three pre-app failures (wrong ioreg path, pipefail
+SIGPIPE, absent guest otool) are preserved, not hidden. No source GUI behavior
+change, native default change, main mutation or delegation. At that checkpoint,
+next local work was repeatable build/payload plumbing, release bundling and wider
+functional gates; the following checkpoint records their results. Performance and
+independent review remain unpassed.
+
+Verified tooling checkpoint: the committed BBR source `73dd8ecf`, complete
+same-pin GPUI export and selected SDK now feed an opt-in Linux entrypoint.
+A production release bundle is built/signed with rcodesign without credentials
+or a timestamp service. Apple's strict deep signature check, liveness observation
+and clean SIGINT shutdown pass in Tart without Mac rebuilding/resigning.
+The source-derived functional order plus Peek/Gallery passes 59 programs / 348
+tests on exact Linux bytes. Native mbx-equivalent `just verify`, strict testkit
+all-target Clippy and 32 cross-tooling contracts pass. Final evidence:
+`/private/tmp/bbr-cross-active/final-vm-recheck/verified.json`.
+
+An earlier full run also passed; the first final-driver run failed one unchanged
+Hover assertion (`Loading` vs `Selected` on a newly opened about:blank tab).
+Source inspection shows the helper has no loading-completion wait for that tab.
+One focused same-artifact recheck and the final complete sequence pass; no product
+or test assertion changed, and the intermittent failure remains recorded.
+Every actual guest run verified isolated authentication/access and owned cleanup.
+No performance, independent-review, reproducible-byte-build or distribution-signing
+claim follows. This is an intermediate verified tooling slice, not final task or
+phase acceptance. Native defaults and other writers' work remain untouched.
 
 ## GPUI Visual migration activation (2026-10-01)
 
