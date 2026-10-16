@@ -1,5 +1,5 @@
 //! History stills use keyboard filtering and the real tab-close authority.
-use super::{key, save, wait};
+use super::{key, save, wait, PAGE};
 use bbr_testkit::{protocol::HistoryInput, Client, Request};
 use std::path::Path;
 
@@ -16,14 +16,7 @@ pub fn filters(client: &mut Client, output: &Path, appearance: &str) {
     assert_eq!(groups.len(), 1);
     assert_eq!(groups[0].rows.len(), 1);
     assert_eq!(groups[0].rows[0].title, "Browser architecture notes");
-    save(
-        client,
-        output,
-        "history-search",
-        appearance,
-        false,
-        filtered,
-    );
+    save(client, output, "history-search", appearance, PAGE, filtered);
     for _ in "architecture".chars() {
         key(client, "backspace");
     }
@@ -41,7 +34,7 @@ pub fn filters(client: &mut Client, output: &Path, appearance: &str) {
         output,
         "history-search-empty",
         appearance,
-        false,
+        PAGE,
         empty,
     );
     for _ in "no-match".chars() {
@@ -110,7 +103,7 @@ pub fn closed(client: &mut Client, output: &Path, appearance: &str) {
         output,
         "history-recently-closed",
         appearance,
-        false,
+        PAGE,
         closed,
     );
     key(client, "escape");

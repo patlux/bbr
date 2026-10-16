@@ -33,7 +33,7 @@
     "e2e::library::library_sort_control_renders_all_four_orders",
     "e2e::pointer::pointer_click_on_disclosure_collapses_and_reexpands_group",
     "e2e::pointer::pointer_click_on_group_row_uses_the_same_expansion_authority",
-    "e2e::sidebar::footer_glyphs_are_sixteen_points_and_the_strip_leads_with_its_chips",
+    "e2e::sidebar::footer_glyphs_follow_the_icon_size_and_the_strip_leads_with_its_chips",
     "e2e::sidebar::real_keyboard_events_report_through_the_sidebar_recorders",
     "e2e::sidebar::real_pointer_presses_report_through_the_sidebar_recorders",
     "e2e::sidebar::sidebar_story_renders_every_matrix_family_with_stable_ids",

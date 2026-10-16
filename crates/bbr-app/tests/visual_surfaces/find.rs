@@ -103,6 +103,23 @@ pub fn capture() {
                 assert_eq!(reported.engine_sessions, initial.engine_sessions);
                 save(&mut client, &output, case, appearance, reported);
             }
+            // Formerly withheld (2026-10-12): stepping to the next match.
+            client.send_ok(&dsl::find_set_query("alice")).unwrap();
+            wait(&mut client, |s| {
+                s.find.query == "alice"
+                    && !s.find.pending
+                    && !s.find.stale
+                    && s.find.current_match == Some(1)
+            });
+            client.send_ok(&dsl::find_next()).unwrap();
+            let next = wait(&mut client, |s| {
+                !s.find.pending
+                    && !s.find.stale
+                    && s.find.match_count == Some(3)
+                    && s.find.current_match == Some(2)
+            });
+            assert_find(&next, appearance);
+            save(&mut client, &output, "find-next", appearance, next);
             key(&mut client, "escape");
             let closed = wait(&mut client, |s| !s.find.open && !s.portal.visible);
             assert_eq!(closed.tabs, initial.tabs);

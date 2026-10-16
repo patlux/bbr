@@ -185,6 +185,28 @@ fn searches(client: &mut super::Client, output: &Path, appearance: &str) {
         }
         save(client, output, case, appearance, snapshot);
     }
+    // Formerly withheld (2026-10-12): a typed address and a plain search
+    // query, each with its real result rows and the keyboard row.
+    for (case, query) in [
+        ("command-palette-url", "docs.example.test/guide"),
+        ("command-palette-search", "gpui layout"),
+    ] {
+        client
+            .send_ok(&Request::SetCommandBarText { text: query.into() })
+            .unwrap();
+        client.send_ok(&Request::FlushCommandRanking).unwrap();
+        let snapshot = wait(client, |s| {
+            s.command_bar_text == query
+                && s.command_result_state == CommandResultState::Results
+                && !s.command_results.is_empty()
+        });
+        assert_palette(&snapshot, appearance);
+        assert!(
+            snapshot.command_results.iter().any(|row| row.selected),
+            "{case}: one keyboard row"
+        );
+        save(client, output, case, appearance, snapshot);
+    }
 }
 
 fn assert_palette(snapshot: &Snapshot, appearance: &str) {
@@ -212,7 +234,13 @@ fn assert_palette(snapshot: &Snapshot, appearance: &str) {
     assert_eq!(snapshot.window_size, [1080.0, 1407.0]);
     assert_eq!(snapshot.shell_modes.theme, appearance);
     assert!(snapshot.shell_modes.reduced_motion);
-    assert!(snapshot.motion.moments.is_empty());
+    assert!(
+        snapshot.motion.moments.is_empty(),
+        "palette capture must be settled; active moments {:?}, tab states {:?}, loading {}",
+        snapshot.motion.moments,
+        snapshot.tab_states,
+        snapshot.loading
+    );
     assert!(snapshot.visible_ids.iter().any(|id| id == "bbr-palette"));
 }
 

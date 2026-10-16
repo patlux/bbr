@@ -52,6 +52,36 @@ fn find_bar_production_child_capture() {
     visual_surfaces::find::capture();
 }
 
+#[test]
+#[ignore = "requires optimized real app and Tart guest"]
+fn downloads_production_panel_capture() {
+    visual_surfaces::downloads::capture();
+}
+
+#[test]
+#[ignore = "requires optimized real app and Tart guest"]
+fn footer_production_dock_capture() {
+    visual_surfaces::footer::capture();
+}
+
+#[test]
+#[ignore = "requires optimized real app and Tart guest"]
+fn history_dated_production_capture() {
+    visual_surfaces::history_dated::capture();
+}
+
+#[test]
+#[ignore = "requires optimized real app and Tart guest"]
+fn welcome_and_about_production_capture() {
+    visual_surfaces::welcome::capture();
+}
+
+#[test]
+#[ignore = "requires optimized real app and Tart guest"]
+fn portal_surfaces_production_capture() {
+    visual_surfaces::portal::capture();
+}
+
 #[derive(Clone, Copy)]
 enum CaptureKind {
     Representative,

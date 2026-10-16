@@ -32,7 +32,18 @@ CASES = tuple(
                     "settings-shortcuts-scroll-1", "settings-shortcuts-scroll-2",
                     "settings-shortcuts-scroll-3", "command-palette-open",
         "command-palette-actions-match", "command-palette-actions-empty",
-        "find-open", "find-matches", "find-no-matches")
+        "find-open", "find-matches", "find-no-matches", "downloads-empty",
+        "downloads-history", "downloads-missing-file", "footer-spaces",
+        "footer-hover-downloads", "footer-hover-chip", "footer-plus-open",
+        "footer-strip-focus", "footer-downloads-running", "footer-drag-target",
+        "footer-overflow", "library-search", "library-search-empty", "library-sort-title", "library-row-rename",
+        "library-collection-rename", "library-collection-remove", "library-long-list", "history-dated",
+        "history-range-today", "history-selected", "history-cleared", "settings-contrast-menu",
+        "settings-profile-create-named", "settings-profiles-multiple", "settings-profile-delete",
+        "welcome", "welcome-import", "welcome-default-browser", "welcome-first-space",
+        "about", "find-next", "command-palette-url", "command-palette-search",
+        "peek-bar", "permission-prompt", "permission-site-settings", "client-certificate-sheet",
+        "settings-privacy-populated", "open-app-no-app", "open-app-sheet", "auth-sheet")
     for appearance in ("light", "dark")
 )
 

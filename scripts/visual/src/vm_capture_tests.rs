@@ -160,17 +160,26 @@ impl Fixture {
             }
             let settings = self.root.join("settings.png");
             image::RgbaImage::new(1560, 1240).save(&settings).unwrap();
+            let about = self.root.join("about.png");
+            image::RgbaImage::new(680, 760).save(&about).unwrap();
+            let element = self.root.join("element.png");
+            image::RgbaImage::new(600, 200).save(&element).unwrap();
             for surface in crate::BROWSER_SURFACES {
-                let png = if surface.starts_with("settings-") {
-                    settings.clone()
-                } else {
-                    self.root.join("full.png")
+                let (png, metadata) = match crate::browser_still(surface) {
+                    crate::BrowserStill::Settings => (settings.clone(), "{\"synthetic\":true}"),
+                    crate::BrowserStill::About => (about.clone(), "{\"synthetic\":true}"),
+                    crate::BrowserStill::Element => (
+                        element.clone(),
+                        "{\"synthetic\":true,\"visual_region\":{\"ids\":[\"bbr-synthetic\"],\
+                         \"margin_pt\":4.0,\"pixels\":[0,2614,600,200]}}",
+                    ),
+                    _ => (self.root.join("full.png"), "{\"synthetic\":true}"),
                 };
                 for mode in ["light", "dark"] {
                     fs::copy(&png, raw.join(format!("{surface}--{mode}.png"))).unwrap();
                     fs::write(
                         raw.join(format!("{surface}--{mode}.snapshot.json")),
-                        "{\"synthetic\":true}",
+                        metadata,
                     )
                     .unwrap();
                 }
@@ -336,7 +345,7 @@ fn fresh_selected_full_gallery_and_browser_reuse_upstream_seals_without_pixel_re
     for (suite, selected, count) in [
         (Suite::Gallery, true, 4),
         (Suite::Gallery, false, 4),
-        (Suite::Browser, false, 78),
+        (Suite::Browser, false, 162),
     ] {
         let f = Fixture::new(suite, selected);
         let run = f.run();

@@ -1,7 +1,9 @@
 use bbr_visual::{
     browser_cases,
+    browser_output::element_size,
+    browser_still,
     gallery::{self, Case, Plan},
-    provenance, runner, Suite,
+    provenance, runner, BrowserStill, Suite,
 };
 use cargo_gpui_visual::{
     collection::catalog::{Catalog, State},
@@ -180,6 +182,37 @@ fn populated_library_is_required_independently_of_producer_output() {
         "settings-shortcuts-scroll-1",
         "settings-shortcuts-scroll-2",
         "settings-shortcuts-scroll-3",
+        "library-search",
+        "library-search-empty",
+        "library-sort-title",
+        "library-row-rename",
+        "library-collection-rename",
+        "library-collection-remove",
+        "library-long-list",
+        "history-dated",
+        "history-range-today",
+        "history-selected",
+        "history-cleared",
+        "settings-contrast-menu",
+        "settings-profile-create-named",
+        "settings-profiles-multiple",
+        "settings-profile-delete",
+        "welcome",
+        "welcome-import",
+        "welcome-default-browser",
+        "welcome-first-space",
+        "about",
+        "find-next",
+        "command-palette-url",
+        "command-palette-search",
+        "peek-bar",
+        "permission-prompt",
+        "permission-site-settings",
+        "client-certificate-sheet",
+        "settings-privacy-populated",
+        "open-app-no-app",
+        "open-app-sheet",
+        "auth-sheet",
     ] {
         assert!(
             browser
@@ -191,7 +224,6 @@ fn populated_library_is_required_independently_of_producer_output() {
     }
     for base in [
         "remaining-app-surfaces",
-        "library-remaining-states",
         "history-remaining-states",
         "settings-remaining-states",
         "portal-surfaces",
@@ -206,11 +238,141 @@ fn populated_library_is_required_independently_of_producer_output() {
         assert_eq!(entry.state, State::Withheld);
         assert!(!entry.reason.as_ref().unwrap().is_empty());
     }
-    assert_eq!(browser_cases().len(), 78);
+    assert_eq!(browser_cases().len(), 162);
     for mode in ["light", "dark"] {
         assert!(browser_cases().contains(&format!("library-populated--{mode}")));
     }
 }
+
+#[test]
+fn every_still_keeps_only_its_subject_region() {
+    // Patrick (2026-10-12): a still photographs only its subject. History,
+    // Saved Pages, Downloads and footer stills are element readbacks, so a
+    // sidebar change never touches a page reference and a page change never
+    // a footer or Downloads one. The shell pairs keep the whole window and
+    // its rail; Settings, Find and the Command Palette are own windows.
+    for mode in ["light", "dark"] {
+        for (base, still) in [
+            ("library-selection-single", BrowserStill::Element),
+            ("history", BrowserStill::Element),
+            ("history-clear-range-menu", BrowserStill::Element),
+            ("downloads-history", BrowserStill::Element),
+            ("footer-drag-target", BrowserStill::Element),
+            ("ordinary-rail", BrowserStill::Rail),
+            ("ordinary-full", BrowserStill::Window),
+            ("settings-general", BrowserStill::Settings),
+            ("find-open", BrowserStill::Window),
+            ("command-palette-open", BrowserStill::Window),
+        ] {
+            assert_eq!(browser_still(&format!("{base}--{mode}")), still, "{base}");
+        }
+    }
+    let count = |still| {
+        browser_cases()
+            .iter()
+            .filter(|case| browser_still(case) == still)
+            .count()
+    };
+    assert_eq!(
+        count(BrowserStill::Element),
+        80,
+        "25 History and Saved Pages states, 4 welcome steps, 3 Downloads, 8 footer"
+    );
+    assert_eq!(count(BrowserStill::Rail), 4);
+    assert_eq!(count(BrowserStill::Settings), 40);
+    assert_eq!(count(BrowserStill::About), 2);
+    assert_eq!(
+        count(BrowserStill::Window),
+        36,
+        "2 shell windows, 5 Command, 4 Find and 7 other portal surfaces"
+    );
+}
+
+#[test]
+fn an_element_still_has_exactly_its_recorded_region() {
+    let root = tempfile::tempdir().unwrap();
+    let snapshot = root.path().join("footer-spaces--light.snapshot.json");
+    let write = |region: serde_json::Value| {
+        fs::write(
+            &snapshot,
+            serde_json::to_vec(&serde_json::json!({ "visual_region": region })).unwrap(),
+        )
+        .unwrap();
+    };
+    write(serde_json::json!({ "ids": ["bbr-footer"], "margin_pt": 4.0,
+        "pixels": [0, 2710, 608, 104] }));
+    assert_eq!(element_size(&snapshot).unwrap(), (608, 104));
+    for region in [
+        serde_json::json!(null),
+        serde_json::json!({ "ids": [], "pixels": [0, 2710, 608, 104] }),
+        serde_json::json!({ "ids": ["footer"], "pixels": [0, 2710, 608, 104] }),
+        serde_json::json!({ "ids": ["bbr-footer"], "pixels": [0, 2710, 608, 105] }),
+        serde_json::json!({ "ids": ["bbr-footer"], "pixels": [0, 0, 2160, 2814] }),
+        serde_json::json!({ "ids": ["bbr-footer"], "pixels": [0, 2710, 0, 104] }),
+    ] {
+        write(region.clone());
+        assert!(element_size(&snapshot).is_err(), "{region}");
+    }
+}
+
+#[test]
+fn downloads_panel_is_an_independent_production_requirement() {
+    let repo = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let browser: Catalog =
+        store::read_json(&repo.join("scripts/visual/catalogs/browser.json")).unwrap();
+    for base in [
+        "downloads-empty",
+        "downloads-history",
+        "downloads-missing-file",
+    ] {
+        let entry = browser
+            .snapshots
+            .iter()
+            .find(|s| s.base == base)
+            .expect("real Downloads panel state must be required independently");
+        assert_eq!(entry.state, State::Required);
+        for mode in ["light", "dark"] {
+            assert!(browser_cases().contains(&format!("{base}--{mode}")));
+        }
+    }
+    let remaining = browser
+        .snapshots
+        .iter()
+        .find(|s| s.base == "portal-surfaces")
+        .unwrap();
+    assert_eq!(remaining.state, State::Withheld);
+    assert!(remaining.reason.as_ref().unwrap().contains("Downloads"));
+}
+
+#[test]
+fn footer_dock_states_are_independent_production_requirements() {
+    let repo = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let browser: Catalog =
+        store::read_json(&repo.join("scripts/visual/catalogs/browser.json")).unwrap();
+    for base in FOOTER_STATES {
+        let entry = browser
+            .snapshots
+            .iter()
+            .find(|s| s.base == base)
+            .expect("each Paper S-7b footer state is captured from the real app");
+        assert_eq!(entry.state, State::Required);
+        assert_eq!(entry.group, "Footer dock");
+        for mode in ["light", "dark"] {
+            assert!(browser_cases().contains(&format!("{base}--{mode}")));
+        }
+    }
+}
+
+const FOOTER_STATES: [&str; 8] = [
+    "footer-spaces",
+    "footer-hover-downloads",
+    "footer-hover-chip",
+    "footer-plus-open",
+    "footer-strip-focus",
+    "footer-downloads-running",
+    "footer-drag-target",
+    "footer-overflow",
+];
 
 #[test]
 fn find_bar_is_an_independent_child_window_requirement() {

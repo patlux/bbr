@@ -1,13 +1,38 @@
 //! Additional stills use actual application actions and windows, never Gallery.
 pub mod command;
+pub mod downloads;
 pub mod find;
+pub mod footer;
 mod history;
+pub mod history_dated;
 mod library;
+pub mod portal;
 mod settings;
+pub mod welcome;
 use super::e2e_common::{deadline, Client, Instant};
 use bbr_persistence::{CommandHistoryEntry, Repository};
-use bbr_testkit::protocol::{HistoryInput, Request, SettingsInput, Snapshot};
+use bbr_testkit::protocol::{HistoryInput, Request, Response, SettingsInput, Snapshot};
 use std::{fs, path::Path};
+
+/// What one still reads back (Patrick, 2026-10-12): only its subject, so a
+/// change elsewhere in the window never touches its reference. Elements are
+/// read back as the union of their drawn rects, grown by
+/// [`SUBJECT_MARGIN_PT`] for edge rings and near shadows; Settings is its
+/// own window.
+#[derive(Clone, Copy, Debug)]
+pub enum Still {
+    Settings,
+    /// The About BBR window (340 x 380 pt).
+    About,
+    Elements(&'static [&'static str]),
+}
+
+/// A History or Saved Pages still: the content card the page draws in.
+pub const PAGE: Still = Still::Elements(&["bbr-content-card"]);
+
+/// Rings (1 pt), the lift and the near part of `elev:2`; the long shadow
+/// tail would reach into neighbouring chrome.
+pub const SUBJECT_MARGIN_PT: f32 = 4.0;
 
 const PANES: [&str; 7] = [
     "general",
@@ -79,9 +104,10 @@ fn save(
     output: &Path,
     case: &str,
     appearance: &str,
-    settings: bool,
+    still: Still,
     before: Snapshot,
 ) {
+    let settings = matches!(still, Still::Settings);
     let scroll_before = settings.then(|| {
         client
             .request(&Request::ScrollSettings { delta_y: 0 })
@@ -92,24 +118,60 @@ fn save(
         std::process::id()
     );
     assert!(!Path::new(&temporary).exists(), "fresh temporary readback");
-    let request = if settings {
-        Request::CaptureSettings {
-            path: temporary.clone(),
+    let region = match still {
+        Still::Settings => {
+            client
+                .send_ok(&Request::CaptureSettings {
+                    path: temporary.clone(),
+                })
+                .expect("actual Settings window renderer readback");
+            None
         }
-    } else {
-        Request::CaptureChrome {
-            path: temporary.clone(),
+        Still::About => {
+            client
+                .send_ok(&Request::CaptureAbout {
+                    path: temporary.clone(),
+                })
+                .expect("actual About window renderer readback");
+            None
+        }
+        Still::Elements(ids) => {
+            let reply = client
+                .request(&Request::CaptureElements {
+                    path: temporary.clone(),
+                    ids: ids.iter().map(|id| id.to_string()).collect(),
+                    margin: SUBJECT_MARGIN_PT,
+                })
+                .expect("element readback request");
+            let Response::CapturedRegion { pixels } = reply else {
+                panic!("{case}: element readback of {ids:?} failed: {reply:?}");
+            };
+            Some((ids, pixels))
         }
     };
-    client
-        .send_ok(&request)
-        .expect("actual window renderer readback");
     let image = image::open(&temporary).expect("read surface PNG");
-    assert_eq!(
-        (image.width(), image.height()),
-        if settings { (1560, 1240) } else { (2160, 2814) },
-        "exact 2x window; never rescale"
-    );
+    match region {
+        None => assert_eq!(
+            (image.width(), image.height()),
+            if settings { (1560, 1240) } else { (680, 760) },
+            "exact 2x Settings or About window; never rescale"
+        ),
+        Some((_, [x, y, width, height])) => {
+            assert_eq!(
+                (image.width(), image.height()),
+                (width, height),
+                "exactly the reported element region; never rescale"
+            );
+            assert!(
+                x + width <= 2160 && y + height <= 2814,
+                "inside the 2x window"
+            );
+            assert!(
+                width < 2160 || height < 2814,
+                "{case}: the subject, never the whole window"
+            );
+        }
+    }
     assert_eq!(image.color(), image::ColorType::Rgba8);
     let after = client.snapshot().expect("post-readback state");
     assert_eq!(after.tabs, before.tabs, "readback preserves tabs");
@@ -140,6 +202,13 @@ fn save(
         .open(metadata)
         .expect("fresh metadata");
     let mut metadata = serde_json::to_value(&after).unwrap();
+    if let Some((ids, pixels)) = region {
+        metadata["visual_region"] = serde_json::json!({
+            "ids": ids,
+            "margin_pt": SUBJECT_MARGIN_PT,
+            "pixels": pixels,
+        });
+    }
     if let Some(scroll) = scroll_before {
         assert!(matches!(
             scroll,
@@ -186,7 +255,7 @@ pub fn capture(client: &mut Client, output: &Path, appearance: &str) {
         .visible_ids
         .iter()
         .any(|id| id.starts_with("bbr-native-web-slot")));
-    save(client, output, "history", appearance, false, history);
+    save(client, output, "history", appearance, PAGE, history);
 
     history::filters(client, output, appearance);
     key(client, "cmd-shift-backspace");
@@ -209,7 +278,7 @@ pub fn capture(client: &mut Client, output: &Path, appearance: &str) {
         output,
         "history-clear-data",
         appearance,
-        false,
+        PAGE,
         sheet,
     );
     client
@@ -228,7 +297,7 @@ pub fn capture(client: &mut Client, output: &Path, appearance: &str) {
         output,
         "history-clear-range-menu",
         appearance,
-        false,
+        PAGE,
         range,
     );
     key(client, "escape");
@@ -247,7 +316,7 @@ pub fn capture(client: &mut Client, output: &Path, appearance: &str) {
     assert!(library.history.is_none());
     assert_eq!(library.library.total, 0);
     assert!(library.library.rows.is_empty());
-    save(client, output, "library-empty", appearance, false, library);
+    save(client, output, "library-empty", appearance, PAGE, library);
     for (url, title) in [
         ("https://docs.example.test/gpui", "GPUI documentation"),
         (
@@ -277,7 +346,7 @@ pub fn capture(client: &mut Client, output: &Path, appearance: &str) {
         output,
         "library-populated",
         appearance,
-        false,
+        PAGE,
         populated,
     );
     library::extended(client, output, appearance);
@@ -320,7 +389,7 @@ pub fn capture(client: &mut Client, output: &Path, appearance: &str) {
             output,
             &format!("settings-{pane}"),
             appearance,
-            true,
+            Still::Settings,
             snapshot,
         );
     }
@@ -330,4 +399,59 @@ pub fn capture(client: &mut Client, output: &Path, appearance: &str) {
         .expect("close actual Settings window");
     wait(client, |s| s.settings.is_none());
     history::closed(client, output, appearance);
+    // Creating a profile activates its first space: always last.
+    settings::profiles(client, output, appearance);
+}
+
+/// A portal-child still: the transparent scene of whatever surface the
+/// portal presents (prompts, sheets, Peek's bar), never the parent or page.
+pub fn save_portal(
+    client: &mut Client,
+    output: &Path,
+    case: &str,
+    appearance: &str,
+    before: Snapshot,
+) {
+    // Presentations and the transient overlays share the synced child frame.
+    assert!(before.portal.frame_synced, "{case}");
+    let temporary = format!(
+        "/tmp/bbr-portal-{case}-{appearance}-{}.png",
+        std::process::id()
+    );
+    assert!(!Path::new(&temporary).exists());
+    client
+        .send_ok(&Request::CapturePortal {
+            path: temporary.clone(),
+        })
+        .expect("portal child readback");
+    let image = image::open(&temporary).expect("read portal PNG");
+    assert_eq!((image.width(), image.height()), (2160, 2814));
+    assert_eq!(image.color(), image::ColorType::Rgba8);
+    let rgba = image.as_rgba8().unwrap();
+    assert_eq!(
+        rgba.get_pixel(0, 0).0[3],
+        0,
+        "transparent outside the surface"
+    );
+    assert!(
+        rgba.pixels().any(|pixel| pixel.0[3] == 255),
+        "{case}: drawn surface"
+    );
+    let after = client.snapshot().expect("post-readback state");
+    assert_eq!(after.portal.presentation, before.portal.presentation);
+    assert_eq!(after.portal.ids, before.portal.ids);
+    assert_eq!(after.tabs, before.tabs);
+    assert_eq!(after.engine_sessions, before.engine_sessions);
+    assert_eq!(after.active_profile, before.active_profile);
+    assert_eq!(after.active_space, before.active_space);
+    assert_eq!(after.shell_modes.theme, appearance);
+    let destination = output.join(format!("{case}--{appearance}.png"));
+    assert!(!destination.exists(), "never overwrite surface capture");
+    fs::rename(temporary, destination).expect("preserve original PNG bytes");
+    let file = fs::OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .open(output.join(format!("{case}--{appearance}.snapshot.json")))
+        .expect("fresh metadata");
+    serde_json::to_writer_pretty(file, &after).expect("write semantic evidence");
 }
