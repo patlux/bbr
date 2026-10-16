@@ -1,6 +1,66 @@
 <!-- bbr:current-delivery -->
 # Current delivery
 
+## Content-card integration checkpoint (2026-10-16)
+
+Patrick authorized the merge and preservation repair: “ok dann fix all das ohne
+das was verloren geht”. Session `01a12f82` fast-forwarded the existing main checkout
+from `70f6026a` to `d94c5568`, preserving the Visual/Footer/Downloads/dialog
+session's 110 dirty files. The complete hash-verified backup is
+`/Users/patwoz/dev/Personal/macos/bbr-integration-backup-20261016-110218`.
+106 files remained byte-identical; four overlaps were semantically combined.
+The existing content-card bounds probe remains alongside the corner covers and
+seam/rim. No staged work, baseline, branch or worktree was discarded.
+
+Combined working-tree evidence, not a clean-HEAD acceptance claim:
+
+- `just verify` passes with compiler-invoking Cargo commands routed through mbx
+  by `/tmp/bbr-integration-cargo-route/cargo`; test budgets/assertions unchanged.
+  Strict `mbx clippy -p bbr --features testkit --all-targets -- -D warnings`
+  and `just visual-test` also pass. Logs:
+  `/tmp/bbr-main-integration-verify-final.log`,
+  `/tmp/bbr-main-testkit-clippy-final.log`,
+  `/tmp/bbr-main-visual-contracts-final.log`.
+- The only repair to preserved product work adds `#[cfg(feature = "testkit")]`
+  to the new `clear_footer_hover` test seam. Normal-build Clippy previously
+  rejected it as unused. This one-line correction remains with that session's
+  uncommitted footer implementation; it cannot be committed alone against HEAD,
+  where the method does not yet exist. No unrelated implementation is absorbed.
+- The sequential functional aggregate passes **350 tests / 59 executables**,
+  including Sidebar22, Downloads13, Library12, Peek8 and Gallery48. Only the
+  standing deferred `e2e-perf` is excluded. The invocation is
+  `python3 /tmp/bbr-main-integration-e2e.py functional-aggregate`; it uses the
+  repository plan/executor plus the existing hardened Tart profile, offline
+  declared-dylib transfer, a 45-minute outer deadline and first-failure abort.
+  Logs and observed clone/key/process/disk/SSH cleanup:
+  `/tmp/bbr-e2e-vm/run-20261016-134319-49858/`. Rounded suite durations total
+  341 s, excluding builds/boot/transfer; these are not product performance.
+- Official sealed combined-tree capture `1792150501363141000-5921` contains
+  **162 images: 66 changed, 6 same, 90 missing baselines**, zero capture errors.
+  Six withheld coverage families and the host-build OS mismatch remain explicit.
+  Report: `/Users/patwoz/dev/Personal/macos/bbr/reports/visual/batches/1792150501363141000-5921/review/index.html`.
+  Scoped inspection covers Library multi-selection in both themes, History and
+  the representative light shell. This is not acceptance of every captured
+  surface. This documentation edit requires fresh source-bound capture before
+  any baseline adoption; existing reports are never resealed.
+
+Failed attempts remain evidence: the initial concurrent build/E2E run had no
+reachable testkit socket (shared app-artifact replacement is suspected, not
+proven). Serial build then smoke passed without a startup-code change. Its
+orphaned owned clone was stopped/deleted and cleanup independently rechecked.
+The 50-ms command benchmark initially reached 56.689 ms; isolated unchanged
+rerun max was 18.874 ms and final verify passed. One earlier Peek routing
+assertion failed, then the unchanged focused run and final aggregate passed;
+no root-cause fix or flake elimination is claimed. The earlier visual
+`signal-after-ack` failure did not recur in the full passing visual contracts.
+
+Scheduling audit: only this requested integration is active here. No subagent,
+new lane/worktree, cross-build merge, performance run or host GUI was authorized
+or used. The preserved Visual work remains uncommitted; its wider completion
+and baseline decisions stay with that scope. No push, worktree deletion or
+baseline acceptance. The seated-card product change is integrated, while visual
+review, withheld coverage and deferred performance remain open.
+
 Start at [ROADMAP.md](../../ROADMAP.md), then read this file completely before choosing or scheduling work. This is the sole owner of volatile execution state. Durable acceptance lives in the linked packets; detailed chronology remains in Git and the historical delivery ledgers.
 
 ## Control metadata
