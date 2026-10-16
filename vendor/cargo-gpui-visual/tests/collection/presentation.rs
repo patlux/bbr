@@ -1,6 +1,75 @@
 use super::*;
 
 #[test]
+fn collection_detail_windows_keep_suite_assets_and_all_changed_pixels() {
+    let mut f = Fixture::new();
+    for s in &f.suites {
+        RgbaImage::from_pixel(608, 200, Rgba([30, 40, 50, 255]))
+            .save(s.run.join("panel-page-one--light.png"))
+            .unwrap();
+    }
+    f.seal(0);
+    f.seal(1);
+    f.compare().unwrap();
+    let ids = [
+        "gallery:panel-page-one--light".into(),
+        "browser:panel-page-one--light".into(),
+    ];
+    collection::accept(&f.report, &ids, &[]).unwrap();
+    let before: Vec<_> = f
+        .suites
+        .iter()
+        .map(|s| baseline_state(&s.baselines).unwrap())
+        .collect();
+    for (index, s) in f.suites.iter().enumerate() {
+        let path = s.run.join("panel-page-one--light.png");
+        let mut image = read_png(&path).unwrap();
+        image.put_pixel(
+            if index == 0 { 0 } else { 607 },
+            199,
+            Rgba([200, 0, 0, 255]),
+        );
+        image.save(path).unwrap();
+        f.seal(index);
+    }
+    f.report = f.root.join("changed");
+    let review = f.compare().unwrap();
+    let html = f.html();
+    for (index, s) in f.suites.iter().enumerate() {
+        let section = html
+            .split(&format!("id=\"f-{}:panel-page-one--light\"", s.id))
+            .nth(1)
+            .unwrap()
+            .split("</section>")
+            .next()
+            .unwrap();
+        let x = if index == 0 { 0 } else { 304 };
+        assert!(section.contains(&format!(
+            "data-x=\"{x}\" data-w=\"304\" data-y=\"104\" data-h=\"96\""
+        )));
+        for file in ["expected", "actual", "diff"] {
+            assert!(section.contains(&format!(
+                "src=\"suites/{}/panel-page-one--light/{file}.png\"",
+                s.id
+            )));
+        }
+        assert_eq!(
+            review.suites[index]
+                .review
+                .as_ref()
+                .unwrap()
+                .results
+                .iter()
+                .find(|r| r.case == "panel-page-one--light")
+                .unwrap()
+                .changed_pixels,
+            Some(1)
+        );
+        assert_eq!(before[index], baseline_state(&s.baselines).unwrap());
+    }
+}
+
+#[test]
 fn compact_catalog_navigation_grows_with_wrapped_labels() {
     let f = Fixture::new();
     let long_label =

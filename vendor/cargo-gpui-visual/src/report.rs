@@ -1,6 +1,7 @@
 //! Static report. The existing review controls are embedded, never fetched.
 mod case;
 mod collection;
+mod detail;
 mod diagnostics;
 use crate::compare::{Finding, Review};
 pub use crate::gallery::{Group, Options};
@@ -11,6 +12,7 @@ pub(crate) use case::{
     AcceptPaths,
 };
 pub(crate) use collection::write_collection;
+pub(crate) use detail::Detail;
 use sha2::{Digest, Sha256};
 use std::{
     fs,
@@ -83,92 +85,25 @@ pub fn crop_box(item: &Finding, rows: Option<[u32; 2]>) -> Option<[u32; 4]> {
 pub(crate) fn hint([x, y, w, h]: [u32; 4]) -> String {
     format!("{w}×{h} px ab {x},{y}")
 }
-/// Changed columns of one row band; the overall bounds when unknown.
-pub(crate) fn extent(item: &Finding, extents: &[[u32; 2]], index: usize) -> Option<[u32; 2]> {
-    extents
-        .get(index)
-        .copied()
-        .or(item.bounds.map(|[x1, _, x2, _]| [x1, x2]))
-}
-/// The 1:1 window around one row band and its changed columns.
-pub(crate) fn row_crop(
-    item: &Finding,
-    [top, bottom]: [u32; 2],
-    [x1, x2]: [u32; 2],
-) -> Option<[u32; 4]> {
-    let [w, h] = item.actual_size?;
-    let x = x1.saturating_sub(40);
-    let y = top.saturating_sub(40);
-    Some([
-        x,
-        y,
-        (w - x).min(x2 - x1 + 80).min(700),
-        (h - y).min(bottom - top + 80).min(520),
-    ])
-}
-/// Per-row changed columns, read from the stored exact diff image. Direct
-/// report writes without images fall back to the overall bounds.
-pub(crate) fn row_extents(root: &Path, asset: &str, item: &Finding) -> Vec<[u32; 2]> {
-    let (Some([bx1, _, bx2, _]), Some(size)) = (item.bounds, item.actual_size) else {
-        return Vec::new();
-    };
-    let fallback = vec![[bx1, bx2]; item.rows.len()];
-    let path = root.join(asset).join("diff.png");
-    if item.rows.is_empty() || crate::store::no_symlinks(&path).is_err() {
-        return fallback;
-    }
-    let Ok(diff) = crate::store::read_png(&path) else {
-        return fallback;
-    };
-    if [diff.width(), diff.height()] != size {
-        return fallback;
-    }
-    item.rows
-        .iter()
-        .map(|&[top, bottom]| {
-            let (mut x1, mut x2) = (u32::MAX, 0);
-            for y in top..bottom.min(size[1]) {
-                for x in bx1..bx2.min(size[0]) {
-                    if diff.get_pixel(x, y).0 == crate::compare::CHANGED {
-                        x1 = x1.min(x);
-                        x2 = x2.max(x + 1);
-                    }
-                }
-            }
-            if x1 < x2 {
-                [x1, x2]
-            } else {
-                [bx1, bx2]
-            }
-        })
-        .collect()
-}
-/// Numbered boxes over the changed columns of every changed row band.
-pub(crate) fn marks(item: &Finding, extents: &[[u32; 2]]) -> String {
+/// Numbered boxes use exactly the same windows as the inspector and stage.
+pub(crate) fn marks(item: &Finding, details: &[Detail]) -> String {
     let Some([width, height]) = item.actual_size else {
         return String::new();
     };
-    if item.rows.is_empty() {
+    if details.is_empty() {
         return String::new();
     }
-    let mut s = String::from("<span class=\"marks\">");
-    for (index, &[top, bottom]) in item.rows.iter().enumerate() {
-        let Some([x1, x2]) = extent(item, extents, index) else {
-            continue;
-        };
-        if let Some(b) = row_crop(item, [top, bottom], [x1, x2]) {
-            let (left, span) = (
-                f64::from(x1) / f64::from(width) * 100.,
-                f64::from(x2 - x1) / f64::from(width) * 100.,
-            );
-            let (y, h) = (
-                f64::from(top) / f64::from(height) * 100.,
-                f64::from(bottom - top) / f64::from(height) * 100.,
-            );
-            s+=&format!("<i style=\"top:{y:.3}%;height:{h:.3}%;left:{left:.3}%;width:{span:.3}%\" title=\"Abweichung y {top}–{bottom} · klicken für 1:1-Ausschnitt\" data-x=\"{}\" data-w=\"{}\" data-y=\"{}\" data-h=\"{}\" data-rows=\"y {top}–{bottom}\" data-hint=\"{}\"></i><b style=\"top:{:.3}%\" aria-hidden=\"true\">{}</b>",b[0],b[2],b[1],b[3],hint(b),y+h/2.,index+1);
-        }
+    let mut html = String::from("<span class=\"marks\">");
+    for (index, detail) in details.iter().enumerate() {
+        let [x, y, w, h] = detail.crop;
+        let n = index + 1;
+        let left = f64::from(x) / f64::from(width) * 100.;
+        let top = f64::from(y) / f64::from(height) * 100.;
+        let span = f64::from(w) / f64::from(width) * 100.;
+        let high = f64::from(h) / f64::from(height) * 100.;
+        html += &format!("<i style=\"top:{top:.3}%;height:{high:.3}%;left:{left:.3}%;width:{span:.3}%\" title=\"Detailausschnitt {n} · {}\" data-x=\"{x}\" data-w=\"{w}\" data-y=\"{y}\" data-h=\"{h}\" data-rows=\"Detail {n}\" data-hint=\"{}\"></i><b style=\"top:{:.3}%;left:{left:.3}%;margin-left:-22px\" aria-hidden=\"true\">{n}</b>", hint(detail.crop), hint(detail.crop), top + high/2.);
     }
-    s + "</span>"
+    html + "</span>"
 }
 pub(crate) fn radios(case: &str, global: bool, comparable: bool) -> String {
     MODES.iter().map(|(key,label)| {
@@ -178,7 +113,7 @@ pub(crate) fn radios(case: &str, global: bool, comparable: bool) -> String {
     }).collect()
 }
 /// `c` namespaces DOM identities; `asset` is the report-relative image folder.
-pub(crate) fn views(item: &Finding, c: &str, asset: &str, extents: &[[u32; 2]]) -> String {
+pub(crate) fn views(item: &Finding, c: &str, asset: &str, details: &[Detail]) -> String {
     let expected = if item.status == "missing-baseline" {
         String::new()
     } else {
@@ -196,7 +131,7 @@ pub(crate) fn views(item: &Finding, c: &str, asset: &str, extents: &[[u32; 2]]) 
             actual: &format!("{asset}/actual.png"),
             diff: &diff,
         },
-        Some((item, extents)),
+        Some((item, details)),
     )
 }
 pub fn write(root: &Path, r: &Review) -> Result<()> {

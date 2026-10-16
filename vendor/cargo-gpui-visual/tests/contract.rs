@@ -15,6 +15,8 @@ use std::{
 mod baselines;
 #[path = "support/environment.rs"]
 mod environment;
+#[path = "support/inspector.rs"]
+mod inspector;
 #[path = "support/presentation.rs"]
 mod presentation;
 #[path = "support/sequences.rs"]

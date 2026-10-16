@@ -1,7 +1,7 @@
 //! Shared still/sequence comparison controls. Missing sides never look like a blank diff.
 use crate::{
     compare::Finding,
-    report::{crop_box, escape, hint, marks, radios},
+    report::{crop_box, escape, hint, marks, radios, Detail},
 };
 
 pub(crate) struct Images<'a> {
@@ -10,15 +10,16 @@ pub(crate) struct Images<'a> {
     pub diff: &'a str,
 }
 
-/// `finding` carries the per-row changed columns used for numbered boxes.
-pub(crate) fn html(
-    id: &str,
-    images: Images<'_>,
-    finding: Option<(&Finding, &[[u32; 2]])>,
-) -> String {
+/// `finding` carries the exact spatial detail windows used for numbered boxes.
+pub(crate) fn html(id: &str, images: Images<'_>, finding: Option<(&Finding, &[Detail])>) -> String {
     let comparable =
         !images.expected.is_empty() && !images.actual.is_empty() && !images.diff.is_empty();
-    let crop = finding.and_then(|(f, _)| crop_box(f, None));
+    let crop = finding.and_then(|(f, details)| {
+        details.first().map(|d| d.crop).or_else(|| {
+            // Changed stills without verified detail data keep the full image.
+            (f.status != "changed").then(|| crop_box(f, None)).flatten()
+        })
+    });
     let frame = crop.map_or_else(
         || "class=\"frame\"".into(),
         |b| {
@@ -29,7 +30,7 @@ pub(crate) fn html(
         },
     );
     let marks = finding
-        .map(|(f, extents)| marks(f, extents))
+        .map(|(f, details)| marks(f, details))
         .unwrap_or_default();
     let crop_hint = crop.map_or_else(
         || "1:1-Bildfenster · zum Prüfen scrollen".into(),

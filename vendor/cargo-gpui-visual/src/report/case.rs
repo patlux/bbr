@@ -1,6 +1,6 @@
 //! One case per section: header, stage and a sticky inspector beside it.
 //! The inspector only reads stored findings; acceptance stays an explicit CLI step.
-use super::{escape, extent, hint, row_crop, row_extents, status_label, views};
+use super::{detail, escape, hint, status_label, views, Detail};
 use crate::compare::{Finding, Review};
 use std::path::Path;
 
@@ -13,9 +13,6 @@ pub(crate) struct AcceptPaths<'a> {
     pub(crate) baselines: &'a Path,
     pub(crate) report: &'a Path,
 }
-
-/// Inspector loupe width in CSS pixels; `--container-loupe` in the stylesheet.
-const LOUPE_WIDTH: u32 = 304;
 
 /// `settings--light` → (`settings`, `hell`). Unknown suffixes stay verbatim.
 pub(crate) fn split_case(case: &str) -> (&str, &str) {
@@ -83,7 +80,11 @@ pub(crate) fn meta(item: &Finding) -> String {
                 "{} px ({} %) · {areas} {} · Bounds {x1},{y1} → {x2},{y2} · {}",
                 grouped(px),
                 percent(px, u64::from(dim[0]) * u64::from(dim[1])),
-                if areas == 1 { "Bereich" } else { "Bereiche" },
+                if areas == 1 {
+                    "Zeilenband"
+                } else {
+                    "Zeilenbänder"
+                },
                 size(dim)
             )
         }
@@ -118,7 +119,11 @@ pub(crate) fn nav_detail(item: &Finding) -> String {
             let areas = item.rows.len();
             format!(
                 "geändert · {areas} {}",
-                if areas == 1 { "Bereich" } else { "Bereiche" }
+                if areas == 1 {
+                    "Zeilenband"
+                } else {
+                    "Zeilenbänder"
+                }
             )
         }
         status => status_label(status).into(),
@@ -156,8 +161,8 @@ fn note(text: &str) -> String {
     format!("<p class=\"panel-note\">{text}</p>")
 }
 
-/// 1:1 windows of every changed row band, the first one opened.
-fn regions(item: &Finding, asset: &str, extents: &[[u32; 2]]) -> String {
+/// Spatial 1:1 windows with actual changes; the first one is opened.
+fn regions(item: &Finding, asset: &str, details: &[Detail]) -> String {
     if item.status == "missing-baseline" {
         return note("Neu · keine Referenz. Die erste Aufnahme wird erst nach einer bewussten Übernahme zur Referenz.");
     }
@@ -173,36 +178,28 @@ fn regions(item: &Finding, asset: &str, extents: &[[u32; 2]]) -> String {
     if item.rows.is_empty() {
         return String::new();
     }
+    if details.is_empty() {
+        return note("Detailausschnitte nicht verfügbar: gespeichertes Diff fehlt oder ist inkonsistent. Vollständige Bilder prüfen.");
+    }
     let asset = escape(asset);
     let mut html = format!(
-        "<div class=\"regions\"><p class=\"panel-head\"><strong>Bereiche</strong> <span class=\"count\">{}</span><span class=\"keyhint\">nächster <kbd>R</kbd></span></p>",
-        item.rows.len()
+        "<div class=\"regions\"><p class=\"panel-head\"><strong>Detailausschnitte</strong> <span class=\"count\">{}</span><span class=\"keyhint\">nächster <kbd>R</kbd></span></p>{}",
+        details.len(), note("Räumliche Ausschnitte mit geänderten Pixeln · keine zusammenhängenden UI-Bereiche. Lange Änderungen sind aufgeteilt; nichts wird ausgelassen.")
     );
-    let lw = LOUPE_WIDTH.min(w);
-    for (index, &[top, bottom]) in item.rows.iter().enumerate() {
-        let Some([x1, x2]) = extent(item, extents, index) else {
-            continue;
-        };
-        let lh = (bottom - top + 16).min(96).min(h);
-        let span = x2 - x1;
-        let x = if span >= lw {
-            x1
-        } else {
-            x1.saturating_sub((lw - span) / 2)
-        }
-        .min(w - lw);
-        let y = top.saturating_sub(8).min(h - lh);
+    for (index, detail) in details.iter().enumerate() {
+        let n = index + 1;
+        let [x, y, lw, lh] = detail.crop;
+        let [x1, top, x2, bottom] = detail.bounds;
+        let coordinates = format!("x {x1}–{x2} · y {top}–{bottom}");
         let loupe = |label: &str, file: &str| {
-            format!("<figure><figcaption>{label}</figcaption><div class=\"loupe\" style=\"width:{lw}px;height:{lh}px\"><img loading=\"lazy\" src=\"{asset}/{file}\" alt=\"{label}, Zeilen {top}–{bottom}\" width=\"{w}\" height=\"{h}\" style=\"left:-{x}px;top:-{y}px\"></div></figure>")
+            format!("<figure tabindex=\"0\" aria-label=\"{label}, Detail {n} in Originalgröße\"><figcaption>{label}</figcaption><div class=\"loupe\" style=\"width:{lw}px;height:{lh}px\"><img loading=\"lazy\" src=\"{asset}/{file}\" alt=\"{label}, Ausschnitt {}\" width=\"{w}\" height=\"{h}\" style=\"left:-{x}px;top:-{y}px\"></div></figure>", hint(detail.crop))
         };
-        let stage = row_crop(item, [top, bottom], [x1, x2]).map_or_else(String::new, |b| {
-            format!("<button type=\"button\" class=\"to-stage\" hidden data-x=\"{}\" data-w=\"{}\" data-y=\"{}\" data-h=\"{}\" data-rows=\"y {top}–{bottom}\" data-hint=\"{}\">Auf der Bühne 1:1 zeigen</button>", b[0], b[2], b[1], b[3], hint(b))
-        });
+        let stage = format!("<button type=\"button\" class=\"to-stage\" hidden data-x=\"{x}\" data-w=\"{lw}\" data-y=\"{y}\" data-h=\"{lh}\" data-rows=\"Detail {n}\" data-hint=\"{}\">Auf der Bühne 1:1 zeigen</button>", hint(detail.crop));
         html += &format!(
-            "<details class=\"region\"{}><summary><span class=\"rmark\">{}</span><code>y {top}–{bottom}</code><span class=\"rsize\">{} px hoch</span></summary><div class=\"loupes\">{}{}{}</div>{stage}</details>",
+            "<details class=\"region\"{}><summary><span class=\"rmark\">{n}</span><code>{coordinates}</code><span class=\"rsize\">{} px geändert</span></summary>{}<div class=\"loupes\">{}{}{}</div>{stage}</details>",
             if index == 0 { " open" } else { "" },
-            index + 1,
-            bottom - top,
+            grouped(detail.changed),
+            note(&format!("1:1 · {}", hint(detail.crop))),
             loupe("Alt", "expected.png"),
             loupe("Neu", "actual.png"),
             loupe("Diff · jedes abweichende Pixel", "diff.png"),
@@ -278,7 +275,7 @@ pub(crate) fn finding_section(
             .map(|(w, h)| [w, h]);
     }
     let item = &sized;
-    let extents = row_extents(root, asset, item);
+    let details = detail::load(root, asset, item).unwrap_or_default();
     let tag = if theme.is_empty() {
         String::new()
     } else {
@@ -288,8 +285,8 @@ pub(crate) fn finding_section(
         "<section class=\"case finding\" id=\"f-{key}\"><div class=\"case-main\"><header class=\"case-head\"><div class=\"case-title\"><h2>{title}</h2>{tag}{}</div><p class=\"case-meta\">{}</p></header>{}</div><aside class=\"inspector\" aria-label=\"Inspektor\"><div class=\"inspector-body\"><p class=\"inview\"><span>im Blick</span><code>{key}</code></p>{}{accept}</div></aside></section>",
         badge(&item.status, item.reason.as_deref()),
         meta_html(item),
-        views(item, key, asset, &extents),
-        regions(item, asset, &extents),
+        views(item, key, asset, &details),
+        regions(item, asset, &details),
         key = escape(key),
     )
 }
