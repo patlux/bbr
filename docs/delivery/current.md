@@ -231,7 +231,7 @@ no Git lock or holder of the repository/GPUI Visual capture locks was found.
 
 | ID | Slice | Status | Worktree | Owner | Contract | Next gate |
 |---|---|---|---|---|---|---|
-| VISUAL-RUST | Standalone GPUI Visual consumer migration | `running` | main, activation base above | session `01a0f8f4` | [visual tooling](../roadmap/tasks/visual-snapshot-tooling.md) | Palette capture implementation settled as a verified intermediate slice;72 approved references and historical evidence preserved. Benchmark sources/config match the last passing base and have no dependency on the capture seam; both recorded50ms maximum failures remain unresolved, not reclassified as passes. Find's pilot and two expanded78-image Tart runs now pass exact source/image/rendering and independent cleanup checks; six new Find candidates remain unapproved. Downloads is next, then Peek, each with an actual-capability matrix and pilot-first proof. Seven withheld families, public cutover and stable aggregate remain open; latest checkpoint below |
+| VISUAL-RUST | Standalone GPUI Visual consumer migration | `running` | main, activation base above | session `01a12151` (authorized handoff; see below) | [visual tooling](../roadmap/tasks/visual-snapshot-tooling.md) | Palette and Find intermediate implementations settled;72 approved references preserved. Downloads fade/floating repair remains uncommitted. Authorized same-inode host-gate restoration and structured ordinary runner now pass; latest source-bound ordinary run proves focused regressions, Downloads13/13 and Sidebar21/21. Real HTTP response holds preserve Waiting/Cancel assertions;19 fixture tests, strict Clippy and serial visual contracts pass. Fresh visual preparation succeeds, but capture A stops on VZ unexpected shutdown/SSH connect failure before runtime import; B stops on the second host metadata-query deadline before transport creation. Both failures remain unresolved; no fresh PNG/HTML or A/B proof. Do not repeat unchanged runs or extend deadlines. Preserve verified cleanup, structured idle gate and all attempts; history/missing-file expansion, Peek, seven withheld families and stable aggregate remain open; latest checkpoint below |
 
 Historical reuse evidence is read-only Git/session metadata, not a takeover of
 `/Users/patwoz/dev/Personal/macos/bbr-visual-snapshots`: its five migration commits
@@ -3321,6 +3321,638 @@ handoff. Downloads/Peek matrices and pilots are next; complete native/app covera
 Gallery interaction/framing, public entrypoint/Python cutover and stable aggregate
 remain open. Further capture-affecting edits require new payloads/runs, never old
 report resealing or silent reference adoption.
+
+### Downloads pilot: transparent production panel blocker (2026-10-03)
+
+Continuation reverified `main@70f6026aea8bcb51a6f7595b884649cdd9981bce`,
+empty index and this writer's Downloads-only candidate. ROADMAP and the complete
+3,858-line delivery queue were reread in bounded chunks. Same sole local writer,
+no subagent/workflow/new lane, foreign-worktree access or publication. The packet
+defines empty, terminal success/failure history and missing-file Light/Dark states;
+only the empty pair was implemented before actual pilot proof. No download was
+started and no Downloads file was removed. Native-transfer expansion and Peek
+remain downstream, not independently activated work.
+
+The first pilot returned80 structurally valid images and a sealed report at
+`/Users/patwoz/dev/Personal/macos/bbr/reports/visual/downloads-pilot-20261003-pilot/index.html`,
+but **failed visual proof**: both inspected original Downloads PNGs omit the panel.
+The semantic snapshot says `open=true`, includes the panel/empty IDs and has no
+motion moments. Those fields do not establish painted opacity. Independent audit
+before source changes verifies1,529 current sources,80 original/report PNG hashes,
+226 sealed report files, unchanged78 prior images including all72 references,
+exact rendering equality and25 historical collection seals. Review remains72
+`same`, eight `missing-baseline`, seven withheld families; no reference adoption.
+Payload `7ba9af4c86ae3671014d802ba6b3b2771e3e2497ad09b7bcaf916ec73a2709c4`,
+capture `0813ca33d365580f673ae1559abfa56a382be9727d106dc782d7dfc3cfaad4e3`.
+Caller207.141s and integrity audit4.885s are tooling timings, not product performance.
+
+Source diagnosis: BBR stores one `Transition<f32>` in Downloads state and primes
+it while closed. At the unchanged GPUI pin, `evaluate` memoizes the first value
+inside that retained object; `update` changes the entity goal/time but never clears
+that cache. Render forwards the cached value to panel opacity. The existing motion
+snapshot does not observe this transition. No production or vendor change was made.
+
+A narrowly visual-feature-only CaptureChrome guard now observes cached alpha,
+goal and transition delta **after the actual draw**, refusing an open panel unless
+all reach1. It neither resets/jumps/clones the transition nor fabricates pixels.
+The fixture retries only that readback under its existing30s deadline and verifies
+no PNG is written on refusal. Negative-first unit red is retained; both readback
+contracts subsequently pass. One fresh source-bound Tart run reproduces the runtime
+failure rather than waiting arbitrarily or retrying unchanged until green:
+- Payload `0e80c1791673591905e60eb60dc4b6e9741dad3eec58eef9c785136b36f82526`,
+  1,529 source hashes and1,532 staged files independently checked.
+- First observation: alpha0, goal1, delta0.0175118. After107,652 draws and
+  30.000205833s: **alpha0, goal1, delta1**. `downloads_production_panel_capture`
+  fails; the other four capture tests pass. Test binary39.02s, caller exit2.
+- No capture seal or new report is published. Original stderr and failed terminal
+  remain under `/private/tmp/bbr-visual-downloads/opacity-probe/`.
+- Both transports' request/payload-bound independent observations prove owned
+  process reaped, clone/key/disk absent and former SSH unreachable. Offline runtime,
+  private NAT and key-only SSH route are unchanged; no host producer, Golden Image
+  write or new exposure. The failed producer has no successful guest receipt claim.
+
+Fresh portable gates pass: readback2/2; consumer catalog17/17; strict all-target
+Clippy for capture-feature, testkit, normal app/UI and consumer; serial offline
+`just visual-test` (171 Python discoveries, one integration skip separately passed,
+188 upstream and119 consumer top-level passes plus nested fixtures). Initial
+consumer Clippy caught the pilot's single-element loop; replacing it with the
+same direct required-row assertion fixes the lint without weakening coverage.
+Logs retain that failure. The catalog now explicitly says Downloads pilot failed
+visual proof, superseding its earlier optimistic wording. This prose/test edit
+makes prior payloads historical diagnostics, not current capture inputs. No full
+verify, canonical functional aggregate, performance or stable acceptance is claimed;
+Command benchmark failures remain unresolved and were not rerun.
+
+Evidence is preserved at
+`/Users/patwoz/dev/Personal/macos/bbr/reports/visual/evidence/downloads-blocked-20261003/`;
+scratch originals at `/private/tmp/bbr-visual-downloads/`. Explicit allowlisting
+excludes private/public keys, known-host files, executables and runtime archives.
+Original reports and PNGs are never rewritten. Self-review checked observation-only
+feature boundaries, goal/cache distinction, strict no-write refusal, original
+payloads and failed-run cleanup. No independent agent review or elapsed whole-task
+timing is claimed. Final format/roadmap/whitespace and preservation checks follow.
+
+Blocked stop: the source and real-app failure require a bounded **production fade
+lifecycle repair**, beyond this capture-only sequence. Do not jump opacity in the
+harness, clone/reset it during readback, invent a Gallery panel or label blank
+PNGs as coverage. Preserve the uncommitted candidate and red regression. Minimum
+next scope is the production Downloads transition fix with an actual painted-
+endpoint regression and fresh Tart pilot before history/missing-file expansion;
+then resume Peek serially. No implementation commit, reference acceptance, broader
+migration completion or publication accompanies this stop.
+
+### Downloads fade: docked proof and ordinary verification stop (2026-10-03)
+
+Patrick's “ja” authorized the narrow production fade-lifecycle repair described
+in the task packet, superseding the preceding capture-only stop. HEAD remains
+`70f6026aea8bcb51a6f7595b884649cdd9981bce`; candidate and index ownership stay
+with this sole serial local writer. At restoration, the complete 3,936-line
+current-delivery document and active packet were reread in bounded chunks. No
+agent/workflow/new lane, foreign-worktree access, host GUI or publication. Queue
+audit: evidence preservation and truthful blocker documentation are runnable;
+history/missing-file expansion and Peek depend on the ordinary Downloads gate.
+Other product lanes, Gallery interaction/framing and public/Python cutover remain
+outside this activation. No duplicate writer or merge order is introduced.
+
+Implemented candidate: `DownloadsFade` retains the `TransitionState<f32>` entity
+and refreshes only its interpolation wrapper in the browser owner's render.
+The docked and floating composition read the cached presented value; floating
+composition never evaluates or requests a browser frame outside its draw phase.
+`Motion::fine()`, opacity-only motion, continuous retargeting and focus/identity
+contracts remain. No GPUI/vendor change or readback-time opacity shortcut.
+Mock rendering covers cache refresh and close/reopen continuity. The visual-only
+post-draw guard requires actual rendered open/closed endpoints; failed reads
+write no PNG. Both earlier mock-context setup failures remain in retained logs.
+
+Fresh visual evidence:
+- The final regression runs open → fully closed → reopen in Light/Dark, preserving
+  semantic/focus/browser identity and requiring byte-identical reopened PNGs.
+  Inspected originals visibly contain the docked empty panel and footer focus.
+- Report: `/Users/patwoz/dev/Personal/macos/bbr/reports/visual/downloads-fade-regression-20261003-a/index.html`.
+  Capture `e82dcb65ba59b15b2861691c9a0b55966869e00e2e7898792db99a05cdaf5185`;
+  payload `2d0303988654b14ee05a8bb3a2115a4ba582f5a9286940ed5490aa70914eee38`.
+  Caller 449.579411125s, tooling time only. 1,530 sealed sources, 80 PNGs, all78
+  preceding images and all72 approved references unchanged;226 report-sealed files.
+  Review72 `same`/eight `missing-baseline`, seven withheld, no rendering mismatch.
+- This is hidden docked-renderer proof, not native on-screen/floating/WebKit
+  composition. No independent final B run or fresh HTML browser inspection is
+  claimed. The earlier repaired pilot has different source bytes and is not B.
+- `fade-pilot` failed its offline runtime-probe deadline; subsequent bounded
+  read-only runtime verification passed without repair. `fade-pilot2` first failed
+  an SSH audit (rc255), then its unchanged-payload fresh clone succeeded. Preserve
+  those failures separately from the final regression; no timing/audit relaxation.
+
+Ordinary verification uses freshly host-built **default + testkit, without
+visual-capture**, with1,531 source hashes, Cargo artifact/feature identity,
+read-only payload mounting, exact installed-byte checks, fixed test lists/results
+and existing hardened offline Tart lifecycle. The general dependency-fetching VM
+runner was not used. Latest schedule runs the entire Downloads13 and Sidebar21
+sequentially even after an independent suite failure, but never reports success
+unless both pass; the red floating test is retained.
+
+| Attempt | Actual outcome |
+|---|---|
+| `ordinary-a` | Preparation failed on absent optional Cargo config; corrected absence hashing, no VM |
+| `ordinary-b` | Prepared only; no guest execution |
+| `ordinary-c` | Focused floating regression failed rc101:0 passed/1 failed,8.01s libtest (8.286254167s invocation); complete suites not reached |
+| `ordinary-d` | Complete-suite schedule failed SSH rc255 at runtime-import connection; no test execution |
+| `ordinary-e` | Fresh-clone retry of identical d payload/request/guest bytes; same SSH banner timeout before tests |
+
+The ordinary failure is exactly `missing semantic id bbr-downloads-panel` in
+`floating::downloads_open_close_reopen_in_the_floating_rail_preserves_browser_identity`.
+Source readback shows `visible_ids_u2` receives docked `sidebar_visible` and gates
+U2/Downloads IDs behind it; separately, `downloads_panel_width` returns0 when
+that sidebar is hidden. Those seams predate this fade diff. Snapshot omission
+explains the failed assertion but does **not** prove a visible floating panel;
+width0 is source-level geometry evidence, not a pixel measurement. No repair of
+those additional seams or weakening/removal of the failing assertion occurred.
+
+Both full-suite failures say `Connection timed out during banner exchange`;
+`tests.stdout`/`tests.stderr` do not exist. Their shared payload is
+`00e2a8710bc2d4fe7d4392d8a2ce958b61dfdfdbbac09cc3dd3fcbc780784162`, request
+`3500a88649ff996b503486f94b834bac2ce7d6d868f3e39ac101ee876fc8939f`.
+No cause is attributed to load, authentication or test behavior. Repeated
+unchanged retries stop here. c preparation/run37.258s/358.286s; d14.478s/39.303s
+are measured tooling durations, not app performance. No total implementation/
+self-review time is claimed.
+
+Final local gate log `/private/tmp/bbr-visual-downloads/ordinary-final-checks.log`:
+readback2/2 (0.00s), Downloads8/8 including mock draw (0.01s), consumer contracts
+17/17 (0.91s), capture-target and strict all-target visual/testkit/normal app+UI/
+consumer Clippy pass. Cargo-reported Clippy durations:104s,7.56s,31.89s,12.31s,
+52.79s respectively. Existing `block v0.1.6` warning remains. These checks are not
+native suite success, a fresh full `verify`, performance or stable aggregate.
+Known-red Command benchmark results remain unaltered and are not retried.
+
+Durable explicit-allowlist evidence (199 hashed files,10,662,456 bytes) is retained at
+`/Users/patwoz/dev/Personal/macos/bbr/reports/visual/evidence/downloads-fade-ordinary-20261003/`:
+failed/successful visual attempts, frozen ordinary guest actions and manifests,
+compiler/source identities, original test/transport output, retry provenance,
+local gates and independent integrity/cleanup audits. No keys, known-host files,
+executables or runtime archives are copied. The previous61-file failure bundle
+is unchanged. All28 existing collection seals,72 baseline PNGs/metadata against
+HEAD and90 immutable export hashes recheck. Baseline metadata stays
+`d9b23b6161cabf9b84525c3392d5f70c86a8a36fc6662783efc476112bef649a`.
+Independent host observations reverify clone/disk/key/process absence and former
+SSH unreachability for the successful visual runs and ordinary-c/d/e. No VM was
+booted in this preservation checkpoint; no Golden Image or exposure change.
+
+Before documentary changes, all1,531 ordinary source hashes match the working
+candidate. Final visual sources differ only by the added ordinary floating test
+and its module registration. Correcting the catalog status now changes another
+source-bound file; the after-docs audit records that delta explicitly. Stored
+payloads, report/capture seals and failed attempts remain immutable; fresh future
+execution requires fresh preparation, never resealing historical runs as current.
+Post-edit catalog contracts17/17 (0.91s), workspace/consumer format, roadmap
+(165 tracked Markdown files, grandfathered warnings only) and whitespace checks
+pass and accompany the bundle. Its hash inventory is independently rechecked.
+
+Blocked stop: the fade candidate stays uncommitted while its ordinary gate is
+red. The next bounded decision is resolution of floating snapshot/width findings
+and the repeated pre-test SSH blocker, followed by actual complete ordinary
+Downloads/Sidebar runs. Do not silently expand the production exception into a
+broad layout/animation rewrite or infer success from docked pixels/Clippy. No
+history/missing-file deletion, Peek, baseline adoption, completion checkbox,
+functional/performance acceptance or publication accompanies this checkpoint.
+
+### Floating Downloads continuation activated (2026-10-09)
+
+Patrick's “ja lets go” authorizes the proposed SSH diagnosis and floating
+Downloads geometry/snapshot repair, followed by relevant ordinary gates and a
+local coherent intermediate commit. This supersedes the preceding scope pause;
+it does not approve a broad Sidebar rewrite or references. Same sole serial
+writer on `main@70f6026aea8bcb51a6f7595b884649cdd9981bce`, inherited candidate
+preserved, index empty. Full delivery queue reread. No agent/new lane/foreign
+worktree or publication. Queue audit: this bounded repair is runnable; expanded
+Downloads and Peek retain their pilot/gate dependency; unrelated product, Gallery
+and public/Python cutover work remain outside activation. No parallel ownership
+or merge conflict is introduced.
+
+Early prerequisite evidence is now real, not a permission blocker. The locked
+51-path runtime passes host offline metadata/byte/Python checks. Fresh artifacts
+use default+testkit without visual-capture. A new hardened clone completes a
+verbose authenticated SSH identity probe, exact offline runtime transfer/import,
+installed-source/artifact checks and existing
+`open_dismiss::footer_open_empty_ids_and_dismissal_preserves_identity` **1/1**
+(14.61s libtest,231.484s complete runner). Independent cleanup verifies removed
+clone/key/disk/process and unreachable former SSH before leases release. Evidence:
+`/private/tmp/bbr-downloads-resume-20261009/runtime-probe/`. No authentication,
+listener, network, timeout or runtime-policy change; historical banner timeouts
+remain unexplained, not erased or attributed to load. A later exact `--ignored`
+listing confirms13 Downloads scenarios including the floating regression; the
+filtered summary's13 excludes neither ordinary non-ignored support tests nor
+proves the ignored-suite count. An incorrect scratch expectation14 stopped the
+first post-fix schedule before the full suite; restored13 from the actual listing,
+without skipping any scenario. Next: complete ordinary Downloads13 and Sidebar21. No fresh
+capture or baseline acceptance is claimed by this prerequisite.
+
+### Floating repair verified; fresh capture blocked at host gate (2026-10-09)
+
+The authorized product repair now has negative-first native evidence. The ordinary
+panel observer reproduces `[10,546,0,108]` at alpha1 before the width fix, inside
+rail `[8,8,300,684]`; the focused test fails for collapsed paint. Passing the
+rail assembler's actual width instead of docked visibility yields
+`[10,546,288,108]` at alpha1 on both open and reopen. The snapshot includes the
+visible floating rail's semantic IDs without changing its false docked-layout
+flag. The additive optional `downloads_paint` observation remains separate from
+the logical Downloads model; full old-snapshot deserialization defaults it to
+None, and a populated observation round-trips without changing that model.
+Canvas layout/opacity observation is not native visibility or pixel-readback proof.
+The browser still evaluates the persistent fade; Portal composition only reads it.
+
+Actual ordinary attempts under `/private/tmp/bbr-downloads-resume-20261009/`:
+
+| Attempt | Outcome |
+|---|---|
+| `geometry-red` | Observer-wiring compile failure; no VM/test execution |
+| `geometry-red2` | Focused native regression fails width0 at alpha1; exact failure retained |
+| `geometry-green` | Focused native regression passes; scratch expected-count14 rejects actual ignored listing13 before complete suites |
+| `ordinary-full` | Focused1/1, complete Downloads13/13, Sidebar21/21 pass; later observation-type/protocol edits require fresh evidence |
+| `ordinary-final` | Authenticated SSH and offline import succeed, then guest stops unexpectedly (`VZErrorDomain Code=1`); SSH rc255, no tests started |
+| `ordinary-diagnostic` | Fresh final code/protocol artifacts: focused1/1, Downloads13/13, Sidebar21/21 all pass with exact listed names and successful per-test results |
+
+The final native payload is
+`e139d899ea522746ff59515f5c7d3957b441109d1019b5d37df806a357d8ffb6`, request
+`aae98b6e936c48d1a95a1dd552233e2c8077cce58b8ceb17e754b884fc41598e`:
+1,531 source hashes /1,534 files, default+testkit with no visual-capture. Focused,
+Downloads and Sidebar libtest times are3.09s,15.06s and50.82s; complete runner
+132.797286209s. The VZ failure's runner took74.266924125s. Instrumentation added
+only bounded SSH verbosity and phase/path markers, not authentication, access or
+time-budget changes. No cause is established for VZ shutdown or historical SSH
+banner timeouts; the successful instrumented run does not explain them.
+
+Independent host rechecks verify all six Oct9 started clones absent, keys absent,
+disks detached, owned processes reaped/absent and former SSH unreachable. Exact
+payloads, installed artifacts, guest scripts, requests and the51-path runtime
+exports rehash. For earlier attempts without a retained per-attempt host runner,
+the final scratch runner is not claimed to be the exact historical invocation
+source; frozen guest scripts/manifests and original logs remain authoritative.
+
+Fresh local evidence:
+- Readback2/2, Downloads8/8 (including mock owner-render lifecycle), consumer
+  contracts17/17 and strict capture-target/visual-feature/testkit/normal app+UI/
+  consumer Clippy pass in `local-gates-final.log` under the scratch root above.
+- Protocol20/20 pass in `protocol-final.log`, including absent-field compatibility
+  and nonempty paint round-trip. A subsequent complete strict Clippy recheck passes
+  in `clippy-checkpoint.log` after those final protocol assertions.
+- `RUST_TEST_THREADS=1 CARGO_NET_OFFLINE=true just visual-test` passes in
+  `portable-visual-final.log`:171 Python discoveries (170 pass, one integration
+  separately passed),188 immutable upstream and119 consumer top-level passes plus
+  nested fixtures. No host GUI execution or real reference acceptance occurs.
+- Exact72 approved PNGs/metadata match HEAD; the90-file immutable export and both
+  earlier Downloads evidence inventories (61/199 files) rehash, as do28 historical
+  Collection seals. No historical failure, reference or seal is rewritten.
+
+Fresh visual host staging succeeds with payload
+`0e7ce9ddeddaf7ddb1a2e48f0a1045573b146ea4d4aba78bf690583537e5a344` under
+`/private/tmp/bbr-downloads-resume-20261009/visual-repair/payload`. The external
+caller compiles successfully but exits2 with `Invalid host gate evidence; explicit
+investigation required: EOF while parsing a value at line 1 column 0`.
+`transport-a` contains only an empty VM diagnostics directory: no supervision
+request, VM launch, producer, PNG, receipt or new report. This is a host-coordination
+failure, not a capture assertion, compiler failure or new SSH failure.
+
+Read-only gate observations:
+- `/private/tmp/gpui-visual-host-501.lock`: zero bytes, inode958111804, UID501,
+  mode0644, one link; birth/mtime2026-10-09T15:22:15+0200.
+- `/private/tmp/bbr-gui-gate-6ff732a0fdc0bb09.lock`: zero bytes, inode958111805,
+  same ownership/mode/link count and creation second. Empty compatibility metadata
+  is allowed; empty primary host-gate evidence is not a valid idle record.
+- Both hash to `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855`;
+  no open descriptor is observed during inspection. That is not a crash-cleanliness
+  attestation. Both original files are left unchanged.
+- The scratch ordinary runner uses `open(path, 'a+')` plus raw flock, so it can
+  create a missing primary file without the mandatory Rust schema-1 lease record.
+  File times coincide with `runtime-probe`; no retained syscall trace proves the
+  creator. This is a concrete runner compatibility defect, not a reason to weaken
+  the immutable gate. Successful ordinary test/cleanup evidence is retained, but
+  this runner is not accepted as equivalent durable crash coordination.
+- The immutable `Gate::recover` rejects malformed evidence because no owner/groups
+  can be validated. No invented owner, fabricated idle record, unlink/replacement,
+  private alternative gate, vendor patch or host-GUI fallback is attempted. Do not
+  rerun the raw-flock ordinary runner against this primary gate.
+
+Safe diagnostic preservation is under
+`/Users/patwoz/dev/Personal/macos/bbr/reports/visual/evidence/downloads-floating-20261009/`:
+allowlisted logs/manifests, red/green source snapshots, exact final caller/guest
+sources, gate observations and integrity checks, with no keys, known-host files,
+executables or runtime archives. `checkpoint-integrity.json` proves the final
+ordinary/visual source inventories matched current sources before documentation.
+The catalog's stale claim that ordinary tests remain red is subsequently removed;
+`checkpoint-integrity-after-docs.json` explicitly records only that catalog delta.
+Do not reseal or reuse the older payload as current after this source-policy edit.
+
+Blocked stop and queue audit: sole local writer, no subagent/workflow/new lane or
+foreign-worktree access. Preserve the uncommitted candidate and empty index.
+Recovery of the shared host-wide coordination file requires a separately scoped
+investigation/authorized recovery path with other consumers quiescent, preserving
+original bytes/inode evidence and crash semantics. The ordinary scratch runner
+must use the existing structured gate authority before future guest use. Then
+freshly stage and run repaired-source pixel/report proof and the independent
+same-source repeat before the coherent repair commit and history/missing-file
+expansion; Peek follows. This is an actual security-coordination boundary, not a
+renewed approval request for the authorized Downloads product repair. Performance
+remains deferred, both Command maximum failures remain recorded, and no stable
+aggregate, migration checkbox, reference approval, commit or publication is claimed.
+
+### Host-gate restoration activated (2026-10-09)
+
+Patrick's “ja let sgo” explicitly authorizes the proposed shared coordination
+investigation/restoration and structured scratch runner, followed by fresh
+captures. Same sole local writer, preserved main candidate and empty index; no
+subagents, new lanes, foreign-worktree inspection or publication. Whole queue
+reviewed: this prerequisite is runnable now; history/missing-file and Peek retain
+their verification dependency. Earlier agent-authored no-recovery precautions
+are not a user prohibition against this now-authorized restoration.
+
+Preflight observes unchanged empty host/compatibility inodes958111804/958111805,
+no holder, no BBR/capture/transport producer and all listed Tart VMs stopped.
+Unrelated compilers, apps and Python processes are left untouched. The task packet
+bounds a one-time same-inode active maintenance lease after locked evidence and
+resource checks, followed by unmodified official recovery of that real exited
+owner. A zero-byte file is not interpreted as prior clean execution. The ordinary
+runner must use existing supervision/control/independent cleanup, not raw flock.
+Private negative contracts precede restoration; a smallest actual existing guest
+test precedes larger capture work. References and historical evidence stay intact.
+
+### Structured gate and ordinary regression verified; runtime remains intermittent (2026-10-09)
+
+Patrick's existing authorization remains in force; no renewed permission blocker.
+Same sole serial writer at `main@70f6026aea8bcb51a6f7595b884649cdd9981bce`,
+empty index and inherited candidate preserved. Entire4,210-line delivery contract
+was reread, including the truncated tail by a separate bounded read. Queue audit:
+only the gate/runner prerequisite, Downloads verification and evidence closeout
+are runnable here. History/missing-file and Peek retain their actual-pixel gate;
+no additional agent, lane, worktree, host GUI or publication is activated.
+
+The authorized restoration completed after eight private negative/positive
+contracts. Under both original inode locks, the actual maintenance process wrote
+its own active lease; after its exit, unmodified `Gate::recover` and normal
+acquire/finish succeeded. Original zero-byte evidence and locked inspection remain
+preserved. No historical owner or historical cleanup was fabricated. Primary inode
+958111804 and compatibility inode958111805 remain unchanged. Current primary is
+valid structured idle evidence (`active=false`, `pending=false`, empty groups),
+with the original maintenance recovery hash/reason retained; compatibility stays
+empty. No raw-flock ordinary run, alternate gate, unlink or vendor patch follows.
+
+The scratch ordinary route now uses existing Rust supervision, Python control and
+original request/payload/independently chosen VM identity. Terminal publication
+follows lifecycle cleanup; Rust independently repeats resource absence before
+finishing leases. Actual attempts under `/private/tmp/bbr-downloads-gate-20261009/`:
+
+| Attempt | Evidence |
+|---|---|
+| `ordinary-probe` | Existing empty-open/dismiss1/1;2.92s libtest,80.361365958s supervisor; completed terminal and independently clean resources |
+| `ordinary-full` | Floating1/1 and Sidebar21/21; Downloads11/13. Bounded history and durable deletion helpers see Running/Succeeded before the next snapshot, violating their exact Waiting assertion. Failed terminal and independently clean resources preserved |
+| `ordinary-hold` | Real HTTP response held until the new native attempt is observed Waiting/Cancel; both failed cases, floating, Downloads13/13 and Sidebar21/21 pass;143.569987875s supervisor |
+| `ordinary-hold-final` | Post-review deadline fix: same five sequential invocations pass; focused2.76s/1.28s/1.30s, Downloads14.04s, Sidebar46.53s libtest;136.476125917s supervisor |
+
+The fixture barrier withholds only real HTTP response bytes, never browser state.
+Pre-action IDs distinguish repeated filenames. Release retains every original
+fixture byte and retry behavior; unobserved/duplicate/aborted requests fail.
+Review found that an already observed request could be released after its30s
+expiry. A deterministic regression first fails for that behavior, then explicit
+readiness/release deadline checks abort and notify waiters. All19 fixture tests
+pass (7.44s). The earlier unwired zero-test invocation is not red proof; the
+initial wired compile failure and native Waiting failures are retained separately.
+No production state injection, protocol change, slower response or test-budget
+increase accompanies this synchronization fix.
+
+Final ordinary payload
+`0e7e3af1216daeb6eedd14e09a7c579a58234b7d00520155c1e62cebf6e5ddd5`
+binds1,532 sources/1,535 files, default+testkit without visual-capture. Request
+`cc1419cde43f8ec3d78a6e32c3596d94a20fbe6ee12694edc49354952ebcb88c`,
+clone `bbr-visual-37042-f693f1bca12b`. Independent final audit verifies every
+frozen byte, runtime export and current-source equality, both successful and
+failed structured terminals, and exact clone/key/disk/process/SSH absence for
+all four ordinary runs. Paint/layout observations still are not floating PNG proof.
+
+Runtime diagnosis and fresh visual attempts remain distinct:
+- `visual-structured` and `visual-structured2` fail the unchanged30s first offline
+  metadata query before VM launch. Standalone exact metadata passes23.377s.
+- A scratch instrumented caller then executes the **unmodified** Python runtime
+  verifier through the actual immutable Rust process-group owner and240s outer
+  policy. It retains exact argv, cleared child environment, stdout/stderr and
+  process-group identity. Both metadata queries pass3.924s/3.856s, full NAR-byte
+  verification12.705s, interpreter/hash/dependency checks pass. This does not
+  explain the earlier failures or reclassify historical partial preparation as
+  capture-ready. No query/timeout/environment policy changed.
+- Fresh `visual-structured3` preparation succeeds after the final fixture edit:
+  payload `3d92975b6b41360f0c99e16e4557c7c8aef800f3749cfde3413c1113dea0333c`,
+  same1,532 current sources/1,535 files. A authenticates and passes access audits,
+  but Tart logs `VZErrorDomain Code=1` / unexpected virtual-machine stop; the
+  runtime-import SSH connection times out. No import success, bootstrap, producer,
+  PNG or capture seal is claimed. Clone `bbr-visual-97723-e99266cb3040`, Tart1063,
+  former IP192.168.67.29; failed request
+  `986163b267233eadc8ee2544c853a5480ce7a57c087ae8a0c605642df078bbfd`
+  has independently verified cleanup before lease finish.
+- One further identical-payload invocation B fails at the **second** offline host
+  metadata query (`vm_runtime.py:226`), before transport-directory creation or
+  another VM. Thus runtime availability remains intermittent; the successful
+  supervised diagnostic is not a fix. No further unchanged capture retry.
+- Bounded host Tart logs add no cause. Later observed load averages111/169/211,
+  low free pages and54GiB available disk are observations, not proof of a load,
+  memory or disk cause. No unrelated process was signalled or machine setup
+  changed. Original SSH/VZ and Command benchmark failures remain unresolved.
+
+Post-review gates: fixture19/19, fixture strict Clippy, complete strict visual-
+feature/testkit/normal app+UI/consumer Clippy and serial offline `just visual-test`
+pass. The visual suite retains171 Python discoveries (one separately passing
+integration),188 upstream and119 consumer top-level tests plus fixtures. Existing
+`block` warning remains. Full non-GUI verify, canonical functional aggregate,
+performance, fresh repaired-source PNG/HTML and independent A/B remain unpassed.
+No green portable result is substituted for those missing runtime gates.
+
+Read-only final audit rehashes all72 approved references/metadata, immutable90-file
+export,28 historical Collection seals and61/199/250-file prior evidence bundles.
+Current ordinary and visual source inventories match exactly. It rechecks five
+started structured runs' cleanup and original gate inodes/idle state without
+modification. An initial audit expected a single-line libtest failure, but panic
+output splits it; the corrected audit checks the exact final failed count and
+both named failure-summary entries. Original failed audit remains preserved.
+Audit36.290s is tooling time, not product performance. Total implementation/review
+time was not instrumented; self-review only, no independent-agent claim.
+
+Safe allowlisted restoration/runner/red-green/runtime/failure evidence is preserved
+at `reports/visual/evidence/downloads-structured-20261009/`; original scratch roots
+remain unchanged. Keys, known-host files, executables and runtime archives are
+excluded. Roadmap, formatting, whitespace and evidence-hash checks precede this
+checkpoint's stop. The candidate remains uncommitted and references unaccepted.
+Next prerequisite is a reliable unchanged offline runtime and disposable Tart
+execution, then fresh original PNG/HTML and exact same-source repeats before the
+coherent repair commit and matrix expansion. Do not ask again for this existing
+scope, infer load causation, extend deadlines, reseal stale output or fall back
+to the host. Stop at this evidenced runtime blocker, not a permission boundary.
+
+### Centred blocking sheets (2026-10-12)
+
+Patrick: “lass alles mittig machen” (against the Paper boards' top
+attachment). Every blocking sheet — open-in-app, client certificate, Clear
+Browsing Data, Settings profile sheets, credentials, Delete Space — sits
+centred on both axes over its veil by layout; DESIGN §11 records the rule.
+`assert_sheet_centered` (content height, centre within 1 pt of the veil) in
+six real-app suites; Tart E2E 15/15 and 3/3; visual pair `sheets2-20261012`
+A/B byte-identical, cleanups verified, no baseline writes.
+Report: `/Users/patwoz/dev/Personal/macos/bbr/reports/visual/downloads-sheets2-20261012-20261009-a/index.html`.
+
+### Sheet height fix (2026-10-12)
+
+Patrick: “viele der dialoge sind viel zu hoch”. The open-in-app,
+client-certificate, Settings profile and Clear Browsing Data sheets were
+stretched to their whole veil (flex row without a cross-axis rule); the veils
+now use `items_start`. Regression: probed sheet rects in the new snapshot
+field `sheet_rects` and `assert_sheet_hugs_content` in four real-app suites —
+red without the fix (sheets drew 666/602 pt), green with it (9/9). `FlushFrame`
+also draws an open Settings window. Visual pair `sheets1-20261012` A/B
+byte-identical (162 PNGs), cleanups verified, no baseline writes. Packet:
+[visual-snapshot-tooling](../roadmap/tasks/visual-snapshot-tooling.md#sheet-height-fix-patrick-2026-10-12-viele-der-dialoge-sind-viel-zu-hoch).
+Report: `/Users/patwoz/dev/Personal/macos/bbr/reports/visual/downloads-sheets1-20261012-20261009-a/index.html`.
+
+### Withheld coverage steps 2–4 and the step 5 proposal (2026-10-12)
+
+Patrick: “ja bitte alle”. Sixteen more states (32 stills): Welcome (four
+steps) and About (`CaptureAbout`); Find's second match, the Command
+Palette with a typed address and a plain search, Peek's bar; the permission
+prompt, site settings, client-certificate sheet, populated Settings ›
+Privacy, no-app banner, mailto open-in-app sheet and HTTP Basic credential
+sheet as portal-child stills (`CapturePortal`). Withheld families narrow to
+what stays uncaptured; step 5 (an explicit transient-state list) waits for
+Patrick's confirmation. Evidence: `steps6-20261012` A/B byte-identical
+(162 PNGs), cleanups verified, no baseline writes; `bbr` 380, testkit 38,
+`bbr-ui` 238, visual contracts and 171 Python tests, Clippy green.
+Retained attempts `steps2`–`steps5` with their causes in the packet.
+Report: `/Users/patwoz/dev/Personal/macos/bbr/reports/visual/downloads-steps6-20261012-20261009-a/index.html`.
+
+### Withheld coverage step 1: Saved Pages, History, Settings (2026-10-12)
+
+Patrick approved working through the withheld families in order (Saved
+Pages/History/Settings, Welcome/import/About, Peek/Command/Find,
+permissions, a transient-state list). Step 1 adds 15 states (30 stills):
+seven Saved Pages states, four dated History states in their own session
+with the testkit `SetDisplayClock` pin, four Settings states. Saved Pages
+leaves the withheld list; History keeps the scrolled list, Settings the
+Privacy lists (permissions step) and other long panes. Packet:
+[visual-snapshot-tooling](../roadmap/tasks/visual-snapshot-tooling.md#withheld-coverage-step-1-saved-pages-history-settings-patrick-2026-10-12).
+Evidence: `step1-20261012` A/B byte-identical (130 PNGs), cleanups
+verified, no baseline writes; Tart E2E 7/7 (run-20261012-101821-73168).
+Report: `/Users/patwoz/dev/Personal/macos/bbr/reports/visual/downloads-step1-20261012-20261009-a/index.html`.
+
+### Subject-only visual stills (2026-10-12)
+
+Patrick saw sidebar changes in the Saved Pages stills and decided that a still
+photographs only its subject. `CaptureElements` (visual-capture only) reads
+back the union of named elements' drawn rects plus 4 pt: History and Saved
+Pages the content card, Downloads the panel, footer the dock with its menu or
+drag proxy. Packet: [visual-snapshot-tooling](../roadmap/tasks/visual-snapshot-tooling.md#subject-only-stills-patrick-2026-10-12).
+Evidence: `element2-20261012` A/B byte-identical (100 PNGs), cleanups
+verified, no baseline writes; old page references cut to the same region are
+identical apart from the round-capped "New collection" plus. Tart E2E 21/21
+(run-20261012-005330-78287). The 28 page references change size once and
+need review; `element1` is preserved (one SSH KEX abort, one real reopen-check
+mismatch, fixed).
+Report: `/Users/patwoz/dev/Personal/macos/bbr/reports/visual/downloads-element2-20261012-20261009-a/index.html`.
+
+### Paper S-7b: the footer dock in every state (2026-10-12)
+
+Patrick asked to design the footer separately in Paper with every state,
+rework it and verify it with visual snapshots. Packet:
+[paper-footer-dock](../roadmap/tasks/paper-footer-dock.md); board "S-7b ·
+Footer — all states (proposal)" (17 states, Light/Dark, S/N/XL). The dock
+shares one 28 pt square and radius, gaps 8/4, hover/press/open/focus states,
+the in-flight count badge and the drag-target monogram tag; eight new browser
+cases in Light and Dark capture it. The capture-versus-Paper check added the
+chip identity ink (ink/accent.ink/ink.secondary) and Paper's round caps for
+the straight glyphs (a capsule fill, because `bbr-ui` may not depend on
+lyon); the board now shows the §12 monogram and the 8 % space hue as DESIGN
+states.
+
+Evidence: `bbr-ui` 238, `bbr` bins 379, gallery 153, testkit 35, Clippy and
+fmt green; Tart E2E 19/19 executables (sidebar, spaces, downloads,
+organize, hover, gallery; run-20261011-224431-60449). Visual pair
+`footer5-20261012`: 100 byte-identical PNGs, both cleanups verified, no
+baseline writes; 62 changed / 10 same / 28 without a reference. Failed
+attempts (footer2/3/4: host-load probe deadlines, one SSH banner timeout,
+one source-gate stop after an edit) are preserved. No reference accepted.
+Report: `/Users/patwoz/dev/Personal/macos/bbr/reports/visual/downloads-footer5-20261012-20261009-a/index.html`;
+side-by-sides: `/private/tmp/bbr-paper-fidelity-20261011/footer5/`.
+
+### Paper fidelity: Downloads panel and rail footer (2026-10-11)
+
+Patrick asked to fix every finding of the Paper comparison and align the
+screens with Paper. Packet:
+[paper-sidebar-downloads-fidelity](../roadmap/tasks/paper-sidebar-downloads-fidelity.md).
+The panel now paints the History label above its rows, 56/48 pt rows that hold
+their content, no bar on terminal rows, Paper action pills with the bordered
+Retry, a trailing Clear and the trash Delete; the footer is the 48 pt Paper band
+with 28 pt controls/chips; Downloads and back/forward follow the Paper paths.
+DESIGN §7/§11.4/§11.12/§15 carry the geometry.
+
+Evidence: six new `bbr-ui` tests red on the old code, then all unit suites,
+workspace check/test/Clippy through `mbx`, fmt, roadmap, ui-deps and script
+tests green (`just verify` itself calls bare cargo against a dangling
+`target` link, so its steps ran through `mbx`). Tart E2E: downloads 13,
+sidebar 21, spaces 27, gallery 48, first-run 2. The full functional aggregate
+(59 binaries, before the last footer inset and assertion edits) had 57 green;
+the new Downloads height assertion missed the focused padding (fixed), and
+`e2e-first-run` once relaunched with "Default" instead of "Home" (persistence,
+untouched here; green on the targeted rerun, recorded as intermittent).
+Visual pair `paper3-20261011`: 84 byte-identical PNGs across two guests, same
+1,532 sources, independent cleanup rechecks pass. The earlier `paper2` B run
+stopped fail-closed in the unchanged Command Palette capture (a motion moment
+started during readback); its assertion now prints the moments, unchanged.
+62 of 72 references differ only in the footer band, the titlebar arrows, the
+empty-Favorites Downloads glyph and a 13 pt back arrow (band analysis in
+`/private/tmp/bbr-paper-fidelity-20261011`). No reference was accepted.
+Report: `/Users/patwoz/dev/Personal/macos/bbr/reports/visual/downloads-paper3-20261011-20261009-a/index.html`;
+Paper side-by-sides: `/private/tmp/bbr-paper-fidelity-20261011/paper-compare/`.
+
+### Downloads capture recovery and expansion (2026-10-10)
+
+Fresh source-bound `history4-20261010` A/B runs pass: 84 PNGs are byte-identical
+across the two disposable guests; all 72 approved references remain identical.
+Both manifests bind the same 1,532 current source files. Independent cleanup
+rechecks confirm both owned VMs, keys, mounts, processes and SSH endpoints absent.
+The matrix now includes native successful/failed download history and a genuinely
+removed file with disabled Reveal, each in Light/Dark. No references were accepted.
+
+The preceding `history3` pair exposed two unequal Light images: one guest had a
+real unresponsive-tab overlay. Capture readiness and final assertions now require
+healthy, non-crashed tabs; no watchdog threshold or production behavior changed.
+Earlier destination/reason assertions were corrected to production truth. All
+failed attempts remain preserved. This successful pair supersedes the old current
+infrastructure blocker, not its unexplained historical failures.
+
+Verification: serial `just visual-test`, strict app capture and visual-consumer
+Clippy, `just roadmap`, and `git diff --check` pass. Evidence is under
+`/private/tmp/bbr-visual-handoff-20261010`; capture transport artifacts are under
+`/private/tmp/bbr-downloads-resume-20261009/history4-20261010`.
+Report: `/Users/patwoz/dev/Personal/macos/bbr/reports/visual/downloads-history4-20261010-20261009-b/index.html`.
+Stable aggregate verification, remaining application families and visual approval
+remain open. No claim of full coverage, canonical performance or `just verify`.
+Single serial owner remains unchanged; no delegation or new worktree.
+
+### Authorized visual handoff (2026-10-10)
+
+Patrick requested the missing captures, approved takeover from session `01a0f8f4`,
+and confirmed “es läuft nichts mehr”. Session
+`01a12151-d70d-7098-a10a-4c450a1bafa7` now owns this serial visual work in
+`/Users/patwoz/dev/Personal/macos/bbr`, branch `main`, HEAD
+`70f6026aea8bcb51a6f7595b884649cdd9981bce`. Preserve the inherited 28 modified
+tracked files and four untracked Downloads/fixture files, empty index, all reports,
+72 approved references and prior failed attempts. No reset, stash or foreign
+worktree access. The previous ownership declaration is historical, not concurrent
+write authority. No subagent, workflow or additional worktree is activated.
+
+Queue audit: first establish current runtime health, then fresh repaired-source
+Downloads image proof and same-source repeat; extend real application captures in
+bounded matrices afterward. Other product lanes remain outside this request.
+The existing Tart profile and structured gates remain mandatory; no host GUI,
+reference acceptance, deadline increase or unchanged retry loop. Capture requests
+are not authorization to fabricate native pixels or remove open coverage rows.
+Read-only preflight finds all Tart VMs stopped and neither capture gate held.
+The unchanged 51-path offline metadata check now passes in 0.249s; this is a
+current prerequisite observation, not an explanation of prior timeouts or a VM
+pass. Evidence starts at `/private/tmp/bbr-visual-handoff-20261010`.
 
 ## Status vocabulary
 

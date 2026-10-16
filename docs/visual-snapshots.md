@@ -121,8 +121,8 @@ lights or Portal-child pixels. Ordinary browser content therefore appears blank.
 Populated Saved Pages, recently closed History, Settings sheets/menus/scrolled
 content, Command/Find/Downloads/Peek portals, permissions, welcome, About and other
 transient states remain outside the set. In particular, Shortcuts is a viewport,
-not the entire shortcut list. The Clear Data sheet's tall empty body is present
-in the actual production render; capture does not crop or repair it.
+not the entire shortcut list. (The Clear Data sheet's former tall empty body was
+a production layout bug, fixed on 2026-10-12: veil sheets hug their content.)
 
 The internal supervised Rust API is runtime-verified for this bounded set and
 the earlier partial Tokens report. Public `produce`/`check` guards remain closed,
@@ -593,8 +593,19 @@ Build, lock-wait and execution deadlines are bounded.
 The authenticated, feature-gated `CaptureChrome` request reads the running
 production browser window's Metal scene. `CaptureSettings` reads the actual
 existing Settings window after an explicit production draw; it refuses closed
-Settings rather than capturing the browser instead. Both accept only direct
-`/tmp/*.png` paths and are unavailable without `visual-capture`. The capture suite
+Settings rather than capturing the browser instead. `CaptureElements` reads
+back only named elements of the browser window: the union of the rects their
+testkit probes recorded in the drawn frame, grown by a margin and clipped to
+the window, and it replies with the kept pixel rectangle. History and Saved
+Pages stills are the content card, Downloads stills the panel, footer stills
+the dock (with the Plus menu or drag proxy they open), each with a 4 pt margin;
+the snapshot's `visual_region` records the rectangle and the host requires
+exactly that PNG size. `CaptureAbout` reads the open About BBR window (340 ×
+380 pt) and refuses a closed one; `CapturePortal` reads the portal child
+window's transparent scene while any portal presentation is visible
+(permission prompt, site settings, certificate, open-in-app and credential
+sheets, Peek's bar). All accept only direct `/tmp/*.png` paths and are
+unavailable without `visual-capture`. The capture suite
 drives real WKWebViews and normal production actions through testkit in fresh,
 isolated profiles:
 

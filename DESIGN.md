@@ -452,7 +452,8 @@ The `motion.started` evidence records every start with its variant.
 
 - **Style:** geometric instrument glyphs, 1.5 pt stroke (1.25 at S density),
   stroke joins rounded, glyph corners squared; no filled-duotone blocks, no
-  gradients. Originals drawn for BBR; luminance-contrast matched to
+  gradients. The straight-stroke glyphs ported from Paper (Downloads,
+  Trash, Plus/Minus, Back/Forward) end in round caps, as Paper draws them. Originals drawn for BBR; luminance-contrast matched to
   `ink.secondary`.
 - **Sizes:** `icon:s` 16, `icon:m` 18, `icon:l` 20 — row glyphs pick the
   owning density's size (§8: S 16 / N 18 / XL 20). Hover affordances and
@@ -462,8 +463,12 @@ The `motion.started` evidence records every start with its variant.
 - **Catalog:** close, pin, lifering, clock, chassis mark, plus, downloads,
   check, stopped, folder (open/closed), disclosure, loading arc, chevrons,
   sidebar toggle, back, forward, reload, **bookmark** (the §11.16 Saved Page
-  mark) and **pencil** (rename), plus the §11.3 identity glyphs. The clock
-  draws two hands from its center. Identity glyphs are normalized by their
+  mark) and **pencil** (rename), **trash** (the §11.12 cancelled-row
+  Delete), plus the §11.3 identity glyphs. The clock
+  draws two hands from its center. Downloads, trash and back/forward follow
+  the Paper 18-unit paths scaled to their box (2026-10-11): downloads is a
+  stem dropping to a downward arrowhead above one flat baseline (no tray
+  walls); back/forward is an 11.5/18 shaft with 4.5/18 arms from the tip. Identity glyphs are normalized by their
   own farthest point so every glyph fills the same optical box.
 - **Fallback:** every icon context has a text alternative (label, tooltip, or
   aria-label). A missing functional glyph falls back to a 2-character
@@ -867,7 +872,14 @@ using the IDs of §15. All rows use `density` geometry from §8.
   surface plus stronger identity weight: v2 paints the active chip as the
   `tint.selected` surface over the tinted rail carrying 8 % of the identity
   hue, with the static `elev:lift` (D2); keyboard focus supplies the accent
-  outline and inactive chips paint no surface of their own.
+  ring on the active chip while the strip owns chrome focus (a chip press
+  focuses the strip, like a row press focuses its list). Inactive chips
+  paint no surface of their own; hover brings `wash.hover` and a press
+  `wash.active` (Paper S-7b). The identity mark is `ink` on the active
+  chip, `accent.ink` on a drag target and `ink.secondary` otherwise. A drag
+  target shows `tint.accent` with the accent outline and the destination
+  profile as a small §12 monogram tag over the chip's top-right edge (cut
+  out by a ring in the rail colour), so the chip never widens.
   Activation keeps the selected tab/session warm and preserves every existing
   50/100 ms budget and fast-but-wrong guard.
 - **Appearance:** each space owns one curated theme-color token, one identity,
@@ -1029,11 +1041,30 @@ using the IDs of §15. All rows use `density` geometry from §8.
   Pointer click, keyboard activation, and horizontal trackpad swipe route
   through the same space-switch authority and preserve warm-session budgets.
 - **Footer:** the glyph-only `[Downloads]` control opens the downloads surface
-  and exposes the full text alternative plus a `type:meta` `tnum` count when
-  content exists. The middle flex region is the permanent icon/badge-only
-  Spaces strip; `[+]` is likewise glyph-only. Both fixed glyphs render at
-  16 pt in every density (v2 §18.3); inactive chips paint no surface of their
-  own, so the footer veil and the rail tint show through.
+  and exposes the full text alternative. The middle flex region is the
+  permanent icon/badge-only Spaces strip; `[+]` is likewise glyph-only.
+  The footer is one quiet dock on the rail (Paper S-7b, adopted
+  2026-10-11; it revises the S-7/W-1 geometry and the v2 §18.3 16 pt
+  footer glyphs):
+  - **Band:** 48 pt at N — 6 pt above and 10 pt below the controls, 10 pt
+    from both visible rail edges (the trailing inset includes the
+    transparent resize divider); S 42 (6/8, 8 pt sides), XL 56 (8/12,
+    12 pt sides). No band paint, no rule.
+  - **Targets:** `[Downloads]`, every chip and `[+]` share the
+    `density:hit-min.close` square (S 24 / N 28 / XL 32) and
+    `density:radius`. `[Downloads]` and `[+]` draw at the density icon size
+    (16 / 18 / 20, the titlebar family); identities 2 pt smaller.
+  - **Spacing:** 8 pt between `[Downloads]`, the strip and `[+]`; 4 pt
+    between chips, so neighbouring washes never touch. The strip fills the
+    band's content box and clips at its edges without a fade.
+  - **States:** hover = `wash.hover`; press = `wash.active`; an open panel
+    or menu keeps its control at `wash.active` with an `ink` glyph;
+    keyboard focus = the 2 pt accent ring inside the square. Inactive chips
+    paint no surface of their own at rest, so the rail tint shows through.
+  - **Count:** while attempts are in flight (§17.11) an accent badge sits on
+    `[Downloads]`'s top-right (`bbr-downloads-count`): 14 pt tall, 10 pt
+    semibold figures in `on.accent`, cut out of the glyph by a 2 pt ring in
+    the rail colour. The control never widens and the strip never moves.
   `[+]` opens the **plus menu** (Planned) — a real context menu
   (`bbr-plus-menu`, `elev:2`, `material:overlay`, `radius:md`) with exactly
   two items in v1: **New Space** (`bbr-plus-new-space`) and **New Folder**
@@ -1654,8 +1685,8 @@ is an **anchored popover** (`bbr-downloads-panel`), not a sidebar region and
 not an above-glass surface: `elev:2` over `material:overlay` with the palette's
 shadow class (§2), `radius:lg`, a 1 pt `hairline` edge (the §9 focus ring
 stays the 2 pt accent, §18.4), anchored so its bottom edge is flush with the
-footer control's top edge and its leading edge with the sidebar column's
-leading edge. Width = the sidebar column's current width − 2 ×
+footer band's top edge and its leading edge `density:row-inset` inside the
+sidebar column's leading edge (Paper M-4). Width = the sidebar column's current width − 2 ×
 `density:row-inset` (S `sp:1` 4 / N `sp:1` 4 / XL `sp:2` 8, §8), clamped to stay
 fully inside the window; the popover grows upward and its height clamps to the
 window. Because the popover is geometrically confined to the sidebar column it
@@ -1669,19 +1700,25 @@ draft and is **not** provisional; only the open questions named in §17 remain.
   the popover with an opacity fade `dur:fine` only — never translate or scale
   (§6). Dismiss: Escape, outside pointer press (one pointer action, §13), or
   re-activating the footer control. The panel never auto-opens; the footer
-  control keeps its §11.4 text alternative and `type:meta` `tnum` count at
-  rest. **The badge counts only in-flight (active) attempts** (settled
+  control keeps its §11.4 text alternative and count badge, and stays
+  pressed while the panel is open. **The badge counts only in-flight (active) attempts** (settled
   §17.11): it returns to zero when nothing transfers and terminal history
   never inflates it.
 - **Anatomy (top → bottom):** two groups separated by a `hairline` —
   **Active** (`bbr-downloads-active`, non-terminal attempts) above, **History**
   (`bbr-downloads-history`, terminal attempts) below; `type:badge` labels
   "Active"/"History" are hidden when a group is empty (§11.4 region-label
-  rule). Rows: `[status glyph `icon:<density>`] [name line + secondary line]
-  [action]` at `density:row` tall, padding-x `sp:2` (S) / `sp:3` (N) / `sp:4`
-  (XL) like §11.1; hover/active inset surfaces per §10.2/§10.3
-  (`density:row-inset`, `density:radius`); the action's hit area ≥
-  `density:hit-min`.
+  rule). Each label heads its own group in paint order: Active label, Active
+  rows, the group hairline, History label, History rows. Geometry (Paper
+  M-4, 2026-10-11, N values): 6 pt panel padding; labels 4 pt above and
+  2 pt below a 13 pt line, inset 8 pt; the hairline centred in a 9 pt band,
+  inset 8 pt. Rows: `[status glyph in an `icon:<density>` slot] [name line
+  / progress bar / secondary line] [action]`, 10 pt leading and 8 pt
+  trailing inset, 10 pt gaps; text lines sit on 16 pt lines 4 pt apart
+  with 6 pt above and below, so a History row is 48 pt and an Active row
+  (with its bar) 56 pt — every row holds its whole content. Hover/active
+  inset surfaces per §10.2/§10.3 (`density:radius`); the action's hit
+  area ≥ `density:hit-min`.
   - **Status glyph** (§7 icon system): active rows (Waiting/Running) show the
     §10.5 spinner at `icon:<density>` (accent, transient indication — allowed);
     succeeded shows the `status.ok` check glyph (right after the success
@@ -1689,14 +1726,16 @@ draft and is **not** provisional; only the open questions named in §17 remain.
     within 260 ms; Reduce Motion: it simply appears); failed the §10.7
     `status.error` glyph; cancelled a neutral glyph at `ink.secondary`. §3.3
     non-color companions apply.
-  - **Name line:** filename, one line, end-ellipsis (§4); tooltip on hover
-    (Planned, §4).
-  - **Secondary line** (`type:meta`, `tnum`): active — a 2 pt progress bar
-    (the §10.5 bar geometry; track `hairline`, fill `color:accent`) plus
-    transferred/total bytes; a known total fills `fraction()`, an unknown
-    length runs the §10.5 indeterminate sweep (`load:indeterminate`) with
-    transferred bytes only; terminal — size + status copy naming the machine
-    outcome ("Completed" / the `DownloadFailure` reason / "Cancelled"; copy
+  - **Name line:** filename (`type:label`, `ink`), one line, end-ellipsis
+    (§4); tooltip on hover (Planned, §4).
+  - **Progress bar** (Active rows only): a 4 pt rounded bar, 150 pt wide
+    (track `wash.active`, fill `color:accent`); a known total fills
+    `fraction()`, an unknown length shows the §10.5 indeterminate sweep
+    (`load:indeterminate`). Terminal rows carry no bar.
+  - **Secondary line** (`type:meta`, `tnum`, `ink.faint`): active —
+    transferred/total bytes (transferred only when the total is unknown);
+    terminal — size + status copy naming the machine outcome ("Completed" /
+    the `DownloadFailure` reason in `status.error` / "Cancelled"; copy
     follows the §11.8 tone).
   - **Action:** exactly one contextual primary per row — active → **Cancel**,
     failed → **Retry**, succeeded → **Reveal-in-Finder** (conventional macOS
@@ -1707,8 +1746,15 @@ draft and is **not** provisional; only the open questions named in §17 remain.
     "Restart"). A cancelled row additionally offers the **Delete** control
     (`bbr-download-delete-<n>`), which removes exactly that one terminal
     record durably (settled §17.8).
+  - **Action presentation:** a 24 pt pill (`type:label`, `ink.secondary`,
+    `radius:md`, 10 pt inset) centred in its hit area; **Retry** is the
+    bordered field button (`border.strong` edge, `field` fill, `ink`); a
+    disabled action drops to `ink.faint`. Delete renders the §7 trash glyph
+    in a `density:hit-min.close` square, on cancelled rows only — other rows
+    reserve no trailing slot.
   - **Clear:** an explicit **Clear** control (`bbr-downloads-clear`) renders
-    below the scroll area while any history exists; it empties the
+    trailing below the scroll area (6 pt above, 2 pt below; the action pill
+    presentation) while any history exists; it empties the
     controller history and the persisted terminal history durably (settled
     §17.7) and keeps live attempts.
 - **Machine fidelity (L6 contract):** the panel never invents transitions.
@@ -1744,12 +1790,14 @@ draft and is **not** provisional; only the open questions named in §17 remain.
   tab/session; dismissing returns focus to the footer control per the
   interaction contract.
 - **Empty state:** when the panel has no attempts at all, a single hint line
-  in `ink.secondary` ("No downloads yet") — no empty box, no icon graveyard.
+  in `ink.secondary` ("No downloads yet", `type:label`) centred in a 120 pt
+  band — no empty box, no icon graveyard.
 - **Modes:** tokens per §3; IC deepens washes and strengthens hairlines
   (§3.4); reduced motion removes everything except `dur:fine` opacity (§6).
 - **Assert ids:** `bbr-downloads-panel`, `bbr-downloads-active`,
   `bbr-downloads-history`, `bbr-download-row-<n>` (+ `-status`/`-name`/
-  `-meta`/`-progress`/`-action`/`-delete` on cancelled rows),
+  `-meta`/`-action`, `-progress` on Active rows, `-delete` on cancelled
+  rows),
   `bbr-downloads-clear`, `bbr-downloads-empty`; the footer control keeps
   `bbr-downloads` (§11.4).
 
@@ -2331,7 +2379,8 @@ semantically — never by pixel comparison.
   shell). Every interactive control carries one. The downloads surface
   registers `bbr-downloads-panel`, `bbr-downloads-active`,
   `bbr-downloads-history`, `bbr-download-row-<n>` (+ `-status`/`-name`/
-  `-meta`/`-progress`/`-action`), and `bbr-downloads-empty` (§11.12); the
+  `-meta`/`-action`, `-progress` on Active rows), and
+  `bbr-downloads-empty` (§11.12); the
   footer control keeps `bbr-downloads` (§11.4). Planned owned menu families
   register the §11.13 ids; the titlebar registers the §11.14 ids; an eligible
   media session registers the §11.15 `bbr-media-card*` ids and an absent card
@@ -2583,7 +2632,7 @@ Chrome radii stay within 6–12; 16 is reserved for the palette sheet. Type
 changes: the selected title drops from 600 to **500** (the lift carries
 selection); the active-space heading is 13 pt / 600 with +0.01 em tracking in
 `ink.secondary`; the address domain is 500; the ⌘T query is 17 pt UI sans.
-Footer glyphs render at 16 pt; the Space strip starts at its leading edge (§11.4, D01).
+Footer glyphs render at the density icon size (Paper S-7b, superseding the 16 pt rule); the Space strip starts at its leading edge (§11.4, D01).
 
 ### 18.4 Floating surfaces
 
@@ -2625,7 +2674,12 @@ Footer glyphs render at 16 pt; the Space strip starts at its leading edge (§11.
   (`portal.hit_regions`, `portal.ignores_mouse_events`).
 - **Blocking sheets dim the card:** the credential sheet and the Delete
   Space sheet sit over a `wash.active` veil over the content card only
-  (answer 9; `bbr-auth-veil`, `bbr-space-delete-veil`).
+  (answer 9; `bbr-auth-veil`, `bbr-space-delete-veil`). Every blocking
+  sheet — credentials, Delete Space, open-in-app, client certificate,
+  Clear Browsing Data and the Settings profile sheets (whose veil covers
+  the Settings window) — sits centred on both axes over its veil at its
+  content height (Patrick, 2026-10-12; supersedes the Paper boards' sheet
+  attached to the card's top edge, P-4 note 2).
 - **Client certificates (blueprint D12, board M-11):** when a server asks
   for a client certificate, WebKit's navigation delegate looks up the
   Keychain identities issued by one of the server's accepted issuers and

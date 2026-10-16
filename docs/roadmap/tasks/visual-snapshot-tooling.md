@@ -2,6 +2,25 @@
 
 Parents: [Phase 4](../phases/04-ui-shell.md) · [Testing track](../tracks/testing.md) · [Design contract](../../../DESIGN.md).
 
+## Latest evidence — 2026-10-10
+
+Downloads recovery and history/missing-file expansion now produce 84 exact-repeat
+Light/Dark PNGs across two disposable Tart guests. All 72 approved references are
+unchanged; no new reference acceptance occurred. The `history4-20261010` pair
+binds identical current sources and passed independent resource-cleanup rechecks.
+A preceding pair exposed a real unresponsive-tab overlay; the capture now asserts
+healthy tabs rather than masking the overlay or changing watchdog policy.
+
+Review report:
+`/Users/patwoz/dev/Personal/macos/bbr/reports/visual/downloads-history4-20261010-20261009-b/index.html`.
+
+2026-10-11: the [Paper fidelity slice](paper-sidebar-downloads-fidelity.md)
+changed the rail footer, titlebar arrows and Downloads panel. Its `paper3` pair
+is byte-identical (84 PNGs); 62 references now differ only in those regions
+and await Patrick's review before any acceptance.
+See the delivery ledger's Downloads recovery entry for checks and retained failures.
+Remaining families, visual review and stable aggregate acceptance stay open.
+
 ## Outcome
 
 BBR's real production chrome has a repeatable Light/Dark screenshot matrix,
@@ -256,6 +275,357 @@ pass. The [Find checkpoint](../../delivery/current.md#find-production-child-capt
 records exact evidence and limitations. No reference adoption, stable aggregate,
 Command benchmark repair or broader migration completion follows. Downloads then
 Peek retain their pilot-first dependency and separate bounded-matrix requirement.
+
+### Downloads production-panel matrix (2026-10-03)
+
+Outcome: three bounded Light/Dark production states, captured through the existing
+`CaptureChrome` parent renderer: `downloads-empty`, `downloads-history` (a completed
+64 KiB fixture plus an HTTP-500 failure), and `downloads-missing-file` (the same
+history after removing only the verified run-created download). This matrix uses
+the docked sidebar panel confined above its footer (DESIGN §11.12), not the
+floating rail's Portal composition. First prove only the empty pair in Tart before
+implementing downloads; docked pixels cannot establish floating correctness.
+
+The expanded fixture must use the existing loopback FixtureServer, authenticated
+`DownloadStart` and native WKDownload/controller path, never seeded machine states
+or a fake engine. Wait for actual terminal outcomes and settled production moments;
+assert exact size/status/action semantics, History ordering, enabled Reveal and
+Retry, then disabled Reveal with the existing missing-file reason. Do not activate
+Finder or retry the failure. Before deleting the disposable result, prove its
+expected guest Downloads path, absence before start and exact content bytes.
+Production footer activation and Escape must preserve tab/WebView/session/profile/
+space identity; readback must also preserve the entire download model and focus.
+
+Retain full2160×2814 RGBA8 frames, no new crop or compositing. Native webpage and
+AppKit pixels remain excluded. Waiting/running/unknown-length/zero-byte/cancelled,
+retry/restart outcomes, scrolling, pointer states and animation sequences remain
+explicitly withheld rather than implied by three terminal/empty stills. No product
+renderer/lifecycle/protocol change is needed for this matrix. Owned territory is
+only capture fixtures, independent inventories/output contracts and evidence docs.
+
+After the empty pilot: two fresh same-source expanded Tart runs, exact PNG repeat,
+unchanged72 approved references and previous Find candidates, original PNG/HTML
+inspection, source/build/payload/receipt and independently observed cleanup checks.
+Run negative-first catalog/output contracts, strict feature/normal/consumer Clippy,
+serial offline visual tests, format/roadmap/whitespace gates. This remains an
+intermediate tooling slice, not a stable aggregate or performance acceptance.
+Preserve failed attempts. Stop at an unresolved native-download, capture, identity,
+cleanup or determinism failure; do not fabricate state, change the product, weaken
+checks, adopt references or fall back to host GUI. Peek follows separately.
+
+The first empty pilot produced80 structurally valid images but visually failed:
+the Downloads panel is absent in both original PNGs despite `open=true`, semantic
+IDs and empty motion moments. Independent audit preserves all78 prior images,
+72 references, source/build/receipt binding and verified clone cleanup. Before
+expansion, add only a visual-feature readback guard observing the existing fade's
+cached rendered opacity, goal and elapsed transition delta after the actual draw.
+Poll that guarded readback within the existing deadline; never reset/jump/clone the
+transition or synthesize opacity. A fresh Tart run must distinguish an early frame
+from a completed transition that still paints zero alpha. If production lifecycle
+repair is necessary, retain the failing candidate/evidence and stop this sequence
+for that separately scoped repair; no Downloads coverage is proven by the pilot.
+
+### Authorized Downloads fade repair (2026-10-03)
+
+Patrick answered “ja” to the bounded production fade-lifecycle fix and continuation
+of this serial sequence. This supersedes the capture-only boundary only for that
+repair. Keep the pinned GPUI transition timing, continuous retargeting, open/close
+focus and native boundaries unchanged. Retain the transition's entity state across
+frames, but obtain a fresh frame-local interpolation wrapper in the owning
+browser render; never carry its evaluated cache across browser draws. Both docked
+and floating panel composition read that presented value. Floating composition
+runs against the browser window outside its draw phase, so it must not request
+animation frames there; the owner render advances and schedules the transition. The capture seam must only
+observe the actual rendered value. No vendor patch, blanket animation rewrite,
+instant-opacity shortcut or altered references.
+
+The retained alpha0/goal1/delta1 Tart failure is the real-app red regression. Prove
+the smallest fixed empty-panel capture first, then add open→close→reopen endpoint
+coverage and run the affected normal Downloads suite in Tart. Targeted units,
+strict feature/normal Clippy and portable visual contracts remain mandatory. A
+verified intermediate repair may be committed separately; stable functional and
+performance aggregate acceptance remain governed by the existing delivery rules.
+Only after visible pilot proof and the affected ordinary-feature gates pass,
+expand Downloads history/missing-file states and repeat the final same-source
+captures; Peek follows separately. Ordinary artifacts must use `testkit` without
+`visual-capture`, whose GPUI executor/test-support configuration differs. Require
+exact listed test names/counts, individual successful results and independent
+cleanup; no zero-test, skipped-test or transport-only success. No additional
+network/runtime/host-GUI or reference-adoption permission is inferred.
+
+The docked open→fully closed→reopen visual regression now passes with exact
+reopened pixels, but the new ordinary floating regression is red at its missing
+panel semantic ID. Source inspection identifies docked-only snapshot gating and
+zero panel width when that sidebar is hidden; neither establishes floating pixel
+visibility or authorizes a broader renderer rewrite. Two later full-suite attempts
+stop before test execution at SSH banner exchange. Keep these distinct outcomes,
+the failing assertion and historical payloads. The [current checkpoint](../../delivery/current.md#downloads-fade-docked-proof-and-ordinary-verification-stop-2026-10-03)
+owns exact attempts and next gates. No expansion, baseline adoption or verified
+repair commit follows until the ordinary gate is resolved.
+
+### Authorized floating Downloads repair (2026-10-09)
+
+Patrick's “ja lets go” approves the explained bounded continuation: diagnose the
+SSH prerequisite on the smallest fresh VM → SSH → offline runtime → existing-test
+path, then repair the floating Downloads width and associated truthful snapshot
+mapping. The rail assembler's actual width must drive both docked and floating
+panels; do not substitute docked visibility for a floating rail's geometry. Add
+ordinary-testkit observation of the panel's actual painted layout/opacity and
+assert open/close/reopen, positive confined geometry, focus and browser identity.
+Semantic IDs alone are not rendering proof. No general Sidebar/animation rewrite.
+
+Run the focused red regression before the repair, then the complete ordinary
+Downloads and Sidebar suites (exact current listed names, no omitted failing case),
+relevant unit/protocol/strict Clippy/visual contracts and source/cleanup checks.
+A coherent verified intermediate repair may be committed locally, after which the
+history/missing-file capture matrix and same-source A/B inspection resume, then
+Peek. Existing performance deferral, stable-aggregate obligations, original failures,
+72 references, immutable dependencies and all no-host/no-publication constraints
+remain. Technical uncertainty calls for investigation, not a renewed consent stop
+for this same scope. Stop only on an evidenced unresolved gate or actual boundary;
+record the specific failure and next prerequisite without weakening checks.
+
+The bounded floating repair now passes measured width/opacity red→green,
+complete ordinary Downloads13/13 and Sidebar21/21, protocol20/20, strict Clippy
+and serial offline visual contracts. Original failures and independently verified
+resource cleanup remain preserved. This is actual ordinary-feature paint-layout
+and identity evidence, not floating pixel/visibility or fresh capture proof.
+The fresh visual caller compiled but stopped before VM start on an empty malformed
+shared host-gate record. The scratch ordinary runner's raw `a+`/flock can create
+that file without the required structured lease and must not be reused unchanged.
+No gate deletion, invented idle state, alternate lock or immutable-vendor change
+is allowed. The [latest checkpoint](../../delivery/current.md#floating-repair-verified-fresh-capture-blocked-at-host-gate-2026-10-09)
+records exact identities and the separate host-wide coordination recovery boundary.
+The candidate remains uncommitted; fresh source-bound image/report proof and A/B,
+then the repair commit and history/missing-file extension, remain open. All72
+references and historical seals stay unchanged; no acceptance is inferred.
+
+### Authorized host-gate restoration (2026-10-09)
+
+Patrick's “ja let sgo” authorizes investigation/restoration of the shared host
+coordination file and moving the scratch ordinary runner to the existing
+structured gate authority, then fresh captures. This supersedes only the latest
+coordination-recovery pause. Inspect actual process/VM/lock users first; preserve
+the original empty bytes, inode, hashes and all prior evidence. Under both exact
+exclusive locks, a one-time same-inode initialization may record an **active
+maintenance lease owned by the actual restoration process**, with the original
+hash and audit reason. It must not invent a previous owner or claim unknown
+historical cleanup. After that process exits, use unmodified `Gate::recover` to
+verify its exact bytes, absent real owner and compatibility gates before idle.
+Interruption must remain fail-closed; no automatic empty-record recovery path,
+unlink, alternate lock, vendor change or checks weakened. Test stale inode/hash,
+contention and unsafe-file refusal on private fixtures before touching real gates.
+
+Wrap the ordinary scratch lifecycle in existing Rust `vm_supervision` and Python
+`vm_control`, with independently retained VM/request/payload identity and host
+cleanup recheck before lease finish. First prove a small existing ordinary test
+in the same offline hardened Tart profile, then complete ordinary suites and
+fresh visual source-bound runs. Preserve all failure outcomes; do not expand
+networking, mutate Golden Image, install dependencies, accept references or run
+host GUI. Stop only at an evidenced remaining technical/safety blocker, not for
+another consent request covering these same authorized actions.
+
+### Ordinary Downloads synchronization follow-up (2026-10-09)
+
+The first structured full run retains two exact failures in `start_download`:
+its next asynchronous snapshot already sees `Succeeded` or `Running`, not the
+asserted initial `Waiting`. Keep the Waiting/Cancel assertions and all downstream
+terminal/progress/identity checks. Bound remediation to an explicit single-response
+hold in the loopback fixture server and the Downloads test helper: withhold the
+real HTTP response until the newly minted row is observed in Waiting, then release
+the original fixture response unchanged. Correlate a new attempt by excluding
+pre-action IDs, including repeated filenames after terminal history. No production
+state injection, protocol change, sleeps, slower fixture or timeout increase.
+Test the fixture's hold/release/abort/duplicate paths locally, then the two failing
+real-app scenarios and complete Downloads/Sidebar in fresh structured Tart runs.
+Preserve the failed run and independently verified cleanup; no green aggregate or
+repair commit until the relevant gates pass.
+
+This follow-up now passes actual native execution: both reproduced failures,
+the floating regression and complete Downloads/Sidebar suites. Review additionally
+requires deadline enforcement for already observed requests, not just sleeping
+waiters; its negative-first regression and fresh native recheck pass. Preserve
+identical response bytes/retry semantics and abort/notify after expiry. The
+structured runner and same-inode authorized gate restoration are also verified.
+Fresh visual work is still blocked by intermittent offline metadata deadlines
+and an unexpected Tart VM shutdown before import. The [structured checkpoint](../../delivery/current.md#structured-gate-and-ordinary-regression-verified-runtime-remains-intermittent-2026-10-09)
+records passed gates, exact failed attempts and independent cleanup. No timeout
+increase, repeated unchanged run, host fallback, reference acceptance or repair
+commit follows without the remaining fresh PNG/HTML and same-source proof.
+
+### Subject-only stills (Patrick, 2026-10-12)
+
+The `footer5` report showed sidebar changes in every Saved Pages and
+History still although those stills are about the page. Patrick decided
+that a still photographs only its subject. The testkit `CaptureElements`
+request (visual-capture only) draws the main window, takes the rects the
+named elements' probes recorded in that frame, reads back only their union
+grown by 4 pt (rings, lift, the near part of `elev:2`) and replies with the
+kept window-pixel rectangle; a missing element fails, never a larger
+readback. History and Saved Pages stills read `bbr-content-card`, Downloads
+stills `bbr-downloads-panel`, footer stills `bbr-footer` (with
+`bbr-plus-menu` or `bbr-tab-drag-proxy` for the states that open them). The
+snapshot records `visual_region`; the host requires the PNG to have exactly
+that size inside the window and never the whole window. The shell pairs,
+Settings, Find and the Command Palette are unchanged.
+
+- [x] Protocol wire shape, region arithmetic (union, outward rounding,
+      clipping, missing element) and host region validation tests.
+- [x] Fresh Tart A/B capture with the element stills and a recheck of the
+      report; changed references stay for Patrick's review. `element2-20261012`:
+      100 PNGs byte-identical across both guests, both cleanups verified,
+      working tree unchanged, no baseline writes; 50 element stills carry
+      their region. Cut to the same region, the 14 old History references
+      are pixel-identical and the 14 Saved Pages ones differ only in the
+      24×24 px "New collection" plus (round caps) — the sidebar no longer
+      reaches them. The first attempt (`element1`) kept a real failure: the
+      Downloads reopen check compared a whole-window frame with the panel
+      still; it now compares the two settled whole-window frames, byte for
+      byte as before. Tart E2E smoke, sidebar, spaces, downloads, organize,
+      hover, real input and gallery: 21/21 executables, 139 tests.
+
+### Withheld coverage, step 1: Saved Pages, History, Settings (Patrick, 2026-10-12)
+
+Patrick asked why the withheld families were never captured and approved
+working through them in order: (1) Saved Pages, History and Settings,
+(2) Welcome, import and About, (3) Peek, Command and Find, (4) permissions,
+(5) an explicit list for the remaining transient states. Step 1 adds 15
+required states (30 stills), all from the real app:
+
+- Saved Pages (end of the existing flow, every staged change cancelled):
+  search with and without a match, title sort, inline row rename, staged
+  collection rename and removal, 50 entries scrolled 12 rows into the
+  24-row window.
+- History in its own session: a profile seeded with 25 dated visits over
+  five days plus two pre-D10 visits, and the testkit `SetDisplayClock`
+  seam pinning the display clock to Tuesday 2026-09-29 12:00 UTC, so day
+  titles, visit times and the Today range never depend on the guest's
+  clock or zone (production always reads the system clock): dated groups,
+  Today range, keyboard-selected row, after Clear Browsing Data (All time).
+- Settings: the contrast menu; after every other still (creating a
+  profile activates its first space) a named New Profile sheet, two
+  profiles and the Delete confirmation (cancelled).
+
+The Saved Pages family is fully covered and leaves the withheld list.
+History keeps only the scrolled list (no typed scroll observation);
+Settings keeps populated Privacy lists (with the permissions step), other
+committed choices and other long panes. The stale Command/Find/Downloads/Peek
+reason now names what is captured.
+
+- [x] Catalog, inventory and adapter contracts (130 cases), clock-pin wire
+      shape and unit test.
+- [x] Fresh Tart A/B capture with the 30 new stills and report check.
+      `step1-20261012`: 130 PNGs byte-identical across both guests, both
+      cleanups verified, working tree unchanged, no baseline writes; review
+      62 changed, 10 same, 58 without a reference (30 new). Inspected: dated
+      groups Today/Yesterday/Sunday 27/Saturday 26/Friday 25/Earlier with
+      fixed times, Today range, selected row, empty page after All-time
+      clearing, every Saved Pages and Settings state as named. Tart E2E
+      history, client certificates, Settings, profiles, Saved Pages Library
+      and command: 7/7 executables, 45 tests. Observation for Patrick: the
+      Settings select menus open beside, not under, their button (already
+      so in the approved motion menu); not changed here.
+
+### Withheld coverage, steps 2–5 (Patrick, 2026-10-12: “ja bitte alle”)
+
+Sixteen more required states (32 stills), each from the real app:
+
+- Step 2, Welcome and About (own session): the first-run welcome, the
+  import sources found in a fixed Safari/Chrome import home, the default
+  browser step after the import toast left, the named first space, and the
+  About window through BBR › About BBR (`CaptureAbout`).
+- Step 3, Peek, Command and Find: Find's second of three matches; the
+  Command Palette with a typed address and with a plain search; Peek's bar
+  over a loaded preview (an eligible new-window request through the engine
+  event path; the bar names the page by its title, never the port).
+- Step 4, permissions and sheets (own session on a fixture page, display
+  clock pinned): the camera and microphone prompt, site settings with the
+  remembered block, the client-certificate sheet, the populated Settings ›
+  Privacy lists, the no-app banner and the mailto open-in-app sheet, and
+  the HTTP Basic credential sheet. Prompts and sheets are portal-child
+  stills (`CapturePortal`); every one names the fixture host without its
+  port.
+
+The withheld families narrow to what stays uncaptured (catalog reasons).
+Step 5 is a proposal for Patrick's confirmation, not yet captured: the
+“Remaining transient application states” family becomes these explicit
+groups — tab rows (hover with close, pressed, keyboard focus, loading arc,
+crashed, unresponsive overlay); Favorites and folders (hover, pressed,
+expanded folder, drop target); tab drag insertion rule; address (focused
+editing, not-secure mark, zoom chip, back/forward history menu); titlebar
+control hover and press; inactive window, full-screen card, collapsed and
+floating rail; content surfaces (empty new tab, offline error, crash panel,
+recovery pane); toasts and the media card; split view; tab and sidebar
+context menus; Increased Contrast and the S/XL densities for the shell
+windows.
+
+- [x] Catalog, inventory and adapter contracts (162 cases), About/portal
+      readback wire shapes.
+- [x] Fresh Tart A/B capture with the 32 new stills and report check.
+      `steps6-20261012`: 162 PNGs byte-identical across both guests, both
+      cleanups verified, working tree unchanged, no baseline writes; review
+      62 changed, 10 same, 90 without a reference (32 new). Retained
+      attempts: `steps2` (the prompt is a portal overlay, not a
+      presentation: `CapturePortal` now needs only the synced child frame),
+      `steps3` (the same, now with named waits; Find also hit the known
+      unresponsive-tab watchdog once under load), `steps4` (a credential
+      challenge holds the page loading: portal waits accept reduced-motion
+      static marks of the parent window), `steps5` (green, but the 8 s
+      no-app banner showed in the next two stills; the capture now waits
+      for it to leave). Observations for Patrick, not changed: the
+      open-in-app and certificate sheets stretch to the full card height,
+      and site settings call `http://127.0.0.1` “Connection is secure”.
+- [ ] Patrick confirms or edits the step 5 list before it is captured.
+
+### Sheet height fix (Patrick, 2026-10-12: “viele der dialoge sind viel zu hoch”)
+
+The open-in-app, client-certificate, Settings (New/Edit/Delete Profile) and
+Clear Browsing Data sheets sat in a `wash.active` veil that is a flex row
+with `justify_center` and no cross-axis rule, so flex stretched each
+`h_auto` sheet to the whole card or Settings window. The veils now use
+`items_start`: the sheet hangs from the card top at its content height
+(the credential and space-delete sheets were already centred). Regression:
+the four sheet panels probe their drawn rect into the new snapshot field
+`sheet_rects` (any window; the portal and Settings windows clear their
+rects per frame) and the real-app suites assert
+`assert_sheet_hugs_content` (open-in-app ≤ 260 pt, certificate ≤ 420,
+New Profile ≤ 480, Delete Profile ≤ 220, Clear Browsing Data ≤ 460).
+`FlushFrame` also draws an open Settings window, so its drawn state never
+lags the model.
+
+- [x] Red without the fix: link destinations, client certificates, history
+      and profile management fail on the new assertion (sheets drew 666 pt
+      in the card, 602 pt in Settings; run-20261012-123506-96820).
+- [x] Green with the fix: profiles, Settings, permissions, certificates,
+      history, link destinations, external URL and first run 9/9
+      (run-20261012-125208-60444); smoke, portal and real input earlier
+      green with the probes (run-20261012-123838-30717).
+- [x] Fresh Tart visual A/B with the corrected sheets: `sheets1-20261012`,
+      162 PNGs byte-identical across both guests, both cleanups verified,
+      working tree unchanged, no baseline writes. Open-in-app, certificate,
+      New/Edit/Delete Profile and Clear Browsing Data sheets now hang from
+      the top at their content height.
+
+Patrick then decided (“lass alles mittig machen”, against the Paper boards'
+top attachment, P-4 note 2): every blocking sheet sits centred on both axes
+over its veil. The four `bbr-ui` veils centre by layout (`items_center`, no
+top margin); the credential and Delete Space portal surfaces now place their
+sheet inside the veil and centre it by layout too (the credential sheet was
+centred on the window, not the card; Delete Space was attached to the top).
+The veils probe their rects as well, and the shared check became
+`assert_sheet_centered` (content height and centre within 1 pt of the
+veil's) in the open-in-app, certificate, history, profile, credential and
+Delete Space suites. DESIGN §11 records the rule.
+
+- [x] Real-app E2E: link destinations, certificates, history, profiles,
+      Settings, spaces (5), auth (7), portal (11), permissions, smoke
+      15/15 (run-20261012-165811-30063); persistence, recovery, gallery
+      3/3 (run-20261012-170400-87370).
+- [x] Fresh Tart visual A/B with the centred sheets: `sheets2-20261012`,
+      162 PNGs byte-identical across both guests, both cleanups verified,
+      working tree unchanged, no baseline writes; Clear Browsing Data,
+      open-in-app, certificate, credential and the Settings profile sheets
+      inspected centred on their veils.
 
 ## Non-goals
 

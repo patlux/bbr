@@ -1201,6 +1201,11 @@ Motion is asserted through typed evidence, never pixels or sleeps:
   `playing`/`rest`; the Reduce Motion variant starts at `rest`.
 - `SetAccessibilityOverride` forces Reduce Motion (and Increase Contrast) so
   every suite proves both variants deterministically.
+- `SetDisplayClock` pins the clock History day groups, visit times, the
+  Today/Week ranges and certificate expiry dates read (Unix milliseconds
+  plus a fixed UTC offset; `None` releases it), so dated evidence never
+  depends on the machine's time or zone. Testkit-only; production always
+  reads the system clock.
 
 Coverage: `e2e_shell_sidebar/{motion,moments}.rs` (loading arc, D5 address
 progress, Favorite pop, idle), `e2e_shell_downloads/moments.rs` (check),
@@ -1356,10 +1361,17 @@ scenarios take the production path instead:
   window key and resends it. Targets come from `element_rects`: with
   `bbr-ui`'s `rect-probes` feature (on under `testkit` only) the tab rows,
   tab close controls, titlebar controls, footer controls and space chips
-  carry an invisible probe that records the rect they drew at in the
+  (and, for element-only visual readback, the content card, footer,
+  Downloads panel, Plus menu and tab drag proxy) carry an invisible probe that records the rect they drew at in the
   `ElementRects` global; page targets are fixed points of
-  `real-input.html`. The snapshot reports `real_input` (routing, key
-  status, first responder) and `window_key`. Scenarios: tab row select,
+  `real-input.html`. The veil sheets (open-in-app, client certificate,
+  Settings, Clear Browsing Data) probe too: `sheet_rects` lists their
+  drawn rects from whichever window draws them (browser, portal or
+  Settings, each clearing its rects per frame), and `FlushFrame` also draws
+  an open Settings window so its drawn state never lags the model;
+  `assert_sheet_hugs_content` guards the sheets' content height. The
+  snapshot reports `real_input` (routing, key status, first responder) and
+  `window_key`. Scenarios: tab row select,
   hover + close, titlebar Back, footer Downloads (and a press outside
   dismissing it), footer `+`, a space chip, a real drag reordering rows, a
   page link click, ⌘-click and middle click on ordinary links and ⌘-click

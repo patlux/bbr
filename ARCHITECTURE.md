@@ -310,8 +310,12 @@ runs. The reveal is a pure model (`app::rail_reveal`) fed by a local AppKit
 pointer monitor (`bbr-web-macos::pointer_observer`, observe-only, drained
 through a channel by `rail_observer`) and by the testkit `RailPointer` seam.
 The card and the web views keep the collapsed geometry; nothing reflows. The
-one window-state API in the composition (the downloads fade) is primed in the
-browser window's render, because the Portal builds the rail outside it.
+Downloads fade retains one interpolation-state entity, with a fresh GPUI
+transition wrapper evaluated in each browser render. Docked and floating panel
+composition read that presented value without evaluating again: Portal builds
+the rail against the browser window outside its draw phase, where requesting
+animation frames is invalid. Goals, continuous retargeting and `dur:fine` remain
+owned by the same production transition.
 
 ### App preferences and the Settings window
 
