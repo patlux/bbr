@@ -53,15 +53,16 @@ pub use snapshot::{
     CommandResultSnapshot, CommandResultState, CommandSurface, ContentCardSnapshot,
     ContentGestureSnapshot, ContextMenuItemSnapshot, ContextMenuNativeSnapshot,
     ContextMenuSnapshot, DenseListSnapshot, DownloadGroup, DownloadMachineState, DownloadRowAction,
-    DownloadRowSnapshot, DownloadsPanelSnapshot, DragOffersSnapshot, ErrorSurfaceCategory,
-    ErrorSurfaceSnapshot, FavoriteTileSnapshot, FindSnapshot, FloatingRailSnapshot,
-    FolderRowSnapshot, GlobalTabSnapshot, IllustrationSnapshot, LifecycleCounts, MenuItemSnapshot,
-    MenuSnapshot, MotionMomentSnapshot, MotionSnapshot, NavHistorySnapshot, NewWindowSnapshot,
-    PaneLayoutSnapshot, PaneRectSnapshot, PeekFrameSnapshot, PortalSnapshot, PreviewSnapshot,
-    PreviewZOrder, ProfileSnapshot, ReloadRestSurface, RestoreDisposition,
-    SavedPagesCollectionSnapshot, SavedPagesLibraryRowSnapshot, SavedPagesLibrarySnapshot,
-    SemanticNode, SemanticRole, SettingsRowSnapshot, SettingsSheetSnapshot, SettingsSnapshot,
-    Snapshot, SpaceAppearanceSnapshot, SpaceChipSnapshot, SpaceConfigSnapshot, SpaceDeleteSnapshot,
+    DownloadRowSnapshot, DownloadsPanelPaint, DownloadsPanelSnapshot, DragOffersSnapshot,
+    ErrorSurfaceCategory, ErrorSurfaceSnapshot, FavoriteTileSnapshot, FindSnapshot,
+    FloatingRailSnapshot, FolderRowSnapshot, FooterSnapshot, GlobalTabSnapshot,
+    IllustrationSnapshot, LifecycleCounts, MenuItemSnapshot, MenuSnapshot, MotionMomentSnapshot,
+    MotionSnapshot, NavHistorySnapshot, NewWindowSnapshot, PaneLayoutSnapshot, PaneRectSnapshot,
+    PeekFrameSnapshot, PortalSnapshot, PreviewSnapshot, PreviewZOrder, ProfileSnapshot,
+    ReloadRestSurface, RestoreDisposition, SavedPagesCollectionSnapshot,
+    SavedPagesLibraryRowSnapshot, SavedPagesLibrarySnapshot, SemanticNode, SemanticRole,
+    SettingsRowSnapshot, SettingsSheetSnapshot, SettingsSnapshot, Snapshot,
+    SpaceAppearanceSnapshot, SpaceChipSnapshot, SpaceConfigSnapshot, SpaceDeleteSnapshot,
     SpaceSnapshot, SpaceStripScrollSnapshot, StoreDiscardReasonSnapshot, StoreLoadSnapshot,
     StoreSnapshot, SwipeSnapshot, TabMenuRowSnapshot, TabMenuSnapshot, TabSnapshot, TabVisualState,
     TextInputReadback, TitlebarSnapshot, ToastSnapshot, WebContentProbe, ZoomSnapshot,
@@ -198,6 +199,9 @@ pub enum Response {
         max_offset: [f32; 2],
         viewport: [f32; 4],
     },
+    /// The window-pixel rectangle `[x, y, width, height]` a
+    /// `CaptureElements` readback kept.
+    CapturedRegion { pixels: [u32; 4] },
     /// Failure carrying a human-readable reason.
     Error(Error),
 }
@@ -207,6 +211,27 @@ mod tests {
     use super::*;
     use bbr_web::WebViewId;
     use serde_json::json;
+
+    #[test]
+    fn downloads_paint_round_trips_without_changing_logical_panel_state() {
+        let painted = DownloadsPanelPaint {
+            rect: [10.0, 546.0, 288.0, 108.0],
+            alpha: 1.0,
+        };
+        let value = serde_json::to_value(painted).unwrap();
+        assert_eq!(
+            value,
+            json!({"rect": [10.0, 546.0, 288.0, 108.0], "alpha": 1.0})
+        );
+        assert_eq!(
+            serde_json::from_value::<DownloadsPanelPaint>(value).unwrap(),
+            painted
+        );
+        assert_eq!(
+            serde_json::from_value::<DownloadsPanelSnapshot>(json!({})).unwrap(),
+            DownloadsPanelSnapshot::default(),
+        );
+    }
 
     /// The split requests keep their exact externally-tagged JSON shape on
     /// the wire (no framework types, no renamed fields), and the fixed
@@ -504,6 +529,66 @@ mod tests {
     }
 
     #[test]
+    fn about_and_portal_readback_have_exact_wire_shapes() {
+        for (request, value) in [
+            (
+                Request::CaptureAbout {
+                    path: "/tmp/about.png".into(),
+                },
+                json!({ "CaptureAbout": { "path": "/tmp/about.png" } }),
+            ),
+            (
+                Request::CapturePortal {
+                    path: "/tmp/portal.png".into(),
+                },
+                json!({ "CapturePortal": { "path": "/tmp/portal.png" } }),
+            ),
+        ] {
+            assert_eq!(serde_json::to_value(&request).unwrap(), value);
+            assert_eq!(serde_json::from_value::<Request>(value).unwrap(), request);
+        }
+    }
+
+    #[test]
+    fn display_clock_pin_has_exact_wire_shape() {
+        let request = Request::SetDisplayClock {
+            now_ms: Some(1_790_683_200_000),
+            offset_s: 0,
+        };
+        let value =
+            json!({ "SetDisplayClock": { "now_ms": 1_790_683_200_000_u64, "offset_s": 0 } });
+        assert_eq!(serde_json::to_value(&request).unwrap(), value);
+        assert_eq!(serde_json::from_value::<Request>(value).unwrap(), request);
+        let unpin = json!({ "SetDisplayClock": { "now_ms": null, "offset_s": 0 } });
+        assert_eq!(
+            serde_json::from_value::<Request>(unpin).unwrap(),
+            Request::SetDisplayClock {
+                now_ms: None,
+                offset_s: 0
+            }
+        );
+    }
+
+    #[test]
+    fn element_capture_has_exact_wire_shape() {
+        let request = Request::CaptureElements {
+            path: "/tmp/bbr-footer.png".into(),
+            ids: vec!["bbr-footer".into(), "bbr-plus-menu".into()],
+            margin: 4.0,
+        };
+        let value = json!({ "CaptureElements": { "path": "/tmp/bbr-footer.png",
+            "ids": ["bbr-footer", "bbr-plus-menu"], "margin": 4.0 } });
+        assert_eq!(serde_json::to_value(&request).unwrap(), value);
+        assert_eq!(serde_json::from_value::<Request>(value).unwrap(), request);
+        let response = Response::CapturedRegion {
+            pixels: [0, 2710, 608, 104],
+        };
+        let value = json!({ "CapturedRegion": { "pixels": [0, 2710, 608, 104] } });
+        assert_eq!(serde_json::to_value(&response).unwrap(), value);
+        assert_eq!(serde_json::from_value::<Response>(value).unwrap(), response);
+    }
+
+    #[test]
     fn settings_wheel_observation_has_exact_wire_shape() {
         let request = Request::ScrollSettings { delta_y: -400 };
         let value = json!({ "ScrollSettings": { "delta_y": -400 } });
@@ -698,6 +783,16 @@ mod tests {
         // An older harness client omitting the appearance evidence defaults
         // to no active appearance (the field is additive, never required).
         assert_eq!(snapshot.active_appearance, None);
+        assert_eq!(snapshot.downloads_paint, None);
+        let mut with_paint = serde_json::to_value(&snapshot).unwrap();
+        with_paint["downloads_paint"] = json!({"rect": [10.0, 546.0, 288.0, 108.0], "alpha": 0.5});
+        let decoded: Snapshot = serde_json::from_value(with_paint).unwrap();
+        assert_eq!(decoded.downloads, snapshot.downloads);
+        assert_eq!(decoded.downloads_paint.unwrap().alpha, 0.5);
+        assert_eq!(
+            decoded.downloads_paint.unwrap().rect,
+            [10.0, 546.0, 288.0, 108.0]
+        );
     }
 
     /// The §11.3 strip chip wire shape stays plain and round-trips: the

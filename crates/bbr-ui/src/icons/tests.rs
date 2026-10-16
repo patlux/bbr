@@ -2,7 +2,7 @@ use super::*;
 use crate::theme::{ContrastMode, ThemeMode};
 use glyphs::{
     arc_radius, chassis_radii, chevron_arm, close_arm, folder_shape, lifering_radii,
-    nav_arrow_geometry, plus_arm, reload_geometry, sidebar_geometry,
+    nav_arrow_segments, plus_arm, reload_geometry, sidebar_geometry,
 };
 
 #[test]
@@ -180,6 +180,39 @@ fn stroke_weight_follows_the_density_contract() {
 }
 
 #[test]
+fn ported_strokes_end_in_paper_round_caps() {
+    // A 1.5 pt stroke along +x: the outline sits 0.75 either side and its
+    // round caps reach 0.75 past both ends (Paper `stroke-linecap: round`).
+    let c = glyphs::capsule(((0.0, 0.0), (10.0, 0.0)), 0.75).expect("capsule");
+    assert_eq!(c.start_plus, (0.0, 0.75));
+    assert_eq!(c.end_plus, (10.0, 0.75));
+    assert_eq!(c.end_tip, (10.75, 0.0));
+    assert_eq!(c.end_minus, (10.0, -0.75));
+    assert_eq!(c.start_minus, (0.0, -0.75));
+    assert_eq!(c.start_tip, (-0.75, 0.0));
+    assert_eq!((c.along, c.side), ((0.75, 0.0), (0.0, 0.75)));
+    // Diagonal strokes keep the half-width on the normal.
+    let d = glyphs::capsule(((0.0, 0.0), (3.0, 4.0)), 1.0).expect("capsule");
+    assert_eq!(d.end_tip, (3.6, 4.8));
+    assert_eq!(d.side, (-0.8, 0.6));
+    assert!(glyphs::capsule(((1.0, 1.0), (1.0, 1.0)), 0.75).is_none());
+}
+
+#[test]
+fn plus_and_minus_follow_paper_paths() {
+    // Paper `M9 3.75v10.5M3.75 9h10.5` on the 18-unit box: 5.25 arms,
+    // 12 pt end to end once the round caps are added.
+    assert_eq!(
+        glyphs::plus_segments(18.0),
+        vec![((-5.25, 0.0), (5.25, 0.0)), ((0.0, -5.25), (0.0, 5.25))]
+    );
+    assert_eq!(
+        glyphs::minus_segments(18.0),
+        vec![((-5.25, 0.0), (5.25, 0.0))]
+    );
+}
+
+#[test]
 fn glyph_geometry_stays_inside_its_box() {
     // Every arm/radius plus the stroke must fit the glyph's bounding box
     // at every shipped size (16/18/20 rows, 32 crash, 64 chassis mark).
@@ -217,12 +250,13 @@ fn glyph_geometry_stays_inside_its_box() {
             chevron_arm(size) * 1.5 + 1.5 / 2.0 <= size / 2.0,
             "step chevron fits at {size}pt"
         );
-        let (nav_head, nav_stem) = nav_arrow_geometry(size);
-        assert!(nav_head <= size / 2.0, "nav head fits at {size}pt");
-        assert!(
-            nav_head + nav_stem <= size / 2.0,
-            "nav stem fits at {size}pt"
-        );
+        for right in [false, true] {
+            for ((x0, y0), (x1, y1)) in nav_arrow_segments(size, right) {
+                for v in [x0, y0, x1, y1] {
+                    assert!(v.abs() <= size / 2.0, "nav arrow fits at {size}pt");
+                }
+            }
+        }
         let (reload_radius, reload_head) = reload_geometry(size);
         assert!(reload_radius <= size / 2.0, "reload radius fits");
         assert!(

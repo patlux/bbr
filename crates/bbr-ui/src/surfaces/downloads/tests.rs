@@ -12,9 +12,11 @@ use super::ids::{
 };
 use super::model::{
     action_label, DownloadActionKind, DownloadGroupKind, DownloadMachine, DownloadRowModel,
-    PanelLayout, DOWNLOADS_MAX_VISIBLE, DOWNLOADS_PAGE_ROWS, DOWNLOADS_WINDOW_ROWS,
+    DownloadsMetrics, PanelItem, PanelLayout, DOWNLOADS_MAX_VISIBLE, DOWNLOADS_PAGE_ROWS,
+    DOWNLOADS_WINDOW_ROWS,
 };
 use crate::state::DownloadVisual;
+use crate::theme::{ContrastMode, Density, Theme, ThemeMode};
 
 /// The §11.12/§15 id constants and the deterministic row/slot derivations.
 #[test]
@@ -113,7 +115,8 @@ fn machine_vocabulary_is_exactly_the_l6_states() {
 fn panel_layout_spacers_sum_to_the_full_content_height() {
     let layout = PanelLayout {
         label_h: 20.0,
-        row_h: 32.0,
+        active_row_h: 40.0,
+        history_row_h: 32.0,
         active_count: 2,
         history_count: 20,
         hairline: 1.0,
@@ -121,7 +124,7 @@ fn panel_layout_spacers_sum_to_the_full_content_height() {
     let window = 0..DOWNLOADS_WINDOW_ROWS;
     let top = layout.top_spacer(&window);
     let bottom = layout.bottom_spacer(&window);
-    let window_rows_height = window.len() as f32 * layout.row_h;
+    let window_rows_height: f32 = window.clone().map(|i| layout.row_h(i)).sum();
     let items = layout.items_in_window(&window);
     let items_height = (if items.active_label {
         layout.label_h
@@ -146,7 +149,8 @@ fn panel_layout_spacers_sum_to_the_full_content_height() {
 fn window_clamps_to_the_deterministic_list() {
     let layout = PanelLayout {
         label_h: 20.0,
-        row_h: 32.0,
+        active_row_h: 40.0,
+        history_row_h: 32.0,
         active_count: 0,
         history_count: 40,
         hairline: 1.0,
@@ -170,7 +174,8 @@ fn window_clamps_to_the_deterministic_list() {
 fn items_in_window_gates_labels_and_hairline() {
     let both = PanelLayout {
         label_h: 20.0,
-        row_h: 32.0,
+        active_row_h: 40.0,
+        history_row_h: 32.0,
         active_count: 2,
         history_count: 2,
         hairline: 1.0,
@@ -181,7 +186,8 @@ fn items_in_window_gates_labels_and_hairline() {
     assert!(items.hairline);
     let history_only = PanelLayout {
         label_h: 20.0,
-        row_h: 32.0,
+        active_row_h: 40.0,
+        history_row_h: 32.0,
         active_count: 0,
         history_count: 2,
         hairline: 1.0,
@@ -190,4 +196,113 @@ fn items_in_window_gates_labels_and_hairline() {
     assert!(!items.active_label);
     assert!(items.history_label);
     assert!(!items.hairline, "no hairline without both groups");
+}
+
+fn layout(active_count: usize, history_count: usize) -> PanelLayout {
+    let theme = Theme::new(ThemeMode::Light, ContrastMode::Standard, Density::Normal);
+    PanelLayout::for_theme(&theme, active_count, history_count)
+}
+
+/// Paper M-4 paint order: the Active label, the Active rows, the group
+/// hairline, the History label, then the History rows. The History label
+/// heads its own rows instead of trailing the whole list.
+#[test]
+fn panel_items_follow_the_group_paint_order() {
+    use PanelItem::*;
+    assert_eq!(
+        layout(2, 2).items(&(0..4)),
+        vec![
+            ActiveLabel,
+            Row(0),
+            Row(1),
+            Hairline,
+            HistoryLabel,
+            Row(2),
+            Row(3)
+        ]
+    );
+    assert_eq!(
+        layout(0, 2).items(&(0..2)),
+        vec![HistoryLabel, Row(0), Row(1)]
+    );
+    assert_eq!(
+        layout(2, 0).items(&(0..2)),
+        vec![ActiveLabel, Row(0), Row(1)]
+    );
+}
+
+/// The painted items stack exactly where the layout math places them, for
+/// windows that start at the top, straddle the groups, or sit mid-history.
+#[test]
+fn panel_item_positions_match_the_layout_math() {
+    for (active, history) in [(2, 2), (0, 3), (3, 0), (2, 30), (20, 20)] {
+        let layout = layout(active, history);
+        let total = layout.total();
+        for start in [
+            0,
+            1,
+            active,
+            active + 1,
+            total.saturating_sub(DOWNLOADS_WINDOW_ROWS),
+        ] {
+            let start = start.min(total.saturating_sub(1));
+            let window = start..(start + DOWNLOADS_WINDOW_ROWS).min(total);
+            let mut y = 0.0;
+            for item in layout.items(&window) {
+                if let PanelItem::Row(index) = item {
+                    assert!(
+                        (y - layout.row_y(index)).abs() < 0.01,
+                        "row {index} of ({active}, {history}) window {window:?} paints at {y}, math says {}",
+                        layout.row_y(index)
+                    );
+                }
+                y += layout.item_height(item);
+            }
+            assert!((y - layout.content_height()).abs() < 0.01, "content height");
+        }
+    }
+}
+
+/// Every row holds its own content (no overflow into the next row) at
+/// every density, and the N values are Paper M-4's.
+#[test]
+fn row_heights_hold_their_content_at_every_density() {
+    for density in [Density::Small, Density::Normal, Density::ExtraLarge] {
+        let theme = Theme::new(ThemeMode::Light, ContrastMode::Standard, density);
+        let metrics = DownloadsMetrics::for_theme(&theme);
+        let layout = PanelLayout::for_theme(&theme, 1, 1);
+        assert!(
+            layout.history_row_h >= metrics.history_content(),
+            "{density:?}"
+        );
+        assert!(
+            layout.active_row_h >= metrics.active_content(),
+            "{density:?}"
+        );
+        assert!(layout.label_h >= metrics.label_line + 6.0, "{density:?}");
+        assert!(
+            layout.history_row_h >= f32::from(density.hit_min()),
+            "{density:?}"
+        );
+    }
+    let theme = Theme::new(ThemeMode::Light, ContrastMode::Standard, Density::Normal);
+    let layout = PanelLayout::for_theme(&theme, 1, 1);
+    assert_eq!(layout.history_row_h, 48.0);
+    assert_eq!(layout.active_row_h, 56.0);
+    assert_eq!(layout.label_h, 19.0);
+    assert_eq!(layout.hairline, 9.0);
+}
+
+/// Scroll offsets and anchors round-trip across mixed row heights.
+#[test]
+fn scroll_anchor_round_trips_the_row_offsets() {
+    let layout = layout(3, 20);
+    for anchor in 0..layout.total() {
+        assert_eq!(layout.anchor_at(layout.row_offset(anchor)), anchor);
+        assert_eq!(layout.anchor_at(layout.row_offset(anchor) + 1.0), anchor);
+    }
+    assert_eq!(
+        layout.viewport_height(),
+        DOWNLOADS_MAX_VISIBLE as f32 * layout.history_row_h
+    );
 }

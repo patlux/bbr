@@ -276,8 +276,8 @@ fn fully_inside(inner: [f32; 4], outer: [f32; 4]) -> bool {
 }
 
 /// §11.3 overflow + selected-chip scroll-into-view on a compact real
-/// window: five short-title spaces overflow the strip viewport (typed
-/// precondition `max_offset.x > 0`). The last chip (Delta, id 7) is
+/// window: seven short-title spaces overflow the strip viewport (typed
+/// precondition `max_offset.x > 0`). The last chip (Zeta, id 9) is
 /// initially fully outside the viewport; selecting it through the
 /// production chip listener and flushing a real frame scrolls it fully
 /// inside — computed from the typed viewport/offset/chip bounds the
@@ -308,13 +308,14 @@ fn selected_offscreen_chip_scrolls_fully_into_view_on_compact_window() {
         let default_space = initial.active_space;
         let default_profile = initial.active_profile;
 
-        // Five short-title spaces in the default profile (ids 2, 4, 5, 6, 7:
+        // Seven short-title spaces in the default profile (ids 2, 4–9:
         // launch space 2, initial tab 3, then Alpha 4, Beta 5, Gamma 6,
-        // Delta 7); the canonical display order equals creation order here,
-        // so the last chip is the rightmost one and the offscreen target is
-        // deterministic.
+        // Delta 7, Epsilon 8, Zeta 9); the canonical display order equals
+        // creation order here, so the last chip is the rightmost one and
+        // the offscreen target is deterministic. Seven 28 pt chips (Paper
+        // W-1 footer) overflow any compact rail.
         let mut last_space = default_space;
-        for title in ["Alpha", "Beta", "Gamma", "Delta"] {
+        for title in ["Alpha", "Beta", "Gamma", "Delta", "Epsilon", "Zeta"] {
             client
                 .send_ok(&dsl::create_space(default_profile, title))
                 .expect("create strip space");
@@ -330,12 +331,12 @@ fn selected_offscreen_chip_scrolls_fully_into_view_on_compact_window() {
             };
         }
         assert_eq!(
-            last_space.0, 7,
-            "Delta is persistent id 7 (launch 2, initial tab 3, Alpha 4, Beta 5, Gamma 6)"
+            last_space.0, 9,
+            "Zeta is persistent id 9 (launch 2, initial tab 3, Alpha 4 … Epsilon 8)"
         );
 
         // Compact real window: the rail yields toward the window so the
-        // footer strip is narrow and the five chips genuinely overflow.
+        // footer strip is narrow and the seven chips genuinely overflow.
         client
             .send_ok(&bbr_testkit::Request::SetWindowSize {
                 width: 320.0,
@@ -350,13 +351,13 @@ fn selected_offscreen_chip_scrolls_fully_into_view_on_compact_window() {
         );
 
         // Precondition: real horizontal overflow (typed max offset > 0),
-        // one raw bounds rect per chip, and the last chip (Delta) fully
+        // one raw bounds rect per chip, and the last chip (Zeta) fully
         // outside the viewport before any selection.
         let before = client.snapshot().expect("overflow precondition");
         let scroll = before.space_strip_scroll;
         assert_eq!(
             scroll.chip_bounds.len(),
-            5,
+            7,
             "one raw chip rect per space in display order"
         );
         assert!(
@@ -372,8 +373,8 @@ fn selected_offscreen_chip_scrolls_fully_into_view_on_compact_window() {
             .space_chips
             .iter()
             .position(|c| c.space == last_space)
-            .expect("Delta chip present");
-        assert_eq!(delta_index, 4, "Delta is the rightmost chip");
+            .expect("Zeta chip present");
+        assert_eq!(delta_index, 6, "Zeta is the rightmost chip");
         let raw_delta = scroll.chip_bounds[delta_index];
         let visual_delta = chip_visual(raw_delta, scroll.offset);
         assert!(
@@ -520,8 +521,8 @@ fn fitting_chips_start_at_the_strip_leading_edge() {
         );
         let gap = second[0] - (first[0] + first[2]);
         assert!(
-            (gap - 8.0).abs() < 0.5,
-            "the second chip follows at the strip gap (8 pt), got {gap}"
+            (gap - 4.0).abs() < 0.5,
+            "the second chip follows at the Paper S-7b strip gap (4 pt), got {gap}"
         );
         let trailing = scroll.viewport[0] + scroll.viewport[2] - (second[0] + second[2]);
         assert!(trailing > 8.0, "the free space stays trailing ({trailing})");

@@ -81,6 +81,47 @@ fn footer_row_and_permanent_strip_render_in_the_compact_rail() {
         let identity_id = format!("bbr-space-identity-{}", initial.active_space.0);
         assert!(initial.visible_ids.contains(&chip_id));
         assert!(initial.visible_ids.contains(&identity_id));
+        // Paper S-7b footer dock: Downloads, the chip and Plus are 28 pt
+        // squares on one line, 12 pt above the rail's bottom edge (10 pt
+        // band inset + 2 pt centring), the strip leading 8 pt after
+        // Downloads, and the controls inset 10 pt from the rail sides.
+        let rect = |id: &str| {
+            initial
+                .element_rects
+                .iter()
+                .find(|(key, _)| key == id)
+                .map(|(_, rect)| *rect)
+                .unwrap_or_else(|| panic!("{id} rect"))
+        };
+        let downloads = rect("bbr-downloads");
+        let chip = rect(&chip_id);
+        let plus = rect("bbr-plus");
+        let bottom = initial.window_content_size[1];
+        for (id, [_, y, width, height]) in
+            [("downloads", downloads), ("chip", chip), ("plus", plus)]
+        {
+            assert!((width - 28.0).abs() < 0.5, "{id} width {width}");
+            assert!((height - 28.0).abs() < 0.5, "{id} height {height}");
+            assert!(
+                (bottom - (y + height) - 12.0).abs() < 0.5,
+                "{id} sits 12 pt above the rail bottom: y {y}, bottom {bottom}"
+            );
+        }
+        assert!(
+            (downloads[0] - 10.0).abs() < 0.5,
+            "Downloads inset {downloads:?}"
+        );
+        assert!(
+            (chip[0] - (downloads[0] + downloads[2] + 8.0)).abs() < 0.5,
+            "the strip leads 8 pt after Downloads: {chip:?}"
+        );
+        // Measured from the visible rail edge (the transparent resize
+        // divider is part of the rail), exactly like the Paper boards.
+        assert!(
+            (initial.sidebar_width - (plus[0] + plus[2]) - 10.0).abs() < 0.5,
+            "Plus inset {plus:?} in a {} pt rail",
+            initial.sidebar_width
+        );
         // §11.10: the Favorites region stays present as its drop band; the
         // empty folders region hides with its label.
         assert_ids(&initial, &["bbr-section-favorites", "bbr-favorites-empty"]);
@@ -104,6 +145,121 @@ fn footer_row_and_permanent_strip_render_in_the_compact_rail() {
             &always,
             &["bbr-footer", "bbr-downloads", "bbr-space-strip", "bbr-plus"],
         );
+
+        client.quit().expect("quit");
+        let status = wait_for_exit(&mut harness.child, Instant::now() + Duration::from_secs(10));
+        assert!(status.success(), "app exit: {status}");
+    }));
+
+    finish(result, &mut harness, &socket, &token);
+}
+
+/// Paper S-7b dock states over the real app: hover follows the production
+/// `on_hover` path for Downloads, Plus and a chip and never moves a target;
+/// an open panel or menu keeps its control pressed; a chip press gives the
+/// strip keyboard focus (the ring on the active chip).
+#[test]
+#[ignore]
+fn footer_dock_states_follow_hover_open_and_focus() {
+    let _serial = serial_gui();
+    if !allow_gui() {
+        return;
+    }
+
+    let (_fixtures, page_one, _page_two) = fixtures();
+    let (mut harness, socket, token) = spawn_harness("sidebar-footer-states", &page_one);
+
+    let result = catch_unwind(AssertUnwindSafe(|| {
+        let mut client = connect(&socket);
+        client.hello(&token).expect("hello");
+        let _replay = client.attach(None).expect("attach");
+        client
+            .send_ok(&bbr_testkit::Request::FocusWeb)
+            .expect("focus web");
+        flush_frame(&mut client);
+        let rest = client.snapshot().expect("rest snapshot");
+        assert_eq!(rest.footer.hovered, None);
+        assert!(!rest.footer.downloads_open && !rest.footer.plus_open);
+        assert!(
+            !rest.footer.strip_focused,
+            "web focus leaves the strip quiet"
+        );
+        let rects = |snapshot: &bbr_testkit::protocol::Snapshot| {
+            snapshot
+                .element_rects
+                .iter()
+                .filter(|(id, _)| {
+                    id == "bbr-downloads" || id == "bbr-plus" || id.starts_with("bbr-space-chip-")
+                })
+                .cloned()
+                .collect::<Vec<_>>()
+        };
+        let resting = rects(&rest);
+        assert_eq!(resting.len(), 3, "Downloads, one chip, Plus");
+
+        let chip = format!("space-{}", rest.active_space.0);
+        for control in ["downloads", "plus", chip.as_str()] {
+            client
+                .send_ok(&bbr_testkit::Request::HoverFooterControl {
+                    control: control.to_string(),
+                })
+                .expect("hover footer control");
+            flush_frame(&mut client);
+            let hovered = client.snapshot().expect("hover snapshot");
+            assert_eq!(hovered.footer.hovered.as_deref(), Some(control));
+            assert_eq!(rects(&hovered), resting, "hover never moves a target");
+        }
+        client
+            .send_ok(&bbr_testkit::Request::UnhoverFooterControl)
+            .expect("unhover");
+        flush_frame(&mut client);
+        assert_eq!(client.snapshot().expect("unhovered").footer.hovered, None);
+        let unknown = client
+            .send_ok(&bbr_testkit::Request::HoverFooterControl {
+                control: "spaces".into(),
+            })
+            .expect_err("unknown footer control rejects");
+        assert_eq!(unknown.code, "unknown_footer_control");
+
+        // An open menu or panel keeps its control pressed; closing returns
+        // it to rest.
+        client
+            .send_ok(&bbr_testkit::Request::ClickFooterPlus)
+            .expect("open plus menu");
+        flush_frame(&mut client);
+        assert!(client.snapshot().expect("plus open").footer.plus_open);
+        client
+            .send_ok(&bbr_testkit::Request::ClickFooterPlus)
+            .expect("close plus menu");
+        flush_frame(&mut client);
+        assert!(!client.snapshot().expect("plus closed").footer.plus_open);
+        client
+            .send_ok(&bbr_testkit::Request::ClickFooterDownloads)
+            .expect("open downloads");
+        flush_frame(&mut client);
+        let downloads = client.snapshot().expect("downloads open");
+        assert!(downloads.footer.downloads_open && downloads.downloads.open);
+        assert_eq!(rects(&downloads), resting, "an open panel moves nothing");
+        client
+            .send_ok(&bbr_testkit::Request::ClickFooterDownloads)
+            .expect("close downloads");
+        flush_frame(&mut client);
+        assert!(
+            !client
+                .snapshot()
+                .expect("downloads closed")
+                .footer
+                .downloads_open
+        );
+
+        // A chip press focuses the strip: the ring sits on the active chip.
+        client
+            .send_ok(&dsl::click_space(rest.active_space))
+            .expect("chip press");
+        flush_frame(&mut client);
+        let focused = client.snapshot().expect("strip focus");
+        assert!(focused.footer.strip_focused);
+        assert_eq!(rects(&focused), resting, "the focus ring moves nothing");
 
         client.quit().expect("quit");
         let status = wait_for_exit(&mut harness.child, Instant::now() + Duration::from_secs(10));

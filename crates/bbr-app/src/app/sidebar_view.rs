@@ -114,7 +114,7 @@ impl BbrApp {
             .command_result_surface(theme)
             .map(|surface| surface.into_any());
         let downloads_panel = self
-            .downloads_panel_surface(theme, window, cx)
+            .downloads_panel_surface(theme, sidebar_width, window, cx)
             .map(|surface| surface.into_any());
         let space_config_panel = self
             .space_config_surface(theme, window, cx)
@@ -228,7 +228,7 @@ impl BbrApp {
             .unwrap_or_else(|| "Default".to_string());
         let plus_menu = self.plus_menu_model();
         let footer = self.footer_model(window);
-        let strip = self.strip_model();
+        let strip = self.strip_model(window);
         let divider_focused = self.divider_handle.is_focused(window);
         SidebarModel {
             sidebar_width,

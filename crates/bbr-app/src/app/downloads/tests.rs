@@ -310,7 +310,8 @@ fn byte_formatting_is_deterministic() {
 fn bounded_window_never_lays_out_the_full_history() {
     let layout = PanelLayout {
         label_h: 20.0,
-        row_h: 32.0,
+        active_row_h: 40.0,
+        history_row_h: 32.0,
         active_count: 0,
         history_count: 40,
         hairline: 1.0,
@@ -346,7 +347,8 @@ fn layout_total_window(layout: &PanelLayout, anchor: usize) -> std::ops::Range<u
 fn panel_layout_spacers_sum_to_the_full_content_height() {
     let layout = PanelLayout {
         label_h: 20.0,
-        row_h: 32.0,
+        active_row_h: 40.0,
+        history_row_h: 32.0,
         active_count: 2,
         history_count: 20,
         hairline: 1.0,
@@ -355,7 +357,7 @@ fn panel_layout_spacers_sum_to_the_full_content_height() {
     let top = layout.top_spacer(&window);
     let bottom = layout.bottom_spacer(&window);
     // Everything above the window plus the window rows plus the remainder.
-    let window_rows_height = window.len() as f32 * layout.row_h;
+    let window_rows_height: f32 = window.clone().map(|i| layout.row_h(i)).sum();
     let items = layout.items_in_window(&window);
     let items_height = (if items.active_label {
         layout.label_h

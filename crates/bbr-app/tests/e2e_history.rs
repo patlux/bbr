@@ -225,6 +225,7 @@ fn history_lists_visits_reopens_closed_tabs_and_clears_data() {
         let from_settings = wait(&mut client, "the sheet from Settings", |s| {
             s.history.as_ref().is_some_and(|h| h.clear.is_some())
         });
+        assert_sheet_centered(&mut client, "bbr-clear-data", "bbr-clear-data-veil", 460.0);
         assert_eq!(
             history(&from_settings).clear.as_ref().unwrap().profile,
             "Default"

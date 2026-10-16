@@ -303,6 +303,8 @@ impl SnapshotExt for crate::shell::TestSnapshot {
             folders: self.folders.clone(),
             download_rows: self.download_rows.clone(),
             downloads: self.downloads,
+            downloads_paint: self.downloads_paint,
+            footer: self.footer.clone(),
             #[cfg(all(target_os = "macos", feature = "testkit"))]
             web_content_probe: self.web_content_probe.clone(),
             #[cfg(not(all(target_os = "macos", feature = "testkit")))]
@@ -321,6 +323,7 @@ impl SnapshotExt for crate::shell::TestSnapshot {
             text_input: self.text_input,
             real_input: self.real_input.clone(),
             element_rects: self.element_rects.clone(),
+            sheet_rects: self.sheet_rects.clone(),
             window_key: self.window_key,
             web_data_stores: self.web_data_stores.clone(),
             rail_reveal: self.rail_reveal.clone(),

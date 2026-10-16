@@ -328,6 +328,7 @@ impl BbrApp {
             motion: motion::MotionState::default(),
             moments: moments::Moments::default(),
             titlebar_hovered: None,
+            footer_hovered: None,
             titlebar_pressed: None,
             nav_history: Default::default(),
             nav_press: None,

@@ -398,6 +398,9 @@ impl SidebarObserver {
             on_select_folder_member: Rc::clone(&self.on_select_folder_member),
             on_close_folder_member: Rc::clone(&self.on_close_folder_member),
             on_folders_key_down: Rc::clone(&self.on_folders_key_down),
+            // The footer hover is presentation state with no product
+            // behavior; the gallery records nothing for it.
+            on_footer_hover: Callbacks::noop().on_footer_hover,
             on_plus_menu_key_down: Rc::clone(&self.on_plus_menu_key_down),
             on_plus_menu_commit: Rc::clone(&self.on_plus_menu_commit),
             on_plus_menu_inside_press: Rc::clone(&self.on_plus_menu_inside_press),

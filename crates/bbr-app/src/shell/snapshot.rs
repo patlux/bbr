@@ -246,6 +246,9 @@ pub struct TestSnapshot {
     pub download_rows: Vec<bbr_testkit::protocol::DownloadRowSnapshot>,
     /// §11.12 downloads panel render contract (open, focus, bounded window).
     pub downloads: bbr_testkit::protocol::DownloadsPanelSnapshot,
+    pub downloads_paint: Option<bbr_testkit::protocol::DownloadsPanelPaint>,
+    /// Paper S-7b footer dock state.
+    pub footer: bbr_testkit::protocol::FooterSnapshot,
     /// The last completed real WebKit content probe (testkit-only; macOS):
     /// the committed-document + native url/title observation the E2E gateway
     /// uses as real content evidence. `None` until a probe completion
@@ -296,6 +299,8 @@ pub struct TestSnapshot {
     pub real_input: Option<bbr_testkit::protocol::RealInputReadback>,
     /// Reality gaps (item C): each probed control's drawn rect by id.
     pub element_rects: Vec<(String, [f32; 4])>,
+    /// Each open veil sheet's drawn rect by id, from any window.
+    pub sheet_rects: Vec<(String, [f32; 4])>,
     /// Reality gaps (item C): the window is the key window.
     pub window_key: bool,
     /// Reality gaps (item F): the latest website-data store listing.

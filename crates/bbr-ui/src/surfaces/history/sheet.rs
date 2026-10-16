@@ -3,7 +3,9 @@
 
 use gpui::{div, prelude::*, px, AnyElement, MouseButton, SharedString};
 
-use super::{press, ClearDataModel, HistoryCallback, HistoryEvent, CLEAR_DATA_ID};
+use super::{
+    press, ClearDataModel, HistoryCallback, HistoryEvent, CLEAR_DATA_ID, CLEAR_DATA_VEIL_ID,
+};
 use crate::icons::Icon;
 use crate::theme::Theme;
 
@@ -124,12 +126,19 @@ pub(super) fn clear_sheet(
         .inset_0()
         .bg(p.wash_active)
         .flex()
+        // Patrick (2026-10-12): every blocking sheet sits centred on both
+        // axes over its veil, at its content height (without the cross-axis
+        // rule flex would stretch it to the whole veil).
         .justify_center()
+        .items_center()
+        // Testkit-only: the veil's drawn rect (`sheet_rects`).
+        .children(crate::rect_probe::rect_probe(CLEAR_DATA_VEIL_ID))
         .on_mouse_down(MouseButton::Left, |_e, _w, cx| cx.stop_propagation())
         .child(
             div()
                 .id(CLEAR_DATA_ID)
-                .mt(px(12.0))
+                // Testkit-only: the drawn sheet rect (`sheet_rects`).
+                .children(crate::rect_probe::rect_probe(CLEAR_DATA_ID))
                 .w(px(440.0))
                 .h_auto()
                 .p(px(20.0))

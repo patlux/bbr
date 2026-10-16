@@ -89,6 +89,18 @@ fn drag_pressed_tab_onto_exact_chip_keeps_session_and_repairs_selection() {
             "the pointer targets the exact persistent chip"
         );
         assert!(during.drag_valid, "the chip is a legal drop");
+        // Paper S-9: over a chip the lifted row floats above the strip, so
+        // the live chip and its destination tag stay visible.
+        client
+            .send_ok(&bbr_testkit::Request::FlushFrame)
+            .expect("flush the lifted proxy");
+        let lifted = client.snapshot().expect("lifted proxy snapshot");
+        let proxy = lifted.drag_offers.proxy_rect.expect("proxy rect");
+        let strip_top = lifted.space_strip_scroll.viewport[1];
+        assert!(
+            (strip_top - 4.0 - (proxy[1] + proxy[3])).abs() < 0.5,
+            "proxy {proxy:?} ends 4 pt above the strip at {strip_top}"
+        );
         let target_chip = &during.space_chips[chip_index(&during, reading)];
         assert!(
             target_chip.drag_target,

@@ -99,6 +99,8 @@ pub fn space_delete_sheet(
     div()
         .id(SPACE_DELETE_SHEET_ID)
         .debug_selector(|| SPACE_DELETE_SHEET_ID.to_string())
+        // Testkit-only: the drawn sheet rect (`sheet_rects`).
+        .children(crate::rect_probe::rect_probe(SPACE_DELETE_SHEET_ID))
         .w(gpui::px(SPACE_DELETE_SHEET_WIDTH))
         .rounded(theme.radius.large())
         .bg(p.surface_overlay)

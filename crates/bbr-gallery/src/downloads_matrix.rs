@@ -42,20 +42,11 @@ pub const FIXTURE_ID_BASE: u64 = 1000;
 /// The default deterministic group layout for one row family: a single row
 /// in its L6 group with the N-default token-derived label height.
 pub fn family_layout(theme: &Theme, machine: DownloadMachine) -> PanelLayout {
-    let row_h = f32::from(theme.density.row());
-    let label_h = f32::from(theme.type_.badge.size) * theme.type_.badge.leading
-        + 2.0 * f32::from(bbr_ui::theme::Spacing::sp1());
     let (active_count, history_count) = match machine {
         DownloadMachine::Waiting | DownloadMachine::Running => (1, 0),
         DownloadMachine::Succeeded | DownloadMachine::Failed | DownloadMachine::Cancelled => (0, 1),
     };
-    PanelLayout {
-        label_h,
-        row_h,
-        active_count,
-        history_count,
-        hairline: 1.0,
-    }
+    PanelLayout::for_theme(theme, active_count, history_count)
 }
 
 /// The §11.12 machine → panel group derivation (the production row model

@@ -44,6 +44,27 @@ pub(crate) fn dispatch_u2(
         })
         .unwrap_or_else(err_response),
 
+        // Paper S-7b: the footer hover through the production listener
+        // method (the same one the element's `on_hover` calls).
+        Request::HoverFooterControl { control } => {
+            let Some(target) = bbr_ui::components::footer::FooterTarget::parse(control) else {
+                return Some(Response::Error(bbr_testkit::protocol::Error::new(
+                    "unknown_footer_control",
+                    "control must be downloads, plus or space-<id>",
+                )));
+            };
+            with_app(window, app, cx, |view, _window, cx| {
+                view.set_footer_hover(target, true, cx);
+                Response::Ok
+            })
+            .unwrap_or_else(err_response)
+        }
+        Request::UnhoverFooterControl => with_app(window, app, cx, |view, _window, cx| {
+            view.clear_footer_hover(cx);
+            Response::Ok
+        })
+        .unwrap_or_else(err_response),
+
         // §11.3 appearance seam: the production controller appearance
         // authority (explicit theme records are authoritative over the
         // derived profile-hue default). Rejects unknown theme names whole.

@@ -84,9 +84,6 @@ pub struct PanelFixture {
 /// token-derived layout, the bounded window from the scroll anchor (the
 /// production clamp), and the matching scroll offset.
 pub fn build_panel_fixture(case: &PanelCase, theme: &Theme) -> PanelFixture {
-    let row_h = f32::from(theme.density.row());
-    let label_h = f32::from(theme.type_.badge.size) * theme.type_.badge.leading
-        + 2.0 * f32::from(bbr_ui::theme::Spacing::sp1());
     let rows: Vec<DownloadRowModel> = case
         .rows
         .iter()
@@ -116,20 +113,14 @@ pub fn build_panel_fixture(case: &PanelCase, theme: &Theme) -> PanelFixture {
         .filter(|r| r.group == DownloadGroupKind::Active)
         .count();
     let history_count = rows.len() - active_count;
-    let layout = PanelLayout {
-        label_h,
-        row_h,
-        active_count,
-        history_count,
-        hairline: 1.0,
-    };
+    let layout = PanelLayout::for_theme(theme, active_count, history_count);
     let total = layout.total();
     let anchor = total
         .saturating_sub(DOWNLOADS_WINDOW_ROWS)
         .min(case.scroll_anchor);
     let end = (anchor + DOWNLOADS_WINDOW_ROWS).min(total);
     let window = anchor..end;
-    let scroll_offset = point(px(0.0), px(-(anchor as f32) * row_h));
+    let scroll_offset = point(px(0.0), px(-layout.row_offset(anchor)));
     let viewport_rows = DOWNLOADS_MAX_VISIBLE.min(total);
     PanelFixture {
         rows,
@@ -188,7 +179,9 @@ mod tests {
         // never disagree.
         assert!(fixture.scroll_offset.y < px(0.0));
         assert_eq!(
-            (-f32::from(fixture.scroll_offset.y) / fixture.layout.row_h).floor() as usize,
+            fixture
+                .layout
+                .anchor_at(-f32::from(fixture.scroll_offset.y)),
             fixture.window.start
         );
         // A concrete scroll handle derived from the fixture window returns
@@ -196,7 +189,7 @@ mod tests {
         let handle = gpui::ScrollHandle::new();
         handle.set_offset(fixture.scroll_offset);
         assert_eq!(
-            (-f32::from(handle.offset().y) / fixture.layout.row_h).floor() as usize,
+            fixture.layout.anchor_at(-f32::from(handle.offset().y)),
             fixture.window.start
         );
     }

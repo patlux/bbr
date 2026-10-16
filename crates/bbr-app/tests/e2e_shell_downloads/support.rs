@@ -43,6 +43,24 @@ pub fn open_downloads(client: &mut Client) -> Snapshot {
     snapshot
 }
 
+/// Poll until the open panel has painted fully faded in (bounded by the
+/// suite deadline) and return its painted interior.
+pub fn wait_downloads_painted(client: &mut Client) -> bbr_testkit::protocol::DownloadsPanelPaint {
+    let until = Instant::now() + Duration::from_secs(30);
+    loop {
+        flush_frame(client);
+        let snapshot = client.snapshot().expect("downloads paint snapshot");
+        if let Some(paint) = snapshot.downloads_paint.filter(|paint| paint.alpha == 1.0) {
+            return paint;
+        }
+        assert!(
+            Instant::now() < until,
+            "downloads panel never painted: {:?}",
+            snapshot.downloads_paint
+        );
+    }
+}
+
 /// Poll until the panel is fully closed (bounded by the suite deadline).
 pub fn wait_downloads_closed(client: &mut Client) -> Snapshot {
     let until = Instant::now() + Duration::from_secs(30);
@@ -62,26 +80,47 @@ pub fn wait_downloads_closed(client: &mut Client) -> Snapshot {
 
 /// Start a download through the production controller + native adapter path
 /// and return the minted attempt id (observed as a `Waiting` row).
-pub fn start_download(client: &mut Client, url: &str, destination: &str) -> u64 {
+pub fn start_download(
+    client: &mut Client,
+    fixtures: &bbr_fixtures::FixtureServer,
+    url: &str,
+    destination: &str,
+) -> u64 {
+    let before: Vec<_> = client
+        .snapshot()
+        .expect("pre-start rows")
+        .download_rows
+        .iter()
+        .map(|row| row.id)
+        .collect();
+    let response = fixtures.hold_download(url).expect("hold fixture response");
     client
         .send_ok(&Request::DownloadStart {
-            url: url.into(),
+            url: response.url().into(),
             destination: destination.into(),
         })
         .expect("download start");
-    // The controller mints the attempt synchronously; poll for the Waiting
-    // row with the suggested filename.
+    // The native request must reach the fixture, but its HTTP headers cannot
+    // arrive until we observe the real controller's Waiting/Cancel row. A
+    // separate snapshot otherwise races WebKit progress/terminal callbacks.
+    response
+        .wait_requested()
+        .expect("native request reached fixture");
     let until = Instant::now() + Duration::from_secs(30);
     loop {
         let snapshot = client.snapshot().expect("waiting row snapshot");
         if let Some(row) = snapshot
             .download_rows
             .iter()
-            .find(|row| row.filename == destination)
+            .find(|row| row.filename == destination && !before.contains(&row.id))
         {
             assert_eq!(row.machine_state, DownloadMachineState::Waiting);
             assert_eq!(row.action, bbr_testkit::protocol::DownloadRowAction::Cancel);
-            return row.id;
+            let id = row.id;
+            response
+                .release()
+                .expect("release original fixture response");
+            return id;
         }
         assert!(
             Instant::now() < until,

@@ -174,6 +174,14 @@ impl BbrApp {
             pointer_y,
             press_in_row,
         );
+        // Paper S-9: over a space chip the proxy floats above the strip so
+        // the live chip and its destination tag stay visible.
+        let rect = if self.tab_drag.chip_target().is_some() {
+            let strip_top = f32::from(self.space_strip_scroll.bounds().origin.y);
+            bbr_ui::components::drag_offer::lift_proxy_above_strip(rect, strip_top)
+        } else {
+            rect
+        };
         Some(DragProxyModel { row, rect })
     }
 
@@ -194,6 +202,8 @@ impl BbrApp {
     pub(super) fn footer_model(&self, window: &Window) -> FooterModel {
         FooterModel {
             downloads_count: self.downloads_controller_active_count(),
+            downloads_open: self.downloads.open,
+            hovered: self.footer_hovered,
             downloads_focused: self.downloads_control_handle.is_focused(window),
             downloads_focus: self.downloads_control_handle.clone(),
         }
@@ -201,12 +211,13 @@ impl BbrApp {
 
     /// The §11.3 permanent space-strip model: the chip visuals in canonical
     /// order, the interpolated swipe tint, and the scroll/focus handles.
-    pub(super) fn strip_model(&self) -> StripModel {
+    pub(super) fn strip_model(&self, window: &Window) -> StripModel {
         StripModel {
             chips: self.space_chip_visuals(),
             swipe_tint: self.swipe_tint(),
             scroll: self.space_strip_scroll.clone(),
             focus: self.space_strip_handle.clone(),
+            focused: self.space_strip_handle.is_focused(window),
         }
     }
 }

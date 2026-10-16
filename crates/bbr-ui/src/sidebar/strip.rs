@@ -32,7 +32,7 @@ use gpui::{
 
 use crate::icons::{classify_identity, IdentityForm};
 use crate::state::SpaceChipVisuals;
-use crate::theme::{Radius, Spacing, Theme};
+use crate::theme::Theme;
 
 /// The §15 id of the permanent space strip.
 pub const SPACE_STRIP_ID: &str = "bbr-space-strip";
@@ -53,21 +53,24 @@ pub fn space_identity_id(space: SpaceId) -> SharedString {
 
 /// The §11.3 space strip: the single-line horizontal scroll viewport that
 /// holds the identity chips, starting at its leading edge right after
-/// Downloads (Blueprint D01). `chips` are the caller-built chip elements in
+/// Downloads (Blueprint D01). It fills the dock's content box (Paper S-7b),
+/// so a drag target's destination tag stays inside the viewport; chips sit
+/// centred 4 pt apart. `chips` are the caller-built chip elements in
 /// canonical order (the strip scrolls to the selected chip via the tracked
-/// handle); `focus`/`on_key_down` are the app-layer keyboard seams.
+/// handle).
 pub fn space_strip(
     theme: &Theme,
     scroll: ScrollHandle,
     chips: Vec<Stateful<Div>>,
 ) -> Stateful<Div> {
+    let footer = crate::components::footer::FooterMetrics::for_density(theme.density);
     div()
         .id(SPACE_STRIP_ID)
         .debug_selector(|| SPACE_STRIP_ID.to_string())
         .flex_1()
         .min_w_0()
-        .h(theme.density.row())
-        .gap(Spacing::sp2())
+        .h(px(footer.strip))
+        .gap(px(footer.chip_gap))
         .items_center()
         .flex()
         .flex_row()
@@ -110,66 +113,102 @@ fn badge_fallback(identity: &str) -> SharedString {
 /// curated emoji directly, a curated catalog name as its drawn §7 path, a
 /// non-curated value as the §7 two-letter badge. The one renderer the
 /// footer chip and the active-space heading share, so a space never shows
-/// two different marks.
+/// two different marks. `ink` colours the drawn glyph and the badge
+/// letters alike (an emoji keeps its own colours).
 pub fn identity_mark(
     theme: &Theme,
     identity: &str,
     text_weight: gpui::FontWeight,
+    glyph_size: gpui::Pixels,
+    ink: gpui::Rgba,
 ) -> gpui::AnyElement {
-    let p = theme.palette;
     match classify_identity(identity) {
         IdentityForm::Emoji => div()
             .text_size(theme.type_.badge.size)
             .font_weight(text_weight)
-            .text_color(p.ink)
+            .text_color(ink)
             .child(SharedString::from(identity.to_string()))
             .into_any(),
         IdentityForm::Glyph(glyph) => crate::icons::Icon::Bbr(glyph)
-            .canvas(theme, theme.density.icon())
+            .canvas_with(theme, glyph_size, ink)
             .into_any(),
         IdentityForm::Badge => div()
             .text_size(theme.type_.badge.size)
             .font_weight(text_weight)
-            .text_color(p.ink)
+            .text_color(ink)
             .child(badge_fallback(identity))
             .into_any(),
     }
+}
+
+/// Paper S-7b: the identity carries the chip's state — `accent.ink` on a
+/// drag target, `ink` on the active chip (§11.3 stronger identity
+/// weight), `ink.secondary` at rest.
+pub fn chip_identity_ink(
+    palette: &crate::palette::Palette,
+    selected: bool,
+    target: bool,
+) -> gpui::Rgba {
+    if target {
+        palette.accent_ink
+    } else if selected {
+        palette.ink
+    } else {
+        palette.ink_secondary
+    }
+}
+
+/// The live pointer/focus state of one chip and the rail colour behind
+/// it (the destination tag's cut-out ring).
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct ChipState {
+    pub hovered: bool,
+    /// §9: the strip owns keyboard focus and this is its (selected) chip.
+    pub focused: bool,
+    pub rail: gpui::Rgba,
 }
 
 pub fn space_chip(
     theme: &Theme,
     visuals: &SpaceChipVisuals,
     swipe_tint: Option<crate::theme::SpaceTint>,
+    state: ChipState,
     on_select: impl Fn(&MouseDownEvent, &mut Window, &mut App) + 'static,
 ) -> Stateful<Div> {
     let p = theme.palette;
     let selected = visuals.selected;
     let target = visuals.drag_target;
     // §11.3: the active token tints the chip through the one central
-    // resolver; text, the accent rail, and the §9 outline keep their own
-    // tokens (the tint is never the only state cue). While a swipe tracks,
-    // the active chip's surface interpolates toward the adjacent space's
-    // presentation (chrome-only; the selected evidence never changes).
+    // resolver; the identity, the §9 ring and the drag treatment keep
+    // their own tokens (the tint is never the only state cue). While a
+    // swipe tracks, the active chip's surface interpolates toward the
+    // adjacent space's presentation (chrome-only).
     let tint = crate::theme::space_tint(visuals.theme, visuals.intensity, theme);
-    let chip_surface = if selected {
-        swipe_tint.map_or(tint.chip_active, |swipe| swipe.chip_active)
+    let surface = if target {
+        // §10.9/§18.2 drag target: `tint.accent` + the accent outline.
+        Some(p.tint_accent)
+    } else if selected {
+        Some(swipe_tint.map_or(tint.chip_active, |swipe| swipe.chip_active))
+    } else if state.hovered {
+        // Paper S-7b: inactive chips paint nothing at rest; the pointer
+        // brings the §10.2 wash.
+        Some(p.wash_hover)
     } else {
-        // Inactive chips paint nothing: the footer veil and the rail tint
-        // show through (§18.2).
-        crate::components::tab_row::REST_SURFACE
+        None
     };
-    // §11.3/§7: the identity renders its drawn §7 glyph path when the value
-    // is a curated `BbrGlyph`, the emoji scalar directly when curated, and
-    // the two-letter badge only for a non-curated value (the missing-glyph
-    // fallback). The text weight steps up on the active chip; the glyph
-    // canvas is the same ink at rest and selected (the §9 ring and the
-    // surface carry selection).
     let text_weight = if selected {
         gpui::FontWeight(600.0)
     } else {
         theme.type_.badge.weight
     };
-    let identity_slot = identity_mark(theme, &visuals.identity, text_weight);
+    let identity_slot = identity_mark(
+        theme,
+        &visuals.identity,
+        text_weight,
+        crate::components::footer::footer_identity_size(theme.density),
+        chip_identity_ink(&p, selected, target),
+    );
+    let footer = crate::components::footer::FooterMetrics::for_density(theme.density);
     let space = visuals.space;
     div()
         .id(space_chip_id(space))
@@ -177,47 +216,26 @@ pub fn space_chip(
         // target for the §11.4 leading-strip evidence.
         .debug_selector(move || space_chip_id(space).to_string())
         .children(crate::rect_probe::rect_probe(space_chip_id(space)))
+        .relative()
         .flex_shrink_0()
-        .size(theme.density.row() - px(4.0))
-        .px(Spacing::sp1())
-        .gap(Spacing::sp2())
-        .items_center()
+        .size(px(footer.control))
         .flex()
-        .flex_row()
-        .rounded(Radius.small())
+        .items_center()
+        .justify_center()
+        .rounded(theme.density.density_radius())
         .cursor_pointer()
-        .bg(if target {
-            // §10.9/§18.2 drag-target: `tint.accent` + accent outline — the
-            // targeted chip is unmistakable without being the active chip.
-            p.tint_accent
-        } else {
-            chip_surface
+        .when_some(surface, |el, surface| el.bg(surface))
+        .when(!selected && !target, |el| {
+            el.active(|style| style.bg(p.wash_active))
         })
-        .when(chip_lifts(selected, target), |el| {
-            // §18.2/D2: the active chip is the lifted selection surface
-            // carrying 8 % of the identity hue; the lift's own 1 pt ring
-            // replaces the old hairline edge. Exact identity + stronger type
-            // weight are the non-color cues; the strip's keyboard focus owns
-            // the accent ring, so rest state carries no decorative rail.
-            el.shadow(crate::theme::elevation::lift(theme))
-        })
-        .when(target, |el| {
-            // §10.9/§11.3: the drag-target outline plus the §12
-            // destination-profile companion (monogram + hue tile), so the
-            // destination profile is never communicated by color alone.
-            let companion = visuals.companion.as_ref().map(|companion| {
-                let spec = crate::components::ProfileChipSpec {
-                    letter: companion.letter.clone(),
-                    hue: companion.hue,
-                };
-                crate::components::profile_chip(theme, companion.profile_index, &spec)
-            });
-            el.border_1()
-                .border_color(p.accent)
-                .when(companion.is_some(), |el| {
-                    el.child(companion.expect("checked above"))
-                })
-        })
+        // §18.2/D2: the active chip is the lifted selection surface (the
+        // lift's own 1 pt ring replaces a hairline edge). The §10.9 drag
+        // outline and the §9 focus ring are inset rings (Paper S-7b), so
+        // neither changes the chip's layout box.
+        .when_some(
+            chip_shadows(theme, selected, target, state.focused),
+            |el, shadows| el.shadow(shadows),
+        )
         .child(
             div()
                 .id(space_identity_id(visuals.space))
@@ -226,7 +244,69 @@ pub fn space_chip(
                 .justify_center()
                 .child(identity_slot),
         )
+        .when_some(
+            visuals.companion.as_ref().filter(|_| target),
+            |el, companion| el.child(destination_tag(theme, companion, state.rail)),
+        )
         .on_mouse_down(MouseButton::Left, on_select)
+}
+
+/// §10.9/§11.3 (Paper S-7b): the destination profile of a drag target —
+/// the §12 monogram on its hue, a small tag over the chip's top-right edge
+/// with a cut-out ring in the rail colour, so the chip never widens. It
+/// keeps the §12 `bbr-profile-chip-<n>` identity.
+fn destination_tag(
+    theme: &Theme,
+    companion: &crate::state::ProfileCompanion,
+    rail: gpui::Rgba,
+) -> Stateful<Div> {
+    let tile = crate::palette::ProfileHueRamp::tile(companion.hue, theme.mode);
+    div()
+        .id(crate::components::space::profile_chip_id(
+            companion.profile_index,
+        ))
+        .absolute()
+        .left(px(17.0))
+        .top(px(-2.0))
+        .h(px(13.0))
+        .px(px(4.0))
+        .rounded(px(4.0))
+        .bg(tile.tile)
+        .shadow(vec![gpui::BoxShadow {
+            color: rail.into(),
+            offset: gpui::point(px(0.0), px(0.0)),
+            blur_radius: px(0.0),
+            spread_radius: px(1.5),
+            inset: false,
+        }])
+        .flex()
+        .items_center()
+        .text_size(px(9.0))
+        .line_height(px(10.0))
+        .font_weight(gpui::FontWeight(600.0))
+        .text_color(tile.letter)
+        .child(companion.letter.to_uppercase())
+}
+
+/// The chip's shadow stack: the lift on the active chip, the inset accent
+/// outline on a drag target, the inset §9 ring while the strip is focused.
+fn chip_shadows(
+    theme: &Theme,
+    selected: bool,
+    target: bool,
+    focused: bool,
+) -> Option<Vec<gpui::BoxShadow>> {
+    let accent = theme.palette.accent;
+    let mut shadows = Vec::new();
+    if chip_lifts(selected, target) {
+        shadows.extend(crate::theme::elevation::lift(theme));
+    }
+    if target {
+        shadows.push(crate::components::footer::inset_ring(accent, 1.5));
+    } else if focused {
+        shadows.push(crate::components::footer::inset_ring(accent, 2.0));
+    }
+    (!shadows.is_empty()).then_some(shadows)
 }
 
 /// D2: the active chip lifts (painted with its surface, never animated);
@@ -246,6 +326,21 @@ mod tests {
         assert!(!chip_lifts(true, true));
         assert!(!chip_lifts(false, false));
         assert!(!chip_lifts(false, true));
+    }
+
+    #[test]
+    fn the_identity_ink_follows_the_chip_state() {
+        // Paper S-7b: ink on the active chip, accent.ink on a drag target
+        // (active or not), ink.secondary at rest.
+        use crate::theme::{ContrastMode, Density, ThemeMode};
+        for mode in [ThemeMode::Light, ThemeMode::Dark] {
+            let theme = Theme::new(mode, ContrastMode::Standard, Density::Normal);
+            let p = theme.palette;
+            assert_eq!(chip_identity_ink(&p, true, false), p.ink);
+            assert_eq!(chip_identity_ink(&p, false, false), p.ink_secondary);
+            assert_eq!(chip_identity_ink(&p, false, true), p.accent_ink);
+            assert_eq!(chip_identity_ink(&p, true, true), p.accent_ink);
+        }
     }
 
     /// A chip visual for a persistent space; the fields that are irrelevant

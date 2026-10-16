@@ -13,6 +13,8 @@ use super::{SettingsCallback, SettingsEvent, SettingsSheet};
 
 /// The §15 id of the sheet card.
 pub const SETTINGS_SHEET_ID: &str = "bbr-settings-sheet";
+/// The sheet's `wash.active` veil.
+pub const SETTINGS_SHEET_VEIL_ID: &str = "bbr-settings-sheet-veil";
 
 fn press(
     events: &SettingsCallback,
@@ -221,12 +223,19 @@ pub(super) fn sheet(theme: &Theme, sheet: &SettingsSheet, events: &SettingsCallb
         .inset_0()
         .bg(p.wash_active)
         .flex()
+        // Patrick (2026-10-12): every blocking sheet sits centred on both
+        // axes over its veil, at its content height (without the cross-axis
+        // rule flex would stretch it to the whole veil).
         .justify_center()
+        .items_center()
+        // Testkit-only: the veil's drawn rect (`sheet_rects`).
+        .children(crate::rect_probe::rect_probe(SETTINGS_SHEET_VEIL_ID))
         .on_mouse_down(MouseButton::Left, |_e, _w, cx| cx.stop_propagation())
         .child(
             div()
                 .id(SETTINGS_SHEET_ID)
-                .mt(px(16.0))
+                // Testkit-only: the drawn sheet rect (`sheet_rects`).
+                .children(crate::rect_probe::rect_probe(SETTINGS_SHEET_ID))
                 .w(px(420.0))
                 .h_auto()
                 .p(px(20.0))

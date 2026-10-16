@@ -47,7 +47,7 @@ fn known_length_progress_is_monotonic_and_succeeds_with_path_and_reveal() {
         // The panel may stay closed — the controller records states
         // regardless; the snapshot exposes the model rows either way. Open
         // it to observe the panel rendering too.
-        let id = start_download(&mut client, &slow_url, "slow.bin");
+        let id = start_download(&mut client, &fixtures, &slow_url, "slow.bin");
 
         // Monotonic known-length progress: two partial observations, the
         // later one never behind the earlier one, and the total stays known.
@@ -107,7 +107,6 @@ fn known_length_progress_is_monotonic_and_succeeds_with_path_and_reveal() {
                 "bbr-download-status-0",
                 "bbr-download-name-0",
                 "bbr-download-meta-0",
-                "bbr-download-progress-0",
                 "bbr-download-action-0",
             ],
         );
@@ -117,6 +116,37 @@ fn known_length_progress_is_monotonic_and_succeeds_with_path_and_reveal() {
                 .iter()
                 .any(|id| id == "bbr-downloads-active"),
             "the empty Active group hides its label"
+        );
+        // §11.12 / Paper M-4: a terminal row names size and outcome only —
+        // no progress bar.
+        assert!(
+            !opened
+                .visible_ids
+                .iter()
+                .any(|id| id == "bbr-download-progress-0"),
+            "terminal rows carry no progress bar"
+        );
+        // The painted panel holds its whole content: the History label, one
+        // 48 pt History row and the Clear control inside the 6 pt padding
+        // (Paper M-4), never rows squeezed into a shorter panel. The probe
+        // reports the padding box: 6 pt each side at rest, 5 pt while the
+        // 2 pt focus ring takes one point from the padding.
+        let painted = wait_downloads_painted(&mut client);
+        let layout = bbr_ui::surfaces::downloads::PanelLayout::for_theme(
+            &bbr_ui::theme::Theme::new(
+                bbr_ui::theme::ThemeMode::Light,
+                bbr_ui::theme::ContrastMode::Standard,
+                bbr_ui::theme::Density::Normal,
+            ),
+            0,
+            1,
+        );
+        let content = layout.content_height() + 32.0;
+        let padding = painted.rect[3] - content;
+        assert!(
+            (padding - 12.0).abs() < 0.5 || (padding - 10.0).abs() < 0.5,
+            "panel interior {:?} holds label + row + Clear ({content}) plus its padding",
+            painted.rect
         );
         assert_panel_identity(&opened, view, sessions, tabs, spaces, profile, space);
 
@@ -161,7 +191,7 @@ fn unknown_length_zero_bytes_and_failure_reach_their_terminal_states() {
 
         // Unknown length: Running with an indeterminate bar (fraction None),
         // then the known total may become known at success (full bar).
-        let unknown_id = start_download(&mut client, &unknown_url, "unknown.bin");
+        let unknown_id = start_download(&mut client, &fixtures, &unknown_url, "unknown.bin");
         let running = wait_running(&mut client, unknown_id);
         assert_eq!(
             running.progress_fraction, None,
@@ -175,7 +205,7 @@ fn unknown_length_zero_bytes_and_failure_reach_their_terminal_states() {
         assert!(unknown_done.resolved_path.is_some());
 
         // Zero bytes: succeeds with a full bar (`fraction()` is never NaN).
-        let zero_id = start_download(&mut client, &zero_url, "zero.bin");
+        let zero_id = start_download(&mut client, &fixtures, &zero_url, "zero.bin");
         let zero_done = wait_row_terminal(&mut client, zero_id, DownloadMachineState::Succeeded);
         assert_eq!(zero_done.filename, "zero.bin");
         assert_eq!(
@@ -186,7 +216,7 @@ fn unknown_length_zero_bytes_and_failure_reach_their_terminal_states() {
         assert_eq!(zero_done.group, DownloadGroup::History);
 
         // Failure: HTTP 500 → Failed with the Retry action enabled.
-        let fail_id = start_download(&mut client, &fail_url, "fail.bin");
+        let fail_id = start_download(&mut client, &fixtures, &fail_url, "fail.bin");
         let failed = wait_row_terminal(&mut client, fail_id, DownloadMachineState::Failed);
         assert_eq!(failed.filename, "fail.bin");
         assert_eq!(failed.group, DownloadGroup::History);

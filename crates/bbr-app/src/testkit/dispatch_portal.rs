@@ -97,6 +97,25 @@ pub(super) fn dispatch_portal(
             }
         })
         .unwrap_or_else(err_response),
+        Request::SetDisplayClock { now_ms, offset_s } => {
+            use crate::app::history_page::time::{Clock, DATED_FLOOR_MS, MAX_OFFSET_S};
+            if now_ms.is_some_and(|now| now < DATED_FLOOR_MS) || offset_s.abs() > MAX_OFFSET_S {
+                Response::Error(Error::new(
+                    "invalid_clock",
+                    "pin a dated Unix time in milliseconds and an offset within ±14 h",
+                ))
+            } else {
+                Clock::pin(now_ms.map(|now_ms| Clock {
+                    now_ms,
+                    offset_s: *offset_s,
+                }));
+                with_app(window, app, cx, |_view, _window, cx| {
+                    cx.notify();
+                    Response::Ok
+                })
+                .unwrap_or_else(err_response)
+            }
+        }
         // Blueprint D11: the permission prompt and site settings.
         Request::PermissionInput { input } => with_app(window, app, cx, |view, window, cx| {
             match input {
@@ -298,6 +317,14 @@ pub(super) fn dispatch_portal(
             .ok()
             .flatten();
             flush_portal_frame(portal, cx);
+            // The open Settings window draws with the same flush, so its
+            // drawn state (and probe rects) never lags the app's model.
+            let settings = app.read(cx).settings.read().window;
+            if let Some(settings) = settings {
+                let _ = AnyWindowHandle::from(settings).update(cx, |_root, window, cx| {
+                    let _clear = window.draw(cx);
+                });
+            }
             main
         }
         _ => return None,

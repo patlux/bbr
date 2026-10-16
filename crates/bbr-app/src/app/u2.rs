@@ -77,6 +77,38 @@ impl BbrApp {
         self.toggle_plus_menu(window, cx);
     }
 
+    /// Paper S-7b: the pointer enters or leaves a footer target (the hover
+    /// wash). A leave clears only the target it left, so a fast move onto
+    /// the neighbour never loses the new hover. The footer listeners and
+    /// the testkit seam both call this.
+    pub fn set_footer_hover(
+        &mut self,
+        target: bbr_ui::components::footer::FooterTarget,
+        hovered: bool,
+        cx: &mut Context<Self>,
+    ) {
+        let next = if hovered {
+            Some(target)
+        } else if self.footer_hovered == Some(target) {
+            None
+        } else {
+            self.footer_hovered
+        };
+        if next != self.footer_hovered {
+            self.footer_hovered = next;
+            cx.notify();
+        }
+    }
+
+    /// Clear the footer hover regardless of the target (the testkit
+    /// `UnhoverFooterControl` seam).
+    #[cfg(feature = "testkit")]
+    pub fn clear_footer_hover(&mut self, cx: &mut Context<Self>) {
+        if self.footer_hovered.take().is_some() {
+            cx.notify();
+        }
+    }
+
     /// §11.4 footer `[+]` control: open the plus menu, or close it on a
     /// second activation. The pointer path keeps the chrome focus domain;
     /// the menu owns keyboard focus while open.

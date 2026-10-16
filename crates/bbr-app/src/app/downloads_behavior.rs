@@ -68,10 +68,7 @@ pub fn downloads_open(app: &mut BbrApp, window: &mut Window, cx: &mut Context<Bb
     // created lazily by the render (it needs the window state); when it
     // already exists, retarget the goal to fully opaque.
     if let Some(fade) = &app.downloads.opacity {
-        fade.update(cx, |value, cx| {
-            *value = 1.0;
-            cx.notify();
-        });
+        fade.set_open(true, cx);
     }
     app.refresh_all_reveal_eligibility();
     app.downloads
@@ -95,10 +92,7 @@ pub fn downloads_close(app: &mut BbrApp, window: &mut Window, cx: &mut Context<B
     app.downloads.hovered_row = None;
     app.downloads.pressed_row = None;
     if let Some(fade) = &app.downloads.opacity {
-        fade.update(cx, |value, cx| {
-            *value = 0.0;
-            cx.notify();
-        });
+        fade.set_open(false, cx);
     }
     window.focus(&app.downloads_control_handle, cx);
     app.engine.borrow_mut().focus_host_chrome();
@@ -389,7 +383,7 @@ impl BbrApp {
         self.downloads.focus = next;
         // A page move re-anchors the viewport so the focused row lands at
         // the viewport's leading edge (page up) or trailing edge (page down).
-        let row_h = f32::from(self.theme().density.row());
+        let layout = self.downloads_layout();
         let anchor = if direction < 0 {
             next
         } else {
@@ -397,7 +391,7 @@ impl BbrApp {
         };
         self.downloads.scroll.set_offset(gpui::point(
             gpui::px(0.0),
-            gpui::px(-(anchor as f32 * row_h)),
+            gpui::px(-layout.row_offset(anchor)),
         ));
     }
 
@@ -409,13 +403,13 @@ impl BbrApp {
         if total == 0 {
             return;
         }
-        let row_h = f32::from(self.theme().density.row());
-        let anchor = self.downloads.anchor_from_offset(row_h);
+        let layout = self.downloads_layout();
+        let anchor = self.downloads.anchor_from_offset(&layout);
         let focus = self.downloads.focus.min(total - 1);
         if focus < anchor {
             self.downloads.scroll.set_offset(gpui::point(
                 gpui::px(0.0),
-                gpui::px(-(focus as f32 * row_h)),
+                gpui::px(-layout.row_offset(focus)),
             ));
         } else if focus >= anchor + DOWNLOADS_MAX_VISIBLE {
             let anchor = focus
@@ -423,7 +417,7 @@ impl BbrApp {
                 .saturating_sub(DOWNLOADS_MAX_VISIBLE);
             self.downloads.scroll.set_offset(gpui::point(
                 gpui::px(0.0),
-                gpui::px(-(anchor as f32 * row_h)),
+                gpui::px(-layout.row_offset(anchor)),
             ));
         }
     }

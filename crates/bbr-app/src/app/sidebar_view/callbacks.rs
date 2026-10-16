@@ -332,6 +332,13 @@ impl BbrApp {
             cx.stop_propagation();
         });
 
+        // Paper S-7b: the pointer enters/leaves a footer target.
+        let entity = cx.entity();
+        let on_footer_hover: bbr_ui::sidebar::FooterHoverCallback =
+            Rc::new(move |target, hovered, _window, cx| {
+                entity.update(cx, |view, cx| view.set_footer_hover(target, hovered, cx));
+            });
+
         // §11.3: a space chip activation through the production pointer path.
         let entity = cx.entity();
         let on_select_space: SpaceCallback = Rc::new(move |space, _e, window, cx| {
@@ -413,6 +420,7 @@ impl BbrApp {
             on_plus_menu_inside_press,
             on_downloads,
             on_plus,
+            on_footer_hover,
             on_select_space,
             on_context_menu_space,
             on_space_strip_key_down,

@@ -28,6 +28,7 @@ testkit = [
 # local testkit gateway.
 visual-capture = [
     "testkit",
+    "dep:image",
     "gpui/test-support",
     "gpui_platform/test-support",
 ]
@@ -50,6 +51,9 @@ smol.workspace = true
 
 # Test-support crates (portable; only the gateway under `testkit`).
 bbr-testkit = { workspace = true, optional = true }
+# Visual-capture only: crop an element readback to its exact pixels (the
+# same 0.25 crate GPUI's renderer readback returns).
+image = { version = "0.25", optional = true }
 # Blueprint D15: Chrome's bookmarks (JSON) and Safari's/Chrome's history
 # (SQLite) for the first-run import; both crates are already in the
 # workspace (the testkit wire format and the persistence store).

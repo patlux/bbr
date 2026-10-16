@@ -589,7 +589,15 @@ impl PortalRoot {
 }
 
 impl Render for PortalRoot {
-    fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+    fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        // Testkit: this portal frame's probes record afresh (a closed sheet
+        // leaves no stale rect).
+        #[cfg(feature = "testkit")]
+        if let Some(rects) = cx.try_global::<bbr_ui::rect_probe::ElementRects>() {
+            rects.begin_frame(window.window_handle().window_id().as_u64());
+        }
+        #[cfg(not(feature = "testkit"))]
+        let _ = window;
         // Blueprint D08: the toast/zoom-readout overlays sit above any
         // active presentation.
         // Blueprint D02: the floating rail lies under any presentation it
@@ -818,24 +826,8 @@ impl PortalRoot {
                 // (absolute rect) and the backdrop policy — no outside
                 // dismissal for credentials.
                 let model = surface.model(theme);
-                // Blueprint D08 (answer 9): a blocking sheet dims the card
-                // under `wash.active`, like the Delete Space sheet.
-                let veil = app.read(cx).transient.card.map(|[x, y, w, h]| {
-                    div()
-                        .absolute()
-                        .left(px(x))
-                        .top(px(y))
-                        .w(px(w))
-                        .h(px(h))
-                        .rounded(px(bbr_ui::card::CARD_RADIUS))
-                        .bg(theme.palette.wash_active)
-                });
-                let card = div()
-                    .absolute()
-                    .left(px(rect.x))
-                    .top(px(rect.y))
+                let sheet = div()
                     .w(px(rect.width))
-                    .h(px(rect.height))
                     .child(bbr_ui::surfaces::auth::auth_sheet(
                         &model,
                         cx.listener(|this, _e: &MouseDownEvent, _window, cx| {
@@ -845,6 +837,38 @@ impl PortalRoot {
                             this.auth_cancel_clicked(cx);
                         }),
                     ));
+                // Blueprint D08 (answer 9): a blocking sheet dims the card
+                // under `wash.active`; Patrick (2026-10-12): it sits centred
+                // on both axes over that veil, by layout at its content
+                // height. Without a known card it keeps the window-centred
+                // presentation rect.
+                let body = match app.read(cx).transient.card {
+                    Some([x, y, w, h]) => div()
+                        .id(bbr_ui::surfaces::auth::AUTH_VEIL_ID)
+                        .absolute()
+                        .left(px(x))
+                        .top(px(y))
+                        .w(px(w))
+                        .h(px(h))
+                        .rounded(px(bbr_ui::card::CARD_RADIUS))
+                        .bg(theme.palette.wash_active)
+                        .flex()
+                        .justify_center()
+                        .items_center()
+                        .children(bbr_ui::rect_probe::rect_probe(
+                            bbr_ui::surfaces::auth::AUTH_VEIL_ID,
+                        ))
+                        .child(sheet)
+                        .into_any_element(),
+                    None => div()
+                        .absolute()
+                        .left(px(rect.x))
+                        .top(px(rect.y))
+                        .w(px(rect.width))
+                        .h(px(rect.height))
+                        .child(sheet)
+                        .into_any_element(),
+                };
                 div()
                     .id("bbr-auth-portal-surface")
                     .size_full()
@@ -859,13 +883,7 @@ impl PortalRoot {
                     .child(bbr_ui::surfaces::floating::appear(
                         &theme,
                         "bbr-auth-appear",
-                        div()
-                            .absolute()
-                            .inset_0()
-                            .children(
-                                veil.map(|veil| veil.id(bbr_ui::surfaces::auth::AUTH_VEIL_ID)),
-                            )
-                            .child(card),
+                        div().absolute().inset_0().child(body),
                     ))
                     .into_any()
             }

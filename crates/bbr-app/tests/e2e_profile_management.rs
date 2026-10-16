@@ -118,6 +118,12 @@ fn profiles_are_created_edited_and_deleted_from_settings() {
         assert_eq!(draft.title, "New Profile");
         assert_eq!(draft.swatch, Some(1), "the next hue round-robin");
         assert!(!draft.confirm_enabled, "a profile needs a name");
+        assert_sheet_centered(
+            &mut client,
+            "bbr-settings-sheet",
+            "bbr-settings-sheet-veil",
+            480.0,
+        );
 
         // The first space follows the name until it is typed.
         typed(&mut client, "Client work");
@@ -181,6 +187,12 @@ fn profiles_are_created_edited_and_deleted_from_settings() {
         );
         let confirm = asking.settings.as_ref().unwrap().sheet.as_ref().unwrap();
         assert_eq!(confirm.title, "Delete “Client work”?");
+        assert_sheet_centered(
+            &mut client,
+            "bbr-settings-sheet",
+            "bbr-settings-sheet-veil",
+            220.0,
+        );
         assert!(
             confirm
                 .message

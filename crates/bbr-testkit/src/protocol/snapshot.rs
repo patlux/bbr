@@ -8,9 +8,11 @@ use serde::{Deserialize, Serialize};
 use super::{CommandBarMode, ShellModes, TestProfileId, TestSpaceId, TestWebViewId};
 
 mod card;
+mod footer;
 mod motion;
 mod u2;
 pub use card::ContentCardSnapshot;
+pub use footer::FooterSnapshot;
 pub use motion::{IllustrationSnapshot, MotionMomentSnapshot, MotionSnapshot};
 pub use u2::{
     ChipCompanionSnapshot, FavoriteTileSnapshot, FolderRowSnapshot, NavHistorySnapshot,
@@ -165,6 +167,13 @@ pub struct DownloadsPanelSnapshot {
     /// never inflates the badge and the count returns to zero when nothing
     /// transfers.
     pub footer_count: usize,
+}
+
+/// Ordinary-testkit layout/opacity observation from the actual panel paint.
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+pub struct DownloadsPanelPaint {
+    pub rect: [f32; 4],
+    pub alpha: f32,
 }
 
 impl Default for DownloadsPanelSnapshot {
@@ -1563,6 +1572,14 @@ pub struct Snapshot {
     /// §11.12 downloads panel render contract (open, focus, bounded window).
     #[serde(default)]
     pub downloads: DownloadsPanelSnapshot,
+    /// Last observed panel-interior paint in its render window's coordinates.
+    /// Absent after a browser draw that builds no panel; may remain during
+    /// fade-out. Separate from logical state; not native pixel/visibility proof.
+    #[serde(default)]
+    pub downloads_paint: Option<DownloadsPanelPaint>,
+    /// Paper S-7b footer dock state (hover, open controls, count, focus).
+    #[serde(default)]
+    pub footer: FooterSnapshot,
     /// The last completed real WebKit content probe (testkit-only; `None`
     /// until a [`crate::protocol::Request::ProbeWebContent`] completion
     /// landed). Real committed-document evidence, never our own bookkeeping.
@@ -1654,6 +1671,12 @@ pub struct Snapshot {
     /// a real click aims at. Only controls that were drawn are listed.
     #[serde(default)]
     pub element_rects: Vec<(String, [f32; 4])>,
+    /// The drawn rect (window points) of each open blocking sheet and its
+    /// veil by id — open-in-app, client certificate, Settings, Clear
+    /// Browsing Data, credentials, Delete Space — from whichever window
+    /// draws it (browser, portal, Settings).
+    #[serde(default)]
+    pub sheet_rects: Vec<(String, [f32; 4])>,
     /// Reality gaps (item C): the window is the application's key window
     /// (real keyboard input reaches only the key window).
     #[serde(default)]

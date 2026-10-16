@@ -219,6 +219,12 @@ fn links_to_other_apps_ask_first() {
         let asked = wait(&mut client, "the open-in-app sheet", |s| {
             s.open_app.sheet.is_some()
         });
+        assert_sheet_centered(
+            &mut client,
+            "bbr-external-open",
+            "bbr-external-open-veil",
+            260.0,
+        );
         let sheet = asked.open_app.sheet.clone().unwrap();
         let app = sheet
             .title

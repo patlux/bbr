@@ -112,6 +112,15 @@ pub fn drag_proxy_rect(
     ]
 }
 
+/// Paper S-9 (move to space): while the pointer targets a space chip the
+/// proxy floats above the strip — its bottom edge 4 pt above `strip_top` —
+/// so the live chip and its destination tag stay visible. Above that line
+/// the proxy keeps following the pointer unchanged.
+pub fn lift_proxy_above_strip(rect: [f32; 4], strip_top: f32) -> [f32; 4] {
+    let [x, y, width, height] = rect;
+    [x, y.min(strip_top - 4.0 - height), width, height]
+}
+
 /// The §10.9 drag proxy: the dragged row lifted off the list (92% opacity,
 /// `elev:2` shadow, 1 pt `border.strong` outline) at `rect` in window
 /// coordinates. It paints the row's favicon and title only; the row left in
@@ -159,6 +168,7 @@ pub fn tab_drag_proxy(theme: &Theme, row: &RowVisuals, rect: [f32; 4]) -> Statef
         .w(px(rect[2]))
         .h(px(rect[3]))
         .child(surface)
+        .children(crate::rect_probe::rect_probe(TAB_DRAG_PROXY_ID))
 }
 
 /// The §15 id of the blueprint D07 destination-profile label.
@@ -259,6 +269,22 @@ mod tests {
         assert_eq!(moved[1] - rest[1], 80.0, "vertical travel follows");
         assert_eq!(rest[2], moved[2], "width is the rail row surface");
         assert_eq!(rest[3], f32::from(Density::Normal.row()));
+    }
+
+    #[test]
+    fn a_chip_target_lifts_the_proxy_above_the_strip() {
+        let theme = theme(Density::Normal);
+        let over_chip = drag_proxy_rect(&theme, 300.0, 0.0, 1381.0, 18.0);
+        let lifted = lift_proxy_above_strip(over_chip, 1365.0);
+        assert_eq!(lifted[1] + lifted[3], 1361.0, "bottom 4 pt above the strip");
+        assert_eq!(lifted[0], over_chip[0], "horizontal travel still follows");
+        assert_eq!(lifted[2..], over_chip[2..], "same row surface");
+        let high = drag_proxy_rect(&theme, 300.0, 0.0, 600.0, 18.0);
+        assert_eq!(
+            lift_proxy_above_strip(high, 1365.0),
+            high,
+            "far above: unchanged"
+        );
     }
 
     #[test]

@@ -40,8 +40,10 @@ pub use geometry::{
     SIDEBAR_DEFAULT, SIDEBAR_DIVIDER_ID, SIDEBAR_DIVIDER_LABEL, SIDEBAR_MAX, SIDEBAR_MIN,
 };
 pub use model::{
-    Callbacks, CommandSlot, FavoritesModel, FoldersModel, FooterModel, PlusMenuModel, SidebarModel,
-    StripModel, TabsModel,
+    Callbacks, CommandSlot, FavoritesModel, FoldersModel, FooterHoverCallback, FooterModel,
+    PlusMenuModel, SidebarModel, StripModel, TabsModel,
 };
 pub use render::{sidebar_surface, SidebarChildren};
-pub use strip::{space_chip, space_chip_id, space_identity_id, space_strip, SPACE_STRIP_ID};
+pub use strip::{
+    space_chip, space_chip_id, space_identity_id, space_strip, ChipState, SPACE_STRIP_ID,
+};

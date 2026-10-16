@@ -83,7 +83,8 @@ impl<'a> Default for U2IdsInput<'a> {
             downloads_window: 0..0,
             downloads_layout: bbr_ui::surfaces::downloads::PanelLayout {
                 label_h: 0.0,
-                row_h: 0.0,
+                active_row_h: 0.0,
+                history_row_h: 0.0,
                 active_count: 0,
                 history_count: 0,
                 hairline: 1.0,
@@ -186,7 +187,10 @@ fn downloads_visible_ids(
             ids.push(download_slot_id("status", index));
             ids.push(download_slot_id("name", index));
             ids.push(download_slot_id("meta", index));
-            ids.push(download_slot_id("progress", index));
+            // §11.12 / Paper M-4: only Active rows carry the progress bar.
+            if index < layout.active_count {
+                ids.push(download_slot_id("progress", index));
+            }
             ids.push(download_slot_id("action", index));
             if delete_rows.contains(&index) {
                 ids.push(download_slot_id("delete", index));

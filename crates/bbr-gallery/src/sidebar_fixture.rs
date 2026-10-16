@@ -278,6 +278,8 @@ pub fn build_sidebar_fixture_with_theme(
     });
     let footer = FooterModel {
         downloads_count: case.downloads_count,
+        downloads_open: false,
+        hovered: None,
         downloads_focused: false,
         downloads_focus: handles.downloads.clone(),
     };
@@ -310,6 +312,7 @@ pub fn build_sidebar_fixture_with_theme(
         swipe_tint: None,
         scroll: handles.space_strip_scroll.clone(),
         focus: handles.space_strip.clone(),
+        focused: false,
     };
     Some(SidebarModel {
         sidebar_width,

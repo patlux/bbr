@@ -316,6 +316,9 @@ pub struct BbrApp {
     /// §10.2 wash), driven by the production `on_hover` listener. `None` at
     /// rest.
     titlebar_hovered: Option<bbr_ui::titlebar::TitlebarControl>,
+    /// Paper S-7b footer hover state: the dock target under the pointer,
+    /// driven by the production `on_hover` listeners. `None` at rest.
+    footer_hovered: Option<bbr_ui::components::footer::FooterTarget>,
     /// §11.14 titlebar pressed state: the control whose primary button is
     /// down (DESIGN §10.3 wash), driven by the production press/release
     /// slots. `None` at rest.

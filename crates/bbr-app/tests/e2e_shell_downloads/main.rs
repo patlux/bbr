@@ -35,6 +35,7 @@ mod e2e_common;
 
 mod actions;
 mod bounded;
+mod floating;
 mod lifecycle;
 mod moments;
 mod open_dismiss;

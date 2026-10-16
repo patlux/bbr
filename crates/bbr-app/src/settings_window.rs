@@ -27,6 +27,11 @@ pub struct SettingsView {
 
 impl Render for SettingsView {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        // Testkit: this Settings frame's probes record afresh.
+        #[cfg(feature = "testkit")]
+        if let Some(rects) = cx.try_global::<bbr_ui::rect_probe::ElementRects>() {
+            rects.begin_frame(window.window_handle().window_id().as_u64());
+        }
         let model = self.app.read(cx).settings_model();
         window.set_window_title(model.pane.title());
         let app = self.app.clone();

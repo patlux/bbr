@@ -382,20 +382,31 @@ fn real_keyboard_events_report_through_the_sidebar_recorders() {
     });
 }
 
-/// Rail footer geometry (DESIGN §11.4/§18.3, Blueprint D01): the fixed
-/// footer glyphs render at 16 pt, and the space chips start at the strip's
-/// leading edge right after Downloads — fitting or overflowing alike (the
-/// overflow scroll is proven by the real-app strip scroll suite).
+/// Rail footer geometry (DESIGN §11.4, Paper S-7b, Blueprint D01): the
+/// fixed footer glyphs render at the density icon size (18 pt at N), and
+/// the space chips start at the strip's leading edge right after Downloads
+/// — fitting or overflowing alike (the overflow scroll is proven by the
+/// real-app strip scroll suite).
 #[test]
 #[ignore]
-fn footer_glyphs_are_sixteen_points_and_the_strip_leads_with_its_chips() {
+fn footer_glyphs_follow_the_icon_size_and_the_strip_leads_with_its_chips() {
     run_scenario(|window, app| {
         open_sidebar(window, app);
         for selector in ["bbr-downloads-glyph", "bbr-plus-glyph"] {
             let glyph = bounds_of(window, selector);
-            assert_eq!(glyph.size.width, gpui::px(16.0), "{selector} width");
-            assert_eq!(glyph.size.height, gpui::px(16.0), "{selector} height");
+            assert_eq!(glyph.size.width, gpui::px(18.0), "{selector} width");
+            assert_eq!(glyph.size.height, gpui::px(18.0), "{selector} height");
         }
+        // Paper S-7b: the glyphs sit centred in 28 pt control squares,
+        // the same square as the Space chips.
+        for selector in ["bbr-downloads", "bbr-plus", "bbr-space-chip-1"] {
+            let control = bounds_of(window, selector);
+            assert_eq!(control.size.width, gpui::px(28.0), "{selector} width");
+            assert_eq!(control.size.height, gpui::px(28.0), "{selector} height");
+        }
+        let control = bounds_of(window, "bbr-downloads");
+        let glyph = bounds_of(window, "bbr-downloads-glyph");
+        assert_eq!(control.center(), glyph.center(), "glyph centred");
         // The default family's strip holds two spaces (ids 1 and 2).
         let strip = bounds_of(window, "bbr-space-strip");
         let first = bounds_of(window, "bbr-space-chip-1");

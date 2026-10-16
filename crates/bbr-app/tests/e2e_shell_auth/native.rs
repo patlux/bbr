@@ -98,6 +98,7 @@ fn a_webkit_challenge_opens_the_sheet_and_the_password_reaches_the_server() {
             .send_ok(&dsl::navigate(protected.clone()))
             .expect("navigate");
         let asked = wait_new_sheet(&mut client, view, None);
+        assert_sheet_centered(&mut client, "bbr-auth-sheet", "bbr-auth-veil", 300.0);
         assert_eq!(asked.auth.host, "127.0.0.1");
         assert_eq!(asked.auth.realm.as_deref(), Some("BBR Fixture"));
         assert_eq!(asked.auth.scheme, "Basic");

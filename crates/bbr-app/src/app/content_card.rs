@@ -102,6 +102,9 @@ impl BbrApp {
                     .bg(theme.palette.surface_canvas)
                     .overflow_hidden()
                     .child(content)
+                    // Testkit-only: where the card drew, for page-only
+                    // visual readback (no element without `rect-probes`).
+                    .children(bbr_ui::rect_probe::rect_probe(CONTENT_CARD_ID))
                     // §2: GPUI clips to rectangles, so a GPUI surface in the
                     // card would paint its corners over the arc; the covers
                     // paint the chassis back over those four wedges, above

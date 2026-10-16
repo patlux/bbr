@@ -246,11 +246,18 @@ fn delete_space_asks_once_and_closes_its_tabs_into_the_fallback() {
         ] {
             assert!(portal.ids.iter().any(|v| v == id), "missing {id}");
         }
+        // Patrick (2026-10-12): the sheet sits centred on the card's veil.
         let rect = portal.rect.expect("sheet rect");
         assert!(
-            (rect[1] - sheet.card[1]).abs() < 0.5,
-            "the sheet attaches to the card's top edge: {rect:?} card {:?}",
+            (rect[0] + rect[2] / 2.0 - (sheet.card[0] + sheet.card[2] / 2.0)).abs() < 0.5,
+            "the sheet frame is centred on the card: {rect:?} card {:?}",
             sheet.card
+        );
+        assert_sheet_centered(
+            &mut client,
+            "bbr-space-delete-sheet",
+            "bbr-space-delete-veil",
+            240.0,
         );
 
         // Return triggers the default Cancel: nothing is deleted.

@@ -11,9 +11,7 @@ use crate::components;
 use crate::theme::{Radius, Spacing, Theme};
 
 use super::callbacks;
-use super::model::{
-    Callbacks, FavoritesModel, FoldersModel, PlusMenuModel, SidebarModel, StripModel,
-};
+use super::model::{Callbacks, FavoritesModel, FoldersModel, PlusMenuModel, SidebarModel};
 
 /// The §11.10 favorites region: the zero-favorites drop band, or the
 /// four-column tile grid with its trailing cell — the glyph-only rest slot,
@@ -254,6 +252,9 @@ pub fn plus_menu_surface(
             callbacks::mouse(&callbacks.on_plus_menu_inside_press),
         )
         .children(items)
+        .children(crate::rect_probe::rect_probe(
+            components::menu::PLUS_MENU_ID,
+        ))
 }
 
 /// The §11.3 permanent space strip: one chip per space in canonical grouped
@@ -262,17 +263,30 @@ pub fn plus_menu_surface(
 /// activation/keyboard callbacks; the strip consumes all footer width left
 /// after `[Downloads]` and before `[+]` and never wraps or shrinks the
 /// fixed controls.
-fn space_strip_surface(theme: &Theme, strip: &StripModel, callbacks: &Callbacks) -> Stateful<Div> {
+fn space_strip_surface(
+    theme: &Theme,
+    model: &SidebarModel,
+    callbacks: &Callbacks,
+) -> Stateful<Div> {
+    let strip = &model.strip;
     let chips: Vec<Stateful<Div>> = strip
         .chips
         .iter()
         .map(|visual| {
+            let target = components::footer::FooterTarget::Space(visual.space);
+            let hover = callbacks.on_footer_hover.clone();
             super::strip::space_chip(
                 theme,
                 visual,
                 strip.swipe_tint,
+                super::strip::ChipState {
+                    hovered: model.footer.hovered == Some(target),
+                    focused: strip.focused && visual.selected,
+                    rail: model.chrome_tint,
+                },
                 callbacks::space(&callbacks.on_select_space, visual.space),
             )
+            .on_hover(move |hovered: &bool, window, cx| hover(target, *hovered, window, cx))
             // Blueprint D05 (§11.13): a secondary-click opens the space menu
             // bound to this exact space; opening never activates it.
             .on_mouse_down(
@@ -294,14 +308,21 @@ fn space_strip_surface(theme: &Theme, strip: &StripModel, callbacks: &Callbacks)
 /// is no `[Spaces]` toggle and no revealable space-row region.
 pub fn footer_surface(theme: &Theme, model: &SidebarModel, callbacks: &Callbacks) -> Stateful<Div> {
     let footer = &model.footer;
-    let strip = space_strip_surface(theme, &model.strip, callbacks);
+    let strip = space_strip_surface(theme, model, callbacks);
     components::footer_surface(
         theme,
-        footer.downloads_focus.clone(),
-        footer.downloads_focused,
-        footer.downloads_count,
+        &components::footer::FooterControls {
+            downloads_focus: footer.downloads_focus.clone(),
+            downloads_focused: footer.downloads_focused,
+            downloads_open: footer.downloads_open,
+            downloads_count: footer.downloads_count,
+            plus_open: model.plus_menu.is_some(),
+            hovered: footer.hovered,
+            rail: model.chrome_tint,
+        },
         strip,
         callbacks::mouse(&callbacks.on_downloads),
         callbacks::mouse(&callbacks.on_plus),
+        callbacks.on_footer_hover.clone(),
     )
 }

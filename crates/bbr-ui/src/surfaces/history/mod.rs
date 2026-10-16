@@ -26,6 +26,8 @@ pub const HISTORY_ID: &str = "bbr-history";
 pub const HISTORY_SEARCH_ID: &str = "bbr-history-search";
 pub const HISTORY_CLEAR_ID: &str = "bbr-history-clear";
 pub const CLEAR_DATA_ID: &str = "bbr-clear-data";
+/// The Clear Browsing Data sheet's `wash.active` veil.
+pub const CLEAR_DATA_VEIL_ID: &str = "bbr-clear-data-veil";
 
 /// The stable id of a visit row (`closed` rows use the tab id).
 pub fn history_row_id(id: u64, closed: bool) -> String {

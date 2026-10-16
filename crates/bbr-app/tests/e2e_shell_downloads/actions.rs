@@ -40,7 +40,7 @@ fn cancel_is_request_confirmation_and_the_terminal_event_wins() {
         let profile = initial.active_profile;
         let space = initial.active_space;
 
-        let id = start_download(&mut client, &slow_url, "slow.bin");
+        let id = start_download(&mut client, &fixtures, &slow_url, "slow.bin");
         // Bytes flowed before the cancel request (deterministic slow window).
         let running = wait_running_progress(&mut client, id);
         assert_eq!(running.action, DownloadRowAction::Cancel);
@@ -144,7 +144,7 @@ fn retry_starts_a_fresh_linked_attempt_from_failed_only() {
         let profile = initial.active_profile;
         let space = initial.active_space;
 
-        let fail_id = start_download(&mut client, &fail_url, "fail.bin");
+        let fail_id = start_download(&mut client, &fixtures, &fail_url, "fail.bin");
         let failed = wait_row_terminal(&mut client, fail_id, DownloadMachineState::Failed);
         assert_eq!(failed.action, DownloadRowAction::Retry);
         assert_eq!(failed.attempt, 1);
@@ -229,13 +229,18 @@ fn restart_offers_a_fresh_linked_attempt_from_cancelled() {
         // restartable state). The footer badge contract (§17.11) is
         // observed through the open panel: the in-flight transfer owns the
         // badge, terminal attempts never do.
-        let cancelled_id = start_download(&mut client, &slow_url, "slow.bin");
+        let cancelled_id = start_download(&mut client, &fixtures, &slow_url, "slow.bin");
         let _ = wait_running_progress(&mut client, cancelled_id);
         let running_open = open_downloads(&mut client);
         assert_eq!(
             running_open.downloads.footer_count, 1,
             "the in-flight transfer owns the badge"
         );
+        // Paper S-7b: the count rides the `[Downloads]` control as the
+        // badge, and the open panel keeps the control pressed.
+        assert_eq!(running_open.footer.downloads_count, Some(1));
+        assert!(running_open.footer.downloads_open);
+        assert_ids(&running_open, &["bbr-downloads-count"]);
         client
             .send_ok(&Request::DownloadCancel { id: cancelled_id })
             .expect("cancel request");
@@ -255,6 +260,14 @@ fn restart_offers_a_fresh_linked_attempt_from_cancelled() {
         assert_eq!(
             terminal_badge.downloads.footer_count, 0,
             "terminal attempts never inflate the badge"
+        );
+        assert_eq!(terminal_badge.footer.downloads_count, None);
+        assert!(
+            !terminal_badge
+                .visible_ids
+                .iter()
+                .any(|id| id == "bbr-downloads-count"),
+            "no badge while nothing transfers"
         );
 
         // Restart through the production pointer path (`ClickDownloadRowAction`
@@ -347,7 +360,7 @@ fn reveal_is_enabled_for_the_existing_resolved_path_and_requests_semantics() {
         let profile = initial.active_profile;
         let space = initial.active_space;
 
-        let id = start_download(&mut client, &known_url, "known.bin");
+        let id = start_download(&mut client, &fixtures, &known_url, "known.bin");
         let succeeded = wait_row_terminal(&mut client, id, DownloadMachineState::Succeeded);
         assert_eq!(succeeded.action, DownloadRowAction::Reveal);
         assert!(

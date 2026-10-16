@@ -547,3 +547,42 @@ pub fn toggle_pin_via_tab_menu(client: &mut Client, index: usize) {
 pub fn allow_gui() -> bool {
     !std::env::var("BBR_SKIP_GUI_TESTS").is_ok_and(|value| value != "0" && value != "false")
 }
+
+/// Regression (2026-10-12, Patrick: “viele der dialoge sind viel zu hoch”,
+/// then “lass alles mittig machen”): a blocking sheet sits centred on both
+/// axes over its veil, at its content height. Waits until the sheet `id` and
+/// its `veil` draw (`sheet_rects`, any window) with the sheet no taller than
+/// `max_pt` (content plus slack) and its centre within 1 pt of the veil's.
+/// Another window draws on its own schedule, so a first rect may still be a
+/// previous sheet's; a stretched or top-attached sheet never qualifies and
+/// fails with its drawn rects at the deadline.
+pub fn assert_sheet_centered(client: &mut Client, id: &str, veil: &str, max_pt: f32) -> [f32; 4] {
+    let until = deadline();
+    loop {
+        client
+            .send_ok(&bbr_testkit::Request::FlushFrame)
+            .expect("flush sheet frame");
+        let snapshot = client.snapshot().expect("sheet snapshot");
+        let rect = |key: &str| {
+            snapshot
+                .sheet_rects
+                .iter()
+                .find(|(drawn, _)| drawn == key)
+                .map(|(_, rect)| *rect)
+        };
+        let (sheet, backdrop) = (rect(id), rect(veil));
+        if let (Some(s), Some(v)) = (sheet, backdrop) {
+            let centre = |r: [f32; 4]| (r[0] + r[2] / 2.0, r[1] + r[3] / 2.0);
+            let ((sx, sy), (vx, vy)) = (centre(s), centre(v));
+            if s[3] > 40.0 && s[3] <= max_pt && (sx - vx).abs() <= 1.0 && (sy - vy).abs() <= 1.0 {
+                return s;
+            }
+        }
+        assert!(
+            Instant::now() < until,
+            "{id} must sit centred on {veil} at its content height (≤ {max_pt} pt): \
+             sheet {sheet:?}, veil {backdrop:?}"
+        );
+        std::thread::yield_now();
+    }
+}

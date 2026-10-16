@@ -49,7 +49,8 @@ pub(super) fn render(root: &PortalRoot, rect: Rect, cx: &mut Context<PortalRoot>
     };
     let theme = app.read(cx).theme();
     // Board P-4: the veil dims the content card only (never the rail) with
-    // the `wash.active` wash; the sheet attaches to the card's top edge.
+    // the `wash.active` wash. Patrick (2026-10-12): the sheet sits centred on
+    // both axes over the veil, by layout at its content height.
     let veil = div()
         .id(bbr_ui::surfaces::space_delete::SPACE_DELETE_VEIL_ID)
         .absolute()
@@ -58,11 +59,14 @@ pub(super) fn render(root: &PortalRoot, rect: Rect, cx: &mut Context<PortalRoot>
         .w(px(card.width))
         .h(px(card.height))
         .rounded(theme.radius.large())
-        .bg(theme.palette.wash_active);
+        .bg(theme.palette.wash_active)
+        .flex()
+        .justify_center()
+        .items_center()
+        .children(bbr_ui::rect_probe::rect_probe(
+            bbr_ui::surfaces::space_delete::SPACE_DELETE_VEIL_ID,
+        ));
     let sheet = div()
-        .absolute()
-        .left(px(rect.x))
-        .top(px(rect.y))
         .w(px(rect.width))
         .child(bbr_ui::surfaces::space_delete::space_delete_sheet(
             &theme,
@@ -88,7 +92,7 @@ pub(super) fn render(root: &PortalRoot, rect: Rect, cx: &mut Context<PortalRoot>
         .child(bbr_ui::surfaces::floating::appear(
             &theme,
             "bbr-space-delete-appear",
-            div().absolute().inset_0().child(veil).child(sheet),
+            div().absolute().inset_0().child(veil.child(sheet)),
         ))
         .into_any()
 }

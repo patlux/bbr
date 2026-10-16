@@ -38,10 +38,14 @@ use crate::theme::Theme;
 
 use glyphs::{
     bookmark_geometry, chassis_radii, check_geometry, chevron_arm, clock_geometry, clock_hands,
-    close_arm, disclosure_arm, downloads_geometry, icon_stroke, lifering_radii, nav_arrow_geometry,
-    pencil_geometry, pin_radius, plus_arm, reload_geometry, sidebar_geometry, stopped_half,
+    close_arm, disclosure_arm, downloads_segments, icon_stroke, lifering_radii, minus_segments,
+    nav_arrow_segments, pencil_geometry, pin_radius, plus_segments, reload_geometry,
+    sidebar_geometry, stopped_half, trash_segments,
 };
-use paint::{paint_filled_circle, paint_path, paint_ring, paint_rounded_square_ring, paint_stroke};
+use paint::{
+    paint_filled_circle, paint_path, paint_ring, paint_rounded_square_ring, paint_segments,
+    paint_stroke,
+};
 
 /// §7 icon catalog: the bounded set of BBR-drawn chrome glyphs.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -62,9 +66,11 @@ pub enum Icon {
     /// Blueprint D08 zoom readout step-down: the horizontal stroke of
     /// [`Icon::Plus`].
     Minus,
-    /// §11.4 footer `[Downloads]` control: an arrow dropping into an
-    /// open-top tray.
+    /// §11.4 footer `[Downloads]` control: an arrow dropping onto a
+    /// baseline (Paper W-1/S-7).
     Downloads,
+    /// §11.12 cancelled-row Delete control: a lidded bin (Paper M-4).
+    Trash,
     /// §11.12 downloads status: the `status.ok` check on succeeded rows.
     Check,
     /// §11.12 downloads status: the neutral cancelled marker (a short
@@ -165,6 +171,7 @@ impl Icon {
             Icon::Plus => "plus",
             Icon::Minus => "minus",
             Icon::Downloads => "downloads",
+            Icon::Trash => "trash",
             Icon::Check => "check",
             Icon::Stopped => "stopped",
             Icon::Folder { open } => {
@@ -229,6 +236,7 @@ impl Icon {
             | Icon::Plus
             | Icon::Minus
             | Icon::Downloads
+            | Icon::Trash
             | Icon::Check
             | Icon::Stopped
             | Icon::Folder { .. }
@@ -328,39 +336,16 @@ impl Icon {
                 paint_ring(window, cx, cy, aperture, stroke, color);
             }
             Icon::Plus => {
-                let arm = plus_arm(size);
-                let mut path = PathBuilder::stroke(stroke);
-                path.move_to(point(px(cx - arm), px(cy)));
-                path.line_to(point(px(cx + arm), px(cy)));
-                path.move_to(point(px(cx), px(cy - arm)));
-                path.line_to(point(px(cx), px(cy + arm)));
-                paint_path(window, path, color);
+                paint_segments(window, stroke, color, cx, cy, &plus_segments(size));
             }
             Icon::Minus => {
-                let arm = plus_arm(size);
-                let mut path = PathBuilder::stroke(stroke);
-                path.move_to(point(px(cx - arm), px(cy)));
-                path.line_to(point(px(cx + arm), px(cy)));
-                paint_path(window, path, color);
+                paint_segments(window, stroke, color, cx, cy, &minus_segments(size));
             }
             Icon::Downloads => {
-                let (arm, arrow, tray_half, tray_depth, tray_side) = downloads_geometry(size);
-                let apex_y = cy + arrow;
-                let mut path = PathBuilder::stroke(stroke);
-                // The vertical stem down to the arrowhead apex.
-                path.move_to(point(px(cx), px(cy - arm)));
-                path.line_to(point(px(cx), px(apex_y)));
-                // The arrowhead, then the open-top tray below it.
-                path.move_to(point(px(cx), px(apex_y)));
-                path.line_to(point(px(cx - arrow), px(apex_y + arrow)));
-                path.move_to(point(px(cx), px(apex_y)));
-                path.line_to(point(px(cx + arrow), px(apex_y + arrow)));
-                let base_y = cy + tray_depth;
-                path.move_to(point(px(cx - tray_half), px(base_y - tray_side)));
-                path.line_to(point(px(cx - tray_half), px(base_y)));
-                path.line_to(point(px(cx + tray_half), px(base_y)));
-                path.line_to(point(px(cx + tray_half), px(base_y - tray_side)));
-                paint_path(window, path, color);
+                paint_segments(window, stroke, color, cx, cy, &downloads_segments(size));
+            }
+            Icon::Trash => {
+                paint_segments(window, stroke, color, cx, cy, &trash_segments(size));
             }
             Icon::Check => {
                 let (inner, outer) = check_geometry(size);
@@ -477,20 +462,9 @@ impl Icon {
                 paint_path(window, path, color);
             }
             Icon::NavBack | Icon::NavForward => {
-                let (head, stem) = nav_arrow_geometry(size);
                 let pointing_right = matches!(self, Icon::NavForward);
-                // The head apex at the pointing side, arms to the corners,
-                // and the stem running from the head base outward.
-                let apex_x = if pointing_right { cx + head } else { cx - head };
-                let stem_x = if pointing_right { cx - stem } else { cx + stem };
-                let mut path = PathBuilder::stroke(stroke);
-                path.move_to(point(px(apex_x), px(cy)));
-                path.line_to(point(px(cx), px(cy - head)));
-                path.move_to(point(px(apex_x), px(cy)));
-                path.line_to(point(px(cx), px(cy + head)));
-                path.move_to(point(px(cx), px(cy)));
-                path.line_to(point(px(stem_x), px(cy)));
-                paint_path(window, path, color);
+                let segments = nav_arrow_segments(size, pointing_right);
+                paint_segments(window, stroke, color, cx, cy, &segments);
             }
             Icon::Reload => {
                 let (radius, head) = reload_geometry(size);

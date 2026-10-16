@@ -38,6 +38,24 @@ impl ElementRects {
             .insert(id.to_string(), rect);
     }
 
+    /// The rects of `ids` in whichever window drew them (sheets live in the
+    /// browser, portal or Settings window), sorted by id.
+    pub fn across_windows(&self, ids: &[&str]) -> Vec<(String, [f32; 4])> {
+        let mut found: Vec<(String, [f32; 4])> = self
+            .rects
+            .borrow()
+            .values()
+            .flat_map(|rects| {
+                rects
+                    .iter()
+                    .filter(|(id, _)| ids.contains(&id.as_str()))
+                    .map(|(id, rect)| (id.clone(), *rect))
+            })
+            .collect();
+        found.sort_by(|a, b| a.0.cmp(&b.0));
+        found
+    }
+
     /// A window's rects, sorted by id.
     pub fn for_window(&self, window: u64) -> Vec<(String, [f32; 4])> {
         self.rects
@@ -89,6 +107,21 @@ pub fn rect_probe(_id: impl Into<SharedString>) -> Option<gpui::AnyElement> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn named_rects_are_found_in_any_window() {
+        let rects = ElementRects::default();
+        rects.record(1, "bbr-footer-plus", [1.0, 2.0, 3.0, 4.0]);
+        rects.record(7, "bbr-settings-sheet", [10.0, 16.0, 420.0, 300.0]);
+        rects.record(9, "bbr-external-open", [5.0, 6.0, 440.0, 160.0]);
+        assert_eq!(
+            rects.across_windows(&["bbr-settings-sheet", "bbr-external-open", "bbr-clear-data"]),
+            [
+                ("bbr-external-open".to_string(), [5.0, 6.0, 440.0, 160.0]),
+                ("bbr-settings-sheet".to_string(), [10.0, 16.0, 420.0, 300.0]),
+            ]
+        );
+    }
 
     #[test]
     fn a_new_frame_forgets_only_its_own_window() {

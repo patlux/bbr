@@ -130,6 +130,8 @@ pub fn auth_sheet(
         // key (no-op in release builds — the same pattern `tab_row`/
         // `favicon` use so gallery scenarios can click the real controls).
         .debug_selector(|| AUTH_SHEET_ID.to_string())
+        // Testkit-only: the drawn sheet rect (`sheet_rects`).
+        .children(crate::rect_probe::rect_probe(AUTH_SHEET_ID))
         .rounded(theme.radius.large())
         .bg(p.surface_overlay)
         .border_1()

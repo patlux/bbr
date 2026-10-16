@@ -43,7 +43,7 @@ fn a_finished_download_draws_its_check_after_the_success_commits() {
         open_downloads(&mut client);
 
         // Full motion.
-        let id = start_download(&mut client, &zero_url, "zero.bin");
+        let id = start_download(&mut client, &fixtures, &zero_url, "zero.bin");
         let row = wait_row_terminal(&mut client, id, DownloadMachineState::Succeeded);
         let done = client.snapshot().expect("succeeded snapshot");
         // Commit first: the success is in the model.
@@ -59,7 +59,7 @@ fn a_finished_download_draws_its_check_after_the_success_commits() {
         client
             .send_ok(&dsl::set_accessibility_override(Some(false), Some(true)))
             .expect("reduce motion");
-        let id = start_download(&mut client, &known_url, "known.bin");
+        let id = start_download(&mut client, &fixtures, &known_url, "known.bin");
         let row = wait_row_terminal(&mut client, id, DownloadMachineState::Succeeded);
         let done = client.snapshot().expect("reduced succeeded snapshot");
         assert_eq!(

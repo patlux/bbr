@@ -53,6 +53,8 @@ pub type RowUpCallback =
     std::rc::Rc<dyn for<'a> Fn(usize, &'a MouseUpEvent, &mut Window, &mut App)>;
 /// A row-indexed hover callback slot.
 pub type HoverCallback = std::rc::Rc<dyn Fn(usize, bool, &mut Window, &mut App)>;
+/// A footer-target hover slot (`(target, hovered)`).
+pub type FooterHoverCallback = crate::components::footer::FooterHover;
 /// A folder-id `MouseDownEvent` callback slot.
 pub type FolderCallback =
     std::rc::Rc<dyn for<'a> Fn(FolderId, &'a MouseDownEvent, &mut Window, &mut App)>;
@@ -171,9 +173,13 @@ pub struct PlusMenuModel {
 /// the fixed controls.
 #[derive(Debug, Clone)]
 pub struct FooterModel {
-    /// The §11.4 `type:meta` `tnum` count while any active attempt exists
-    /// (§17.11: in-flight only).
+    /// The §11.4/§17.11 in-flight count shown as the badge on
+    /// `[Downloads]` (`None` while nothing transfers).
     pub downloads_count: Option<usize>,
+    /// The downloads panel is open (`[Downloads]` stays pressed).
+    pub downloads_open: bool,
+    /// The footer target under the pointer (Paper S-7b hover wash).
+    pub hovered: Option<crate::components::footer::FooterTarget>,
     /// §9: whether the `[Downloads]` control owns keyboard focus.
     pub downloads_focused: bool,
     /// The `[Downloads]` control's focus handle (the §11.12 dismissal
@@ -340,6 +346,9 @@ pub struct Callbacks {
     pub on_downloads: MouseCallback,
     /// §11.4: the footer `[+]` control toggles the plus menu.
     pub on_plus: MouseCallback,
+    /// Paper S-7b: the pointer enters/leaves a footer target (the hover
+    /// wash on Downloads, Plus and inactive chips).
+    pub on_footer_hover: FooterHoverCallback,
     /// §11.3: a space chip activation through the production pointer path.
     pub on_select_space: SpaceCallback,
     /// Blueprint D05 (§11.13): a secondary-click on a space chip opens the
@@ -401,6 +410,7 @@ impl Callbacks {
             on_plus_menu_inside_press: noop_mouse.clone(),
             on_downloads: noop_mouse.clone(),
             on_plus: noop_mouse.clone(),
+            on_footer_hover: std::rc::Rc::new(|_t, _h, _window, _cx| {}),
             on_select_space: noop_space.clone(),
             on_context_menu_space: noop_space,
             on_space_strip_key_down: noop_key.clone(),
@@ -426,4 +436,6 @@ pub struct StripModel {
     pub scroll: ScrollHandle,
     /// The strip's focus handle.
     pub focus: FocusHandle,
+    /// §9: the strip owns keyboard focus (the ring on the selected chip).
+    pub focused: bool,
 }

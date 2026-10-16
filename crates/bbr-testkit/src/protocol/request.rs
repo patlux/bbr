@@ -831,6 +831,15 @@ pub enum Request {
     HistoryInput {
         input: super::HistoryInput,
     },
+    /// Pin the display clock History day groups, visit times and the
+    /// Today/Week ranges (and certificate expiry dates) read: `now_ms` in
+    /// Unix milliseconds plus a fixed local UTC offset, so dated evidence
+    /// never depends on the machine's time or zone. `None` returns to the
+    /// system clock. Testkit-only; production always reads the system.
+    SetDisplayClock {
+        now_ms: Option<u64>,
+        offset_s: i64,
+    },
     /// Blueprint D11: one permission-prompt or site-settings interaction
     /// through the method its control calls.
     PermissionInput {
@@ -1316,6 +1325,14 @@ pub enum Request {
     /// part of the rail and space activation routes through `ClickSpace`.
     ClickFooterDownloads,
     ClickFooterPlus,
+    /// Paper S-7b: pointer hover over a footer target through the
+    /// production `on_hover` listener path (`control` is `downloads`,
+    /// `plus` or `space-<persistent id>`; unknown names reject).
+    HoverFooterControl {
+        control: String,
+    },
+    /// Pointer leave through the same production footer-hover path.
+    UnhoverFooterControl,
     ClickPlusMenuItem {
         index: usize,
     },
@@ -1723,6 +1740,16 @@ pub enum Request {
     CaptureChrome {
         path: String,
     },
+    /// Read back only the named elements of the current production frame:
+    /// the union of the rects their probes recorded in the main window,
+    /// grown by `margin` points and clipped to the window, as an exact 2×
+    /// PNG under `/tmp`. Every id must have drawn in that frame; the reply
+    /// is the kept window-pixel rectangle. Visual-feature-only.
+    CaptureElements {
+        path: String,
+        ids: Vec<String>,
+        margin: f32,
+    },
     /// Read only the existing production Find bar's transparent portal scene.
     /// Visual-feature-only; closed and other portal presentations are rejected.
     CaptureFindBar {
@@ -1737,6 +1764,17 @@ pub enum Request {
     /// Read the existing Settings window's production GPUI scene. Requires
     /// visual-capture; never opens a window and accepts only a direct /tmp PNG.
     CaptureSettings {
+        path: String,
+    },
+    /// Read the open About BBR window's production GPUI scene (visual-only;
+    /// refuses a closed About window, never opens one).
+    CaptureAbout {
+        path: String,
+    },
+    /// Read the portal child window's transparent scene while any portal
+    /// presentation is visible (prompts, sheets, Peek's bar). Visual-only;
+    /// never composites the parent or the native page.
+    CapturePortal {
         path: String,
     },
     /// Visual-feature-only wheel dispatch to the real Settings content. Zero

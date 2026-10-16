@@ -18,7 +18,7 @@ use crate::icons::Icon;
 use crate::theme::Theme;
 
 pub use render::settings_surface;
-pub use sheet::SETTINGS_SHEET_ID;
+pub use sheet::{SETTINGS_SHEET_ID, SETTINGS_SHEET_VEIL_ID};
 
 /// The §15 id of the Settings root.
 pub const SETTINGS_ID: &str = "bbr-settings";

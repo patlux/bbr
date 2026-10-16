@@ -15,6 +15,8 @@ use crate::surfaces::permissions::{checkbox, pill_button};
 use crate::theme::Theme;
 
 pub const CLIENT_CERTIFICATE_ID: &str = "bbr-client-certificate";
+/// The sheet's `wash.active` veil.
+pub const CLIENT_CERTIFICATE_VEIL_ID: &str = "bbr-client-certificate-veil";
 
 /// One identity row.
 #[derive(Debug, Clone, PartialEq)]
@@ -141,12 +143,19 @@ pub fn client_certificate_sheet(
         .h(px(height))
         .bg(p.wash_active)
         .flex()
+        // Patrick (2026-10-12): every blocking sheet sits centred on both
+        // axes over its veil, at its content height (without the cross-axis
+        // rule flex would stretch it to the whole veil).
         .justify_center()
+        .items_center()
+        // Testkit-only: the veil's drawn rect (`sheet_rects`).
+        .children(crate::rect_probe::rect_probe(CLIENT_CERTIFICATE_VEIL_ID))
         .on_mouse_down(MouseButton::Left, |_e, _w, cx| cx.stop_propagation())
         .child(
             div()
                 .id(CLIENT_CERTIFICATE_ID)
-                .mt(px(12.0))
+                // Testkit-only: the drawn sheet rect (`sheet_rects`).
+                .children(crate::rect_probe::rect_probe(CLIENT_CERTIFICATE_ID))
                 .w(px(440.0))
                 .h_auto()
                 .p(px(20.0))

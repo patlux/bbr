@@ -42,11 +42,14 @@ use bbr_ui::surfaces::downloads::{
     DOWNLOADS_MAX_VISIBLE, DOWNLOADS_WINDOW_ROWS,
 };
 use bbr_web::downloads::DownloadId;
-use gpui::{Context, Div, MouseDownEvent, ScrollHandle, Stateful, Transition, Window};
+use gpui::{Context, Div, MouseDownEvent, ScrollHandle, Stateful, Window};
 
 use super::BbrApp;
 
+mod fade;
 mod rows;
+
+use fade::DownloadsFade;
 
 // The row-model derivation is the module's public API surface (the render
 // wrapper, the testkit snapshot, the behavior/benchmark modules, and the
@@ -111,7 +114,10 @@ pub struct DownloadsState {
     /// or scale). Created lazily on the first render that needs it; the goal
     /// is `1.0` while open and `0.0` on dismissal, and the render keeps the
     /// panel mounted (fading out) until the value reaches zero.
-    pub opacity: Option<Transition<f32>>,
+    pub opacity: Option<DownloadsFade>,
+    /// Ordinary testkit evidence from the panel's actual paint, not its model.
+    #[cfg(feature = "testkit")]
+    pub painted: Rc<std::cell::RefCell<Option<bbr_testkit::protocol::DownloadsPanelPaint>>>,
 }
 
 impl Default for DownloadsState {
@@ -132,6 +138,8 @@ impl DownloadsState {
             render_state: DownloadsRenderState::default(),
             reveal: Default::default(),
             opacity: None,
+            #[cfg(feature = "testkit")]
+            painted: Default::default(),
         }
     }
 
@@ -147,6 +155,8 @@ impl DownloadsState {
             render_state: DownloadsRenderState::default(),
             reveal: self.reveal.clone(),
             opacity: None,
+            #[cfg(feature = "testkit")]
+            painted: Default::default(),
         }
     }
 
@@ -157,17 +167,17 @@ impl DownloadsState {
     }
 
     /// The scroll anchor derived from the production scroll offset (negative
-    /// as the user scrolls down), clamped to the deterministic row list.
-    pub fn anchor_from_offset(&self, row_h: f32) -> usize {
+    /// as the user scrolls down), clamped to the deterministic row list. The
+    /// layout maps the offset across the mixed Active/History row heights.
+    pub fn anchor_from_offset(&self, layout: &PanelLayout) -> usize {
         let total = self.controller.read().len();
         if total == 0 {
             return 0;
         }
-        let offset = self.scroll.offset().y;
-        let row_h = row_h.max(1.0);
-        let scrolled = (-f32::from(offset)).max(0.0);
-        let anchor = (scrolled / row_h).floor() as usize;
-        total.saturating_sub(DOWNLOADS_WINDOW_ROWS).min(anchor)
+        let scrolled = (-f32::from(self.scroll.offset().y)).max(0.0);
+        total
+            .saturating_sub(DOWNLOADS_WINDOW_ROWS)
+            .min(layout.anchor_at(scrolled))
     }
 
     /// The bounded render window over the combined row list.
@@ -188,65 +198,38 @@ impl DownloadsState {
 }
 
 impl BbrApp {
-    /// The §11.12 anchored popover surface (the G2 Group 5 render wrapper):
-    /// the app keeps the transition lifecycle (the `dur:fine` opacity fade
-    /// is created lazily — it needs the window state), the DTO building
-    /// (layout/anchor/window/row models from the controller), the render
-    /// evidence recording, and the production listener bundle; the `bbr-ui`
-    /// surface owns the anatomy. `None` while closed and the fade-out has
-    /// completed.
-    /// Create the panel's fade in the browser window's render (blueprint
-    /// D02: the floating rail builds the panel outside that render, where
-    /// window state cannot be created).
+    /// Advance the shared fade in its owning browser render. The floating
+    /// rail is assembled outside that window's draw phase and only reads it.
     pub(crate) fn prime_downloads_fade(&mut self, window: &mut Window, cx: &mut Context<Self>) {
-        if self.downloads.opacity.is_none() {
-            let transition =
-                window.use_transition(cx, bbr_ui::theme::Motion::fine(), |_, _| 0.0_f32);
-            if self.downloads.open {
-                transition.update(cx, |value, cx| {
-                    *value = 1.0;
-                    cx.notify();
-                });
-            }
-            self.downloads.opacity = Some(transition);
-        }
+        #[cfg(feature = "testkit")]
+        self.downloads.painted.borrow_mut().take();
+        let fade = self.downloads.opacity.get_or_insert_with(|| {
+            let fade = DownloadsFade::new(cx);
+            fade.set_open(self.downloads.open, cx);
+            fade
+        });
+        fade.evaluate(window, cx);
     }
 
+    /// Build the §11.12 production model and listeners. The app owns fade
+    /// state, controller mapping and render observations; bbr-ui owns anatomy.
+    /// Returns None only when logically closed and the fade-out has completed.
     pub(crate) fn downloads_panel_surface(
         &mut self,
         theme: &bbr_ui::theme::Theme,
+        rail_width: f32,
         window: &mut Window,
         cx: &mut Context<Self>,
     ) -> Option<Stateful<Div>> {
-        // §11.12 open/close: opacity fade `dur:fine` only — never translate
-        // or scale. The transition is created lazily on the first render
-        // that needs it (the render context owns the window state); the goal
-        // is driven by open/close. While the fade-out runs the panel stays
-        // mounted; at zero it unmounts.
-        if self.downloads.opacity.is_none() {
-            let transition =
-                window.use_transition(cx, bbr_ui::theme::Motion::fine(), |_, _| 0.0_f32);
-            if self.downloads.open {
-                transition.update(cx, |value, cx| {
-                    *value = 1.0;
-                    cx.notify();
-                });
-            }
-            self.downloads.opacity = Some(transition);
-        }
-        let fade = self.downloads.opacity.as_ref().expect("armed above");
-        let alpha = *fade.evaluate(window, cx);
+        // Share the browser render's presented value with floating composition;
+        // never evaluate against the browser window outside its draw phase.
+        let alpha = self.downloads.opacity.as_ref()?.rendered_value();
         if !self.downloads.open && alpha <= 0.001 {
             return None;
         }
 
-        // The §11.12 `type:badge` group label: badge text step × leading +
-        // 2 × `sp:1` padding — the exact height the label divs render (both
-        // sides use the same token-derived constant, so the scroll math and
-        // the layout never drift).
-        let row_h = f32::from(theme.density.row());
-        let label_h = f32::from(theme.type_.badge.size) * theme.type_.badge.leading
-            + 2.0 * f32::from(bbr_ui::theme::Spacing::sp1());
+        // The §11.12 layout authority (Paper M-4 metrics): the same
+        // token-derived heights the render paints and the snapshot reports.
         let (total, active_count, history_count) = {
             let controller = self.downloads.controller.read();
             (
@@ -255,14 +238,8 @@ impl BbrApp {
                 controller.history_ids().len(),
             )
         };
-        let layout = PanelLayout {
-            label_h,
-            row_h,
-            active_count,
-            history_count,
-            hairline: 1.0,
-        };
-        let anchor = self.downloads.anchor_from_offset(row_h);
+        let layout = PanelLayout::for_theme(theme, active_count, history_count);
+        let anchor = self.downloads.anchor_from_offset(&layout);
         let row_window = self.downloads.window_for(anchor);
         let visuals = row_visuals(&self.downloads, Some(self.downloads.focus));
 
@@ -301,7 +278,7 @@ impl BbrApp {
             open: self.downloads.open,
             focused: panel_focused,
             alpha,
-            width: self.downloads_panel_width(window),
+            width: (rail_width - 2.0 * f32::from(theme.density.row_inset())).max(0.0),
             rows: visuals,
             window: row_window,
             layout,
@@ -367,39 +344,46 @@ impl BbrApp {
             on_row_delete,
             on_clear,
         };
-        bbr_ui::surfaces::downloads::downloads_panel_surface(theme, &model, &callbacks)
-    }
-
-    /// §11.12 panel width: the sidebar column's current width − 2 ×
-    /// `density:row-inset` (S `sp:1` 4 / N `sp:2` 8 / XL `sp:3` 12), clamped
-    /// to stay fully inside the window. The leading edge is flush with the
-    /// column's leading edge, so the popover never overlaps the native web
-    /// view (it is confined to the sidebar column by construction).
-    fn downloads_panel_width(&self, window: &Window) -> f32 {
-        let density = self.theme().density;
-        let window_width = f32::from(window.bounds().size.width);
-        let sidebar_width = if self.sidebar_visible {
-            self.sidebar.effective_width(window_width)
-        } else {
-            0.0
+        let panel =
+            bbr_ui::surfaces::downloads::downloads_panel_surface(theme, &model, &callbacks)?;
+        #[cfg(feature = "testkit")]
+        let panel = {
+            use gpui::{prelude::*, Styled};
+            let painted = self.downloads.painted.clone();
+            // An absolute, non-painting observer occupies no flow space. Its
+            // bounds are the panel interior (inside the production border).
+            panel.relative().child(
+                gpui::canvas(
+                    |_, _, _| (),
+                    move |bounds, (), _window, _cx| {
+                        *painted.borrow_mut() = Some(bbr_testkit::protocol::DownloadsPanelPaint {
+                            rect: [
+                                f32::from(bounds.origin.x),
+                                f32::from(bounds.origin.y),
+                                f32::from(bounds.size.width),
+                                f32::from(bounds.size.height),
+                            ],
+                            alpha,
+                        });
+                    },
+                )
+                .absolute()
+                .inset_0(),
+            )
         };
-        (sidebar_width - 2.0 * f32::from(density.row_inset())).max(0.0)
+        Some(panel)
     }
 
-    /// The §11.12 panel layout tokens for the visible-id derivation (the
-    /// same token-derived constants the render uses, so the ids mirror the
-    /// shell's gating exactly).
-    #[cfg(feature = "testkit")]
+    /// The §11.12 panel layout (the same token-derived heights the render
+    /// paints), used by the render, the keyboard scroll, the benchmarks and
+    /// the visible-id derivation.
     pub(crate) fn downloads_layout(&self) -> PanelLayout {
-        let theme = self.theme();
-        PanelLayout {
-            label_h: f32::from(theme.type_.badge.size) * theme.type_.badge.leading
-                + 2.0 * f32::from(bbr_ui::theme::Spacing::sp1()),
-            row_h: f32::from(theme.density.row()),
-            active_count: self.downloads.controller.read().active_ids().len(),
-            history_count: self.downloads.controller.read().history_ids().len(),
-            hairline: 1.0,
-        }
+        let controller = self.downloads.controller.read();
+        PanelLayout::for_theme(
+            &self.theme(),
+            controller.active_ids().len(),
+            controller.history_ids().len(),
+        )
     }
 }
 

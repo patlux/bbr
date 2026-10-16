@@ -16,7 +16,7 @@
 use std::rc::Rc;
 
 use bbr_ui::components::footer::footer_ids;
-use bbr_ui::components::footer_surface;
+use bbr_ui::components::{footer_surface, FooterControls};
 use gpui::{div, prelude::*, AnyElement, App, MouseDownEvent, SharedString, Window};
 
 use crate::footer_matrix::{build_footer_strip, footer_case_valid, FOOTER_REJECTED, FOOTER_VALID};
@@ -53,9 +53,15 @@ pub fn render_footer(ctx: &StoryContext) -> AnyElement {
                 build_footer_strip(theme, case).expect("valid matrix family builds its strip");
             let footer = footer_surface(
                 theme,
-                group4.downloads_focus.clone(),
-                false,
-                case.downloads_count,
+                &FooterControls {
+                    downloads_focus: group4.downloads_focus.clone(),
+                    downloads_focused: false,
+                    downloads_open: false,
+                    downloads_count: case.downloads_count,
+                    plus_open: false,
+                    hovered: None,
+                    rail: theme.palette.surface_sidebar,
+                },
                 strip,
                 {
                     let on = Rc::clone(&on_downloads);
@@ -69,6 +75,7 @@ pub fn render_footer(ctx: &StoryContext) -> AnyElement {
                         on((), window, cx)
                     }
                 },
+                Rc::new(|_target, _hovered, _window: &mut Window, _cx: &mut App| {}),
             );
             let meta = match (case.downloads_count, case.chips.len()) {
                 (Some(count), chips) => format!("running count {count} · {chips} chip(s)"),

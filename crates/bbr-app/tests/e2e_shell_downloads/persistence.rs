@@ -64,9 +64,9 @@ fn terminal_history_restores_across_process_restart() {
         // One succeeded + one cancelled terminal record; each accepted
         // terminal transition persisted the terminal history synchronously
         // (the repository whole-replace write outside render/ranking).
-        let succeeded_id = start_download(&mut client, &known_url, "known.bin");
+        let succeeded_id = start_download(&mut client, &fixtures, &known_url, "known.bin");
         let _ = wait_row_terminal(&mut client, succeeded_id, DownloadMachineState::Succeeded);
-        let cancelled_id = start_download(&mut client, &slow_url, "slow.bin");
+        let cancelled_id = start_download(&mut client, &fixtures, &slow_url, "slow.bin");
         let _ = wait_running_progress(&mut client, cancelled_id);
         client
             .send_ok(&Request::DownloadCancel { id: cancelled_id })
@@ -247,7 +247,7 @@ fn clear_is_durable_across_process_restart() {
         // persisted the terminal history synchronously).
         for index in 0..2 {
             let destination = format!("clear-{index}.bin");
-            let id = start_download(&mut client, &known_url, &destination);
+            let id = start_download(&mut client, &fixtures, &known_url, &destination);
             let _ = wait_row_terminal(&mut client, id, DownloadMachineState::Succeeded);
         }
 
@@ -354,10 +354,10 @@ fn delete_is_durable_across_process_restart() {
         let _since = replay.iter().map(|(seq, _)| *seq).max().unwrap_or(0);
 
         // Three terminal rows: cancelled (1), succeeded (2), cancelled (3).
-        let first_cancelled = cancel_slow(&mut client, &slow_url);
-        let succeeded_id = start_download(&mut client, &known_url, "known.bin");
+        let first_cancelled = cancel_slow(&mut client, &fixtures, &slow_url);
+        let succeeded_id = start_download(&mut client, &fixtures, &known_url, "known.bin");
         let _ = wait_row_terminal(&mut client, succeeded_id, DownloadMachineState::Succeeded);
-        let second_cancelled = cancel_slow(&mut client, &slow_url);
+        let second_cancelled = cancel_slow(&mut client, &fixtures, &slow_url);
 
         // The most-recent cancelled row offers the §17.8 Delete control;
         // Delete removes exactly that one row.
@@ -476,8 +476,8 @@ fn delete_is_durable_across_process_restart() {
 /// Cancel a running `slow.bin` transfer through the production
 /// request/confirmation path and return its terminal cancelled id (the
 /// deterministic fixture trickles, so the cancel lands mid-transfer).
-fn cancel_slow(client: &mut Client, slow_url: &str) -> u64 {
-    let id = start_download(client, slow_url, "slow.bin");
+fn cancel_slow(client: &mut Client, fixtures: &bbr_fixtures::FixtureServer, slow_url: &str) -> u64 {
+    let id = start_download(client, fixtures, slow_url, "slow.bin");
     let _ = wait_running_progress(client, id);
     client
         .send_ok(&Request::DownloadCancel { id })

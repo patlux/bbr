@@ -288,6 +288,9 @@ fn active_space_heading(theme: &Theme, model: &SidebarModel) -> Stateful<Div> {
                         theme,
                         &identity,
                         gpui::FontWeight(600.0),
+                        theme.density.icon(),
+                        // §18.3: the mark keeps the heading's quieter ink.
+                        theme.palette.ink_secondary,
                     )),
             )
         })

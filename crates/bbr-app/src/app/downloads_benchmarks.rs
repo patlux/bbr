@@ -210,10 +210,10 @@ impl BbrApp {
             let anchor = total
                 .saturating_sub(bbr_ui::surfaces::downloads::DOWNLOADS_WINDOW_ROWS)
                 .min(fresh_index);
-            let row_h = f32::from(self.theme().density.row());
+            let layout = self.downloads_layout();
             self.downloads.scroll.set_offset(gpui::point(
                 gpui::px(0.0),
-                gpui::px(-(anchor as f32 * row_h)),
+                gpui::px(-layout.row_offset(anchor)),
             ));
         }
         let active_view = self.controller.read().snapshot().active_view;
@@ -276,10 +276,10 @@ impl BbrApp {
             let anchor = total
                 .saturating_sub(bbr_ui::surfaces::downloads::DOWNLOADS_WINDOW_ROWS)
                 .min(fresh_index);
-            let row_h = f32::from(self.theme().density.row());
+            let layout = self.downloads_layout();
             self.downloads.scroll.set_offset(gpui::point(
                 gpui::px(0.0),
-                gpui::px(-(anchor as f32 * row_h)),
+                gpui::px(-layout.row_offset(anchor)),
             ));
         }
         let active_view = self.controller.read().snapshot().active_view;

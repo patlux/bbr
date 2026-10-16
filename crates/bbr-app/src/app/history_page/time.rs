@@ -42,9 +42,29 @@ pub(crate) struct Clock {
     pub offset_s: i64,
 }
 
+/// Testkit only: the pinned display clock (`SetDisplayClock`), so dated
+/// History evidence never depends on the machine's time or zone.
+#[cfg(feature = "testkit")]
+static PINNED: std::sync::Mutex<Option<Clock>> = std::sync::Mutex::new(None);
+
+/// The largest local UTC offset a zone uses (+14 h, Line Islands).
+#[cfg(feature = "testkit")]
+pub(crate) const MAX_OFFSET_S: i64 = 14 * 3600;
+
 impl Clock {
-    /// The system clock in the current time zone.
+    /// Testkit only: pin (or with `None` release) the display clock.
+    #[cfg(feature = "testkit")]
+    pub(crate) fn pin(clock: Option<Clock>) {
+        *PINNED.lock().unwrap_or_else(|poison| poison.into_inner()) = clock;
+    }
+
+    /// The system clock in the current time zone (the pinned display clock
+    /// instead while a testkit run holds one).
     pub(crate) fn system() -> Clock {
+        #[cfg(feature = "testkit")]
+        if let Some(clock) = *PINNED.lock().unwrap_or_else(|poison| poison.into_inner()) {
+            return clock;
+        }
         #[cfg(target_os = "macos")]
         let offset_s = bbr_web_macos::local_utc_offset_seconds();
         #[cfg(not(target_os = "macos"))]
@@ -133,6 +153,21 @@ mod tests {
 
     /// 2026-09-29 12:00:00 UTC.
     const NOON: u64 = 1_790_683_200_000;
+
+    #[cfg(feature = "testkit")]
+    #[test]
+    fn a_pinned_display_clock_replaces_the_system_until_released() {
+        // No other unit test reads the system clock; this one restores it.
+        let pinned = Clock {
+            now_ms: NOON,
+            offset_s: 2 * 3600,
+        };
+        Clock::pin(Some(pinned));
+        assert_eq!(Clock::system(), pinned);
+        assert_eq!(Clock::system().day_title(Clock::system().today()), "Today");
+        Clock::pin(None);
+        assert_ne!(Clock::system().now_ms, NOON, "the system clock again");
+    }
 
     #[test]
     fn civil_dates_round_trip_known_days() {

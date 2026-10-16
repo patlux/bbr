@@ -582,6 +582,29 @@ pub(crate) fn dispatch(
                 .try_global::<bbr_ui::rect_probe::ElementRects>()
                 .map(|rects| rects.for_window(window.window_handle().window_id().as_u64()))
                 .unwrap_or_default();
+            // The veil sheets draw in the browser, portal or Settings window.
+            snapshot.sheet_rects = cx
+                .try_global::<bbr_ui::rect_probe::ElementRects>()
+                .map(|rects| {
+                    use bbr_ui::surfaces::{
+                        auth, client_certificate, history, open_app, settings, space_delete,
+                    };
+                    rects.across_windows(&[
+                        open_app::OPEN_APP_ID,
+                        open_app::OPEN_APP_VEIL_ID,
+                        client_certificate::CLIENT_CERTIFICATE_ID,
+                        client_certificate::CLIENT_CERTIFICATE_VEIL_ID,
+                        settings::SETTINGS_SHEET_ID,
+                        settings::SETTINGS_SHEET_VEIL_ID,
+                        history::CLEAR_DATA_ID,
+                        history::CLEAR_DATA_VEIL_ID,
+                        auth::AUTH_SHEET_ID,
+                        auth::AUTH_VEIL_ID,
+                        space_delete::SPACE_DELETE_SHEET_ID,
+                        space_delete::SPACE_DELETE_VEIL_ID,
+                    ])
+                })
+                .unwrap_or_default();
             snapshot.window_key = window.is_window_active();
             snapshot.web_data_stores = super::web_data::current();
             snapshot.to_protocol()
@@ -735,6 +758,7 @@ pub(crate) fn dispatch(
         | Request::SettingsInput { .. }
         | Request::OpenHistory
         | Request::HistoryInput { .. }
+        | Request::SetDisplayClock { .. }
         | Request::PermissionInput { .. }
         | Request::MediaInput { .. }
         | Request::SplitInput { .. }
@@ -805,6 +829,8 @@ pub(crate) fn dispatch(
         // a routing bug.
         Request::ClickFooterDownloads
         | Request::ClickFooterPlus
+        | Request::HoverFooterControl { .. }
+        | Request::UnhoverFooterControl
         | Request::ClickPlusMenuItem { .. }
         | Request::OpenSpaceConfig { .. }
         | Request::SpaceConfigSelectTheme { .. }
@@ -892,6 +918,9 @@ pub(crate) fn dispatch(
         // arms); reaching one here is a routing bug.
         #[cfg(feature = "visual-capture")]
         Request::CaptureChrome { .. }
+        | Request::CaptureElements { .. }
+        | Request::CaptureAbout { .. }
+        | Request::CapturePortal { .. }
         | Request::CaptureFindBar { .. }
         | Request::CaptureCommandPalette { .. }
         | Request::CaptureSettings { .. }
@@ -900,6 +929,9 @@ pub(crate) fn dispatch(
         }
         #[cfg(not(feature = "visual-capture"))]
         Request::CaptureChrome { .. }
+        | Request::CaptureElements { .. }
+        | Request::CaptureAbout { .. }
+        | Request::CapturePortal { .. }
         | Request::CaptureFindBar { .. }
         | Request::CaptureCommandPalette { .. }
         | Request::CaptureSettings { .. }

@@ -126,6 +126,12 @@ fn client_certificate_sheet_chooses_remembers_and_forgets() {
         request(&mut client, view, 41, "vpn.corp.example");
         let open = snapshot(&mut client);
         let sheet = open.client_certificates.sheet.clone().expect("the sheet");
+        assert_sheet_centered(
+            &mut client,
+            "bbr-client-certificate",
+            "bbr-client-certificate-veil",
+            420.0,
+        );
         assert_eq!(
             sheet.message,
             "vpn.corp.example asks for a certificate to identify you. Profile · Default."

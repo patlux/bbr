@@ -49,7 +49,7 @@ fn bounded_window_scrolls_and_orders_history_deterministically() {
         let mut ids = Vec::with_capacity(16);
         for index in 0..16 {
             let destination = format!("bulk-{index:02}.bin");
-            let id = start_download(&mut client, &known_url, &destination);
+            let id = start_download(&mut client, &fixtures, &known_url, &destination);
             let _ = wait_row_terminal(&mut client, id, DownloadMachineState::Succeeded);
             ids.push(id);
         }

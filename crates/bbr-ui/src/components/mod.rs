@@ -56,7 +56,7 @@ pub use folders::{
     folder_item_title_id, folder_name_id, folder_row, folder_row_id, folder_toggle_id,
     FolderMemberVisual, FolderPresentation, FolderRowSpec,
 };
-pub use footer::{footer_control, footer_surface, FooterControl};
+pub use footer::{footer_control, footer_surface, FooterControl, FooterControls, FooterTarget};
 pub use menu::{plus_menu_items, PlusMenuItem, PlusMenuState};
 pub use pane::{crash_panel, empty_space_pane, unresponsive_panel};
 pub use saved_pages_library::{

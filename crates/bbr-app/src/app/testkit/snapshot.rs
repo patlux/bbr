@@ -358,7 +358,10 @@ impl BbrApp {
                     &browser,
                     self.chrome_focused(window),
                     self.command_bar_mode,
-                    self.sidebar_visible,
+                    // The same rail composition lives in the Portal while
+                    // floating. Keep the separate docked-layout flag false.
+                    self.sidebar_visible
+                        || (self.rail_floating() && self.floating_rail.geometry.is_some()),
                     self.command_bar_hint().as_deref(),
                     self.command_profile_hint.as_deref(),
                     self.command_surface,
@@ -401,6 +404,11 @@ impl BbrApp {
                     },
                 );
                 ids.extend(self.tab_menu_visible_ids());
+                // Paper S-7b: the in-flight count badge on `[Downloads]`
+                // renders exactly while something transfers.
+                if self.downloads_controller_active_count().is_some() {
+                    ids.push(bbr_ui::components::footer::FOOTER_DOWNLOADS_COUNT_ID.to_string());
+                }
                 // Blueprint D23: the shown group's slots, panes, dividers
                 // and the collapsed chip (the pane layout above names only
                 // its first two panes).
@@ -663,6 +671,14 @@ impl BbrApp {
                 .collect(),
             download_rows,
             downloads,
+            downloads_paint: *self.downloads.painted.borrow(),
+            footer: bbr_testkit::protocol::FooterSnapshot {
+                hovered: self.footer_hovered.map(|target| target.name()),
+                downloads_open: self.downloads.open,
+                plus_open: self.u2.plus_menu.open,
+                downloads_count: self.downloads_controller_active_count(),
+                strip_focused: self.space_strip_handle.is_focused(window),
+            },
             #[cfg(all(target_os = "macos", feature = "testkit"))]
             web_content_probe: self
                 .web_content_probe
@@ -747,6 +763,7 @@ impl BbrApp {
             text_input: self.text_input_readback,
             real_input: self.real_input_readback.clone(),
             element_rects: Vec::new(),
+            sheet_rects: Vec::new(),
             window_key: false,
             web_data_stores: Default::default(),
             rail_reveal: self.rail_reveal_label().into(),

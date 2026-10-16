@@ -275,11 +275,15 @@ impl BbrApp {
     }
 }
 
-/// The sheet attaches to the card's top edge, centred on the card, and is
-/// snapped into the window with the §11.4 margin.
+/// The sheet sits centred on the card on both axes (Patrick, 2026-10-12)
+/// and is snapped into the window with the §11.4 margin; the portal centres
+/// the drawn sheet by layout, this rect is its nominal frame.
 fn sheet_placement(card: Rect) -> PortalPlacement {
     PortalPlacement::Anchored(AnchoredPlacement {
-        anchor_point: Pt::new(card.x + card.width / 2.0, card.y),
+        anchor_point: Pt::new(
+            card.x + card.width / 2.0,
+            card.y + ((card.height - SPACE_DELETE_SHEET_HEIGHT) / 2.0).max(0.0),
+        ),
         anchor: PortalAnchor::TopCenter,
         size: Sz::new(SPACE_DELETE_SHEET_WIDTH, SPACE_DELETE_SHEET_HEIGHT),
         offset: Pt::new(0.0, 0.0),
