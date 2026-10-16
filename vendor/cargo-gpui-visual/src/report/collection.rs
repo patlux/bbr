@@ -40,33 +40,11 @@ pub(crate) fn write_collection(root: &Path, collection: &Collection) -> Result<(
         let id = &s.suite.id;
         let label = escape(&s.suite.label);
         d.nav += &format!("<p class=\"navhead\"><a href=\"#suite-{id}\">{label}</a></p>");
-        d.sections += &format!(
-            "<section class=\"suite\" id=\"suite-{id}\"><h2>{label}</h2><p>{} · Suite: <code>{id}</code></p>",
-            if s.passed {
-                "PASS"
-            } else {
-                "REVIEW REQUIRED / FAIL"
-            }
-        );
-        for error in &s.errors {
-            d.sections += &format!("<p>{}</p>", escape(error));
-        }
+        d.sections += &super::diagnostics::suite(s);
         if let Some(r) = &s.review {
             d.count += r.results.len();
             d.global |= r.results.iter().any(|i| i.status == "changed");
-            d.sections += &format!("<details><summary>Aufnahmeumgebung · {label}</summary><code>{}</code></details><p>Capture: <code>{}</code></p><p>Referenzen: <code>{}</code></p>",escape(&r.environment.to_string()),escape(&r.capture_hash),escape(&s.suite.baselines.display().to_string()));
-            d.sections += &super::provenance_notice(r);
-            for error in &r.errors {
-                d.sections += &format!("<p>{}</p>", escape(error));
-            }
-            if let Some(mismatch) = &r.environment_mismatch {
-                d.sections += &format!(
-                    "<p>Aufnahmeumgebung weicht ab: {}. Keine automatische Übernahme.</p>",
-                    escape(&mismatch.to_string())
-                );
-            }
         }
-        d.sections += "</section>";
         d.gallery += &format!("<h2 id=\"gallery-{id}\">{label}</h2>");
         let mut previous_group = None;
         let mut previous_sequence = None;

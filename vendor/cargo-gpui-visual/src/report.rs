@@ -1,6 +1,7 @@
 //! Static report. The existing review controls are embedded, never fetched.
 mod case;
 mod collection;
+mod diagnostics;
 use crate::compare::{Finding, Review};
 pub use crate::gallery::{Group, Options};
 use anyhow::Result;
@@ -206,9 +207,7 @@ pub fn write_with_options(root: &Path, r: &Review, options: &Options) -> Result<
 }
 
 pub(crate) fn provenance_notice(r: &Review) -> String {
-    r.provenance_difference.as_ref().map_or_else(String::new, |difference| {
-        format!("<details><summary>Provenienz geändert · separat vom Rendering-Vergleich</summary><code>{}</code></details>", escape(&difference.to_string()))
-    })
+    diagnostics::provenance(r)
 }
 
 /// Counts of reviewable units (stills and whole sequences) for the top bar.
@@ -312,21 +311,16 @@ pub(crate) fn write_review(
         .iter()
         .map(|e| format!("<li>{}</li>", escape(e)))
         .collect::<String>();
-    if let Some(mismatch) = &r.environment_mismatch {
+    if r.environment_mismatch.is_some() {
         let advice = if r.selection.is_some() {
             "Übernahme gesperrt; vollständigen Lauf aufnehmen und prüfen."
         } else {
             "Nur explizit mit accept --adopt-environment übernehmen."
         };
-        errors += &format!(
-            "<li>Aufnahmeumgebung weicht ab: {}. {advice}</li>",
-            escape(&mismatch.to_string())
-        );
+        errors += &format!("<li>Aufnahmeumgebung weicht ab. {advice}</li>");
     }
-    let mut environment = format!(
-        "<details id=\"umgebung\"><summary>Aufnahmeumgebung</summary><code>{}</code></details>",
-        escape(&r.environment.to_string())
-    );
+    let mut environment = diagnostics::environment(r);
+    environment += &format!("<details class=\"technical-details\" id=\"umgebung\"><summary>Technische Details · Aufnahmeumgebung</summary>{}</details>", diagnostics::evidence(r));
     environment += &provenance_notice(r);
     if let Some(selection) = &r.selection {
         environment.insert_str(0, &format!("<p class=selection-scope><strong>TEILLAUF · nur ausgewählte Stories: {}</strong><br>Kein vollständiger Suite-Nachweis; Baseline-Übernahme gesperrt. {}</p>", escape(&selection.ids()), if r.passed { "Auswahl stimmt exakt überein." } else { "Auswahl benötigt Prüfung." }));

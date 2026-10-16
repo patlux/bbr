@@ -4,6 +4,8 @@ mod acceptance;
 mod environment;
 #[path = "collection/presentation.rs"]
 mod presentation;
+#[path = "collection/summary.rs"]
+mod summary;
 #[path = "collection/withheld.rs"]
 mod withheld;
 

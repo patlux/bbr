@@ -141,6 +141,38 @@ label[for="crop-all"]::after{content:"Z";font:var(--text-micro) var(--font-mono)
 .empty,.gallery-intro{margin:0;padding:8px 24px 20px;color:var(--color-text-muted)}
 .report-end{margin:0;padding:16px 24px 48px;border-top:1px solid var(--color-surface);color:var(--color-text-subtle);font-size:var(--text-caption)}
 
+/* Diagnostics: a short verdict, exact changed values, disclosure for raw evidence. */
+.suite-summary{display:flex;flex-wrap:wrap;gap:8px 18px;margin:12px 0 20px;color:var(--color-text-secondary)}
+.suite-summary strong{font-weight:600;color:var(--color-text)}
+.suite-summary .checked{color:var(--color-ok)}.suite-summary .incomplete{color:var(--color-changed-text)}
+.suite-summary>span{padding-left:18px;border-left:1px solid var(--color-line-strong)}
+.environment-change{max-width:960px;margin:20px 0}
+.environment-change h3{margin:0 0 6px;font-size:var(--text-body);color:var(--color-new)}
+.diagnostic-note{margin:0 0 12px;color:var(--color-text-muted);max-width:75ch}
+.environment-delta{width:100%;table-layout:fixed;border-collapse:collapse;margin:12px 0 16px;text-align:left;font-size:var(--text-caption);line-height:1.5}
+.environment-delta caption{text-align:left;color:var(--color-text-muted);margin-bottom:8px}
+.environment-delta th,.environment-delta td{padding:8px 12px;border-bottom:1px solid var(--color-line);vertical-align:top;overflow-wrap:anywhere}
+.environment-delta th:first-child{padding-left:0;width:44%}
+.environment-delta thead th{color:var(--color-text-muted);font-weight:400}
+.environment-delta tbody th{color:var(--color-text-secondary);font-weight:500}
+.environment-delta td{font-family:var(--font-mono);font-variant-numeric:tabular-nums;color:var(--color-text-secondary)}
+.environment-delta td:last-child{color:var(--color-changed-text)}
+.environment-delta small{display:block;font:var(--text-micro)/1.5 var(--font-mono);color:var(--color-text-muted);margin-top:4px}
+.value-absent{font-family:var(--font-sans);font-style:italic}
+.technical-details,.coverage-details,.provenance-details,.diagnostic-errors,.diagnostic-more{max-width:960px;margin:10px 0;color:var(--color-text-secondary)}
+.technical-details>summary,.coverage-details>summary,.provenance-details>summary,.diagnostic-errors>summary,.diagnostic-more>summary,.raw-evidence>summary{padding:6px 0;cursor:pointer;line-height:1.5}
+.diagnostic-errors>summary{color:var(--color-changed-text)}
+.coverage-list{list-style:none;margin:8px 0 16px;padding:0}
+.coverage-list li{padding:12px 0;border-top:1px solid var(--color-line);max-width:75ch;line-height:1.5}
+.coverage-list strong{display:block;color:var(--color-text);font-weight:600}
+.coverage-list li>span{display:block;color:var(--color-new);font-size:var(--text-caption);margin:4px 0}
+.coverage-list p{margin:6px 0;color:var(--color-text-secondary)}
+.coverage-list code{font-size:var(--text-caption);color:var(--color-text-muted)}
+.evidence-paths{display:grid;grid-template-columns:max-content minmax(0,1fr);gap:8px 20px;margin:12px 0;font-size:var(--text-caption);line-height:1.5}
+.evidence-paths dt{color:var(--color-text-muted)}.evidence-paths dd{margin:0}
+.raw-evidence{margin:8px 0}
+.raw-evidence pre{max-height:320px;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere;margin:8px 0;padding:12px;background:var(--color-panel);border-radius:var(--radius-md);font-size:var(--text-caption);line-height:1.5;color:var(--color-text-secondary)}
+
 /* One case: stage and inspector side by side */
 section.case,section.sequence{display:grid;grid-template-columns:minmax(0,1fr) var(--container-inspector);
   border-bottom:1px solid var(--color-surface)}
@@ -348,6 +380,11 @@ body:has(#only-findings:checked) .quiet{display:none}
   .inspector{border-left:0;border-top:1px solid var(--color-line)}
   .inspector-body{position:static;max-height:none}
   .case-main{padding:0 16px 24px}
+  .suite-summary{flex-direction:column;gap:6px}
+  .suite-summary>span{padding-left:0;border:0}
+  .environment-delta th,.environment-delta td{padding:8px 6px}
+  .evidence-paths{grid-template-columns:minmax(0,1fr);gap:4px}
+  .evidence-paths dd{margin-bottom:8px}
   .images{flex-wrap:wrap;gap:16px}
   .viewer:has(.m-crop:checked) .frame{max-width:100%;overflow:auto}
   .group-title,#alle,.gallery-group,.empty,.gallery-intro,.notices{padding-left:16px;padding-right:16px}
