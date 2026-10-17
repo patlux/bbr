@@ -68,6 +68,8 @@ responder).
 
 The Sidebar suite exercises light/dark material, live Reduce Transparency and
 Increase Contrast fallbacks, collapse and unchanged WebView/session identity.
+It rejects tint coverage above 67%, the regression in which installed glass
+stayed invisible.
 The content-card scenario also checks the installed native mask through resize
 and the existing full-screen presentation override; it does not prove an actual
 AppKit full-screen transition. The Windows lifecycle suite covers a second

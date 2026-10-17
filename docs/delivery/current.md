@@ -1,6 +1,29 @@
 <!-- bbr:current-delivery -->
 # Current delivery
 
+## Active chrome visibility correction
+
+Patrick rejected the nearly opaque initial result (“ich seh davon nicht”) and
+authorized correction (“ja bitte”). The same local writer continues in
+`/Users/patwoz/dev/Personal/macos/bbr`, now on `main@ca452712` after session
+`01a1470d` fast-forwarded the sidebar slide without touching this work. No
+delegation, new lanes or other queue work is authorized.
+
+Two visible guest permission-setup attempts for native-composite capture expired
+without consent (window not in front; 3200×1800 guest window too large). Every
+booted clone was removed with verified cleanup. Patrick then chose route B:
+correct the tint now, verify through lower-level, functional and GPUI checks,
+and judge the visible effect himself. The unverified native-capture draft is
+preserved outside the repository; details and exact batch ids are in the
+[glass packet](../roadmap/tasks/chrome-desktop-glass.md#visibility-correction--patricks-route-b-2026-10-17).
+
+The tint is 55% light / 66% dark instead of 92–96%, with regressions against
+near-opaque glass. Glass-mode legibility is revised to primary-label AA over
+any raw desktop; opaque D3 floors stay in the fallbacks. This revision and the
+visible effect await Patrick's acceptance. Native-composite proof, inactive
+state, 1×/2× native edges and performance execution remain open. Baselines and
+remote remain untouched.
+
 ## Chrome-only desktop glass checkpoint
 
 The current local writer owns [desktop glass](../roadmap/tasks/chrome-desktop-glass.md)

@@ -38,6 +38,6 @@ pub(super) fn assert_present(snapshot: &Snapshot) {
     assert!(material.attached && material.enabled && material.card_mask_valid);
     assert!(material.behind_window && material.follows_activation);
     assert!(!material.window_opaque && !material.reduce_transparency);
-    assert!(material.tint_alpha > 0.0 && material.tint_alpha < 1.0);
+    assert!(material.tint_alpha > 0.0 && material.tint_alpha <= 0.67);
     assert_eq!(material.web_view_opaque, Some(true), "website stays opaque");
 }

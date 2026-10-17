@@ -234,8 +234,8 @@ window close removes the view and its owned layers. Settings and Gallery
 Roots keep their existing opaque background through a per-instance component
 Root override, not a shared-theme mutation.
 
-`app::chrome_glass` paints one compensated translucent space tint across rail
-and chassis. A cached public Core Animation even-odd mask removes only the
+`app::chrome_glass` paints one translucent space tint (55% light / 66% dark
+coverage) across rail and chassis. A cached public Core Animation even-odd mask removes only the
 inverse content-card corner wedges; matching corner tint sits above the native
 material. Native WKWebView clipping, page opacity, content geometry and session
 ownership are unchanged. Reduce Transparency, Increase Contrast or a failed

@@ -59,7 +59,13 @@ fn desktop_glass_is_chrome_only_and_accessibility_changes_keep_web_sessions() {
                 "native mask leaves content and rail intact"
             );
             assert_eq!(material.web_view_opaque, Some(true), "website stays opaque");
-            assert!(material.tint_alpha > 0.0 && material.tint_alpha < 1.0);
+            // Regression: 0.92-0.96 coverage technically installed glass but
+            // left the native material invisible. A third must show through.
+            assert!(
+                material.tint_alpha > 0.0 && material.tint_alpha <= 0.67,
+                "{mode:?}: tint coverage {} hides the native material",
+                material.tint_alpha
+            );
             assert!(material.size[0] > 400.0 && material.size[1] > 200.0);
             assert_view_and_sessions_preserved(&snapshot, view, sessions);
             let rect = snapshot.content_rect;

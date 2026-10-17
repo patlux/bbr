@@ -32,13 +32,92 @@ Not parallelized. One local writer; no delegation or sibling-worktree changes.
 - GPUI owns controls, AppKit owns behind-window material, WebKit owns pages.
 - Do not change geometry, profile isolation, focus or page opacity.
 - Keep native observer/layer ownership bounded to the browser window.
-- Do not weaken contrast, functional or performance checks.
+- Do not weaken functional or performance checks. Opaque D3 floors stay
+  unchanged; the glass-mode floor is the explicit revised contract below.
+
+## Visibility correction — Patrick's route B (2026-10-17)
+
+Patrick reported that no transparency was visible and authorized correction
+(“ja bitte”). The initial adaptive tint covered the native material by 95.5%
+(light) and 91.6% (dark): technically installed glass, practically opaque. It
+existed only because the agent-authored glass test required the opaque D3 text
+floors over a raw black/white desktop. Those floors cannot hold with visible
+material at all; they force at least 85% coverage.
+
+After the native-capture attempts below, Patrick chose route B (“B”): correct
+the tint with lower-level, functional and GPUI checks and judge the visible
+desktop effect himself on his Mac. Automated proof of the final macOS composite
+stays open.
+
+Glass-mode legibility contract (revised, requires Patrick's visual acceptance):
+
+- The unchanged space-tint color at 55% (light) / 66% (dark) coverage, the
+  smallest coverage that keeps primary labels (`ink`) at WCAG AA 4.5:1 for
+  every space tint and intensity even over a raw black or white desktop. About
+  45% / 34% of the native material remains visible instead of 4.5–8.4%.
+- Secondary text, accents and selection rely on the Sidebar material's own
+  frosting. Their opaque D3 floors still hold unchanged in the Reduce
+  Transparency, Increase Contrast and native-failure fallbacks.
+- Unit, real-app E2E and performance-driver regressions reject tint coverage
+  above 67%, so a near-opaque “glass” cannot return unnoticed.
+
+### Route B verification (2026-10-17, base `main@ca452712`)
+
+- Calibration over every space tint and intensity found the smallest passing
+  coverage at exactly 0.55 (light) and 0.66 (dark); one percent less fails the
+  primary-label bar somewhere. Unit tests assert that minimum, the 67% ceiling,
+  unchanged tint color and the opaque fallbacks.
+- Full mbx-routed `just verify`: 2,164 tests pass. The first attempt failed only
+  the untouched `bbr-command` 50 ms benchmark (p95 53.756 ms at host load 51;
+  `/tmp/bbr-glass-correction-verify.log`). The isolated rerun and the complete
+  rerun pass with the budget unchanged (`/tmp/bbr-glass-correction-verify2.log`).
+  No load-causation claim; the failed log is retained.
+- Strict testkit all-target Clippy passes; optimized short/full performance
+  executables compile without execution
+  (`/tmp/bbr-glass-correction-clippy-perfcompile.log`).
+- Hardened Tart Sidebar/Windows/Spaces: **60 tests / 7 executables** pass,
+  including the real-app 67% ceiling, with verified clone/key/process/disk
+  removal and SSH unreachability:
+  `/tmp/bbr-e2e-vm/run-20261017-121914-69624/`. The wrapper
+  `/tmp/bbr-glass-hardened-e2e.py` is the earlier hardened wrapper without its
+  dependency interception, since `c43fdb84` now imports dependencies itself.
+- Official sealed batch **`1792232601708159000-5458`**: 162 images, 74 same /
+  88 changed against references, zero capture errors, no environment mismatch.
+  Exactly the 88 chrome stills differ from the previous glass batch; all others
+  are byte-identical. Rail pixels now read alpha 140/255 (light) and 168/255
+  (dark) instead of 244/234; the content card stays 255/255. Scoped review of
+  both representative rails and the light History diff shows legible labels and
+  changes only around the card edge. Report:
+  `/Users/patwoz/dev/Personal/macos/bbr/reports/visual/batches/1792232601708159000-5458/review/index.html`.
+  Cleanup: `/private/tmp/bbr-visual/1792232601708159000-5458-browser-transport/vm/cleanup-observed.json`.
+  Exit 1 is review required; no baseline was accepted.
+
+### Native-composite attempts (route A, deferred)
+
+A source-bound guest producer for real macOS composites was drafted and run in
+the official Tart route. Guest Screen Recording permission refused capture
+(`1792186559054008000-26565`; earlier Python-placeholder failure
+`1792186253786645000-85488`). Two visible permission-setup clones then expired
+without consent (`1792189970724559000-52214`: window not in front;
+`1792228317757998000-17258`: 3200×1800 guest window too large). One retry stopped
+before boot because another session fast-forwarded `main` during the build
+(`1792228102182507000-50746`). Every booted clone has verified clone/key/process/
+disk removal and SSH unreachability in its transport `vm/cleanup-observed.json`.
+No TCC write, golden-image change, host capture or synthetic composite occurred.
+
+The unverified draft is removed from the official suite so normal visual checks
+stay headless and runnable. It is preserved, re-applicable with `git apply`, at
+`/tmp/bbr-native-composite-permission-draft-20261017.patch`
+(SHA-256 `e04eca87dd7275f1e672b8dbf4682719edd73c554ea7e62209cef9ed1f341f85`).
+Resuming needs a longer consent window, a fitted guest window and possibly the
+guest administrator password.
 
 ## Evidence
 
 ### Unit and contract
 
 - [x] Material policy, opaque fallbacks, worst-case text contrast and tint alpha.
+- [x] Visible-material regression and primary-label AA over any raw desktop.
 - [x] Testkit serialization and normal/testkit builds.
 
 ### Real-app E2E
@@ -47,6 +126,7 @@ Not parallelized. One local writer; no delegation or sibling-worktree changes.
 - [x] Light/dark, reduced transparency, increased contrast, collapse/resize.
 - [x] New browser windows retain the same native material contract.
 - [x] Official sealed chrome capture; native desktop pixels excluded from GPUI readback.
+- [ ] Patrick confirms the visible desktop effect and legibility on his Mac.
 - [ ] Final desktop-composited appearance, inactive state and native corner
       antialiasing at 1×/2×, through an approved official evidence route.
 

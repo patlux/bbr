@@ -110,13 +110,16 @@ This revises the earlier matte-background direction for these two surfaces
 only. Website/WKWebView content remains opaque, unsampled and unchanged;
 internal content pages and floating panels keep their solid surfaces.
 
-One shared tint covers rail and chassis. Its coverage is at least 85%, raised
-per space tint to keep compensated channels in gamut. Light tints compensate
-toward white, dark tints toward black, preserving the existing D3 contrast
-floors even over the worst black/white backdrop. Space transitions interpolate
-one paint rather than stacking translucent layers. Foreground tokens and all
-card geometry stay unchanged. This is native macOS translucency, not a Liquid
-Glass claim.
+One shared tint covers rail and chassis: the unchanged space-tint color at 55%
+(light) / 66% (dark) coverage, so about 45% / 34% of the native material shows
+through. These are the smallest coverages that keep primary labels (`ink`) at
+WCAG AA 4.5:1 for every space tint even over a raw black or white desktop.
+Secondary text and accents rely on the material's own frosting; the opaque D3
+floors apply in the fallbacks below. (The first 2026-10-16 version kept D3 over
+raw extremes, which required 92–96% coverage and hid the material.) Space
+transitions interpolate one paint rather than stacking translucent layers.
+Foreground tokens and all card geometry stay unchanged. This is native macOS
+translucency, not a Liquid Glass claim; Patrick's visual acceptance is open.
 
 Reduce Transparency and Increase Contrast select the original opaque tint
 and disable the effect. Unsupported/native-install failure does the same.
