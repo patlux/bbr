@@ -104,6 +104,7 @@ fn full_repeated_cold_benchmark_meets_budgets() {
         let find_query_result = report.results["find_query_result"].samples;
         let find_step = report.results["find_step"].samples;
         let zoom_step = report.results["zoom_step"].samples;
+        let transparency = report.results["chrome_transparency_change"].samples;
         let context_menu_open = report.results["context_menu_open"].samples;
         let tab_menu_open = report.results["tab_context_menu_open"].samples;
         let tab_menu_submenu_commit = report.results["tab_context_menu_submenu_commit"].samples;
@@ -225,6 +226,10 @@ fn full_repeated_cold_benchmark_meets_budgets() {
         assert!(
             zoom_step >= INTERACTION_SAMPLES,
             "zoom-step samples {zoom_step} < {INTERACTION_SAMPLES}"
+        );
+        assert!(
+            transparency >= INTERACTION_SAMPLES,
+            "transparency samples {transparency} < {INTERACTION_SAMPLES}"
         );
         assert!(
             context_menu_open >= INTERACTION_SAMPLES,

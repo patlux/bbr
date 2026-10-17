@@ -1006,6 +1006,7 @@ pub(crate) fn dispatch(
         | Request::BenchmarkPeekDismissToOrigin { .. }
         | Request::BenchmarkPeekPromoteToTab { .. }
         | Request::BenchmarkZoomStep { .. }
+        | Request::BenchmarkChromeTransparency { .. }
         | Request::BenchmarkContextMenuOpen { .. }
         | Request::BenchmarkTabMenuOpen { .. }
         | Request::BenchmarkTabMenuSubmenuCommit { .. }

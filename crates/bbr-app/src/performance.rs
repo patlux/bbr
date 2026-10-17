@@ -18,6 +18,7 @@ use bbr_web::{WebEvent, WebRect, WebViewId};
 use crate::app::palette::CommandSurface;
 
 mod auth;
+mod chrome_tint;
 pub mod command;
 mod context_menu;
 pub(crate) mod downloads;
@@ -69,6 +70,9 @@ struct State {
     /// The zoom state the production mutation path reached; the zoom
     /// benchmarks commit only against it (see `zoom`).
     latest_zoom: Option<zoom::ZoomObservation>,
+    /// The chrome tint the browser-window render painted; the transparency
+    /// benchmark commits only against it (render-gated, see `chrome_tint`).
+    latest_chrome_tint: Option<chrome_tint::ChromeTintObservation>,
     /// The context-menu presentation the portal render actually drew; the
     /// context-menu benchmarks commit only against it (render-gated, see
     /// `context_menu`).
@@ -160,6 +164,9 @@ struct Pending {
     /// The exact zoom state the pending sample must commit from (the armed
     /// level, natively applied, persistence acknowledged).
     zoom: Option<zoom::ZoomExpectation>,
+    /// The painted tint coverage/material state the pending sample must
+    /// commit from (the armed transparency).
+    chrome_tint: Option<chrome_tint::ChromeTintExpectation>,
     /// The exact context-menu presentation the pending sample must commit
     /// from (open/focused over the bound view at the armed anchor).
     context_menu: Option<context_menu::ContextMenuExpectation>,
@@ -195,6 +202,7 @@ impl PerformanceProbe {
                 latest_downloads: None,
                 latest_error_surface: error_surface::ErrorSurfaceObservation::default(),
                 latest_zoom: None,
+                latest_chrome_tint: None,
                 latest_context_menu: None,
                 latest_tab_menu: None,
                 latest_auth: None,
@@ -229,6 +237,7 @@ impl PerformanceProbe {
                     downloads: None,
                     error_surface: None,
                     zoom: None,
+                    chrome_tint: None,
                     context_menu: None,
                     tab_menu: None,
                     auth: None,
@@ -281,6 +290,7 @@ impl PerformanceProbe {
             downloads: None,
             error_surface: None,
             zoom: None,
+            chrome_tint: None,
             context_menu: None,
             tab_menu: None,
             auth: None,
@@ -573,6 +583,7 @@ impl PerformanceProbe {
             || !downloads::downloads_matches(pending, &state)
             || !error_surface::error_surface_matches(pending, &state)
             || !zoom::zoom_matches(pending, &state)
+            || !chrome_tint::chrome_tint_matches(pending, &state)
             || !context_menu::context_menu_matches(pending, &state)
             || !tab_menu::tab_menu_matches(pending, &state)
             || !auth::auth_matches(pending, &state)

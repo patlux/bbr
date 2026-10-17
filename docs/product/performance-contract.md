@@ -45,6 +45,7 @@ allowed distribution before the test fails.
 | Reopen a closed tab → fresh native session presented with preserved identity | ≤ 100 ms | p95 ≤ 100 ms; max ≤ 150 ms |
 | Open, close, or toggle the sidebar → state committed and its first presented frame (Reduce Motion: the final chrome and native content geometry) | next display frame | p95 ≤ 50 ms; max ≤ 100 ms |
 | Sidebar toggle slide (DESIGN §6 1a) → chrome and native content geometry settled at the committed state | `dur:emphasis` (260 ms) | p95 ≤ 300 ms; max ≤ 400 ms |
+| Settings sidebar transparency change → the browser window paints the new tint coverage (`chrome_transparency_change`) | next display frame | p95 ≤ 50 ms; max ≤ 100 ms |
 | Focus a tab/split pane or route a browser command to the active target | next display frame when visual | p95 ≤ 50 ms; max ≤ 100 ms |
 | Commit web-content Back/Forward gesture → correct history state presented | next display frame after native commit | p95 ≤ 50 ms; max ≤ 100 ms |
 | Commit Back at a regular child tab's root → child closed and exact warm opener presented | next display frame | p95 ≤ 50 ms; max ≤ 100 ms |

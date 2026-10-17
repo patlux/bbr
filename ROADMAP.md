@@ -10,7 +10,7 @@ Repository workflow and mandatory verification: [AGENTS.md](AGENTS.md).
 
 ## Current execution
 
-- **Chrome material:** [Desktop glass for browser chrome](docs/roadmap/tasks/chrome-desktop-glass.md) shows native behind-window material through the sidebar and content surround; the near-opaque first tint is corrected to 55%/66% coverage. WebKit content remains opaque. Patrick's visual acceptance and native-composite proof are open.
+- **Chrome material:** [Desktop glass for browser chrome](docs/roadmap/tasks/chrome-desktop-glass.md) shows native behind-window material through the sidebar and content surround; the near-opaque first tint is corrected to 55%/66% coverage. WebKit content remains opaque. Patrick's visual acceptance and native-composite proof are open. Settings › Appearance now carries a live [sidebar transparency](docs/roadmap/tasks/chrome-transparency-setting.md) slider.
 
 - **Isolated build tooling:** [Linux-to-macOS cross-build](docs/roadmap/tasks/linux-macos-cross-build.md) builds and ad-hoc signs the ARM64 macOS app on Linux, with checksum-bound Tart functional evidence. Native defaults and Visual ownership remain unchanged; performance and independent acceptance remain open.
 

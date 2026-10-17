@@ -28,6 +28,15 @@
       "samples": 0,
       "source": "contract-budget"
     },
+    "chrome_transparency_change": {
+      "budget_max_ms": 100.0,
+      "budget_p95_ms": 50.0,
+      "max_ms": 100.0,
+      "p50_ms": 0.0,
+      "p95_ms": 50.0,
+      "samples": 0,
+      "source": "contract-budget"
+    },
     "closed_row_select": {
       "budget_max_ms": 150.0,
       "budget_p95_ms": 100.0,

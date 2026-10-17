@@ -112,6 +112,10 @@ pub enum PaperChoice {
     Rich,
 }
 
+/// The sidebar/frame transparency default (percent): the calibrated glass
+/// that keeps primary labels legible over any desktop.
+pub const DEFAULT_CHROME_TRANSPARENCY: u8 = 50;
+
 /// Every preference the Settings window edits.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Preferences {
@@ -129,6 +133,9 @@ pub struct Preferences {
     pub external_links_ask: bool,
     /// Blueprint D15: the first-run welcome was shown (it never returns).
     pub welcomed: bool,
+    /// How much desktop the sidebar and window frame show, 0–100 percent
+    /// (0: opaque chrome, no native material).
+    pub chrome_transparency: u8,
 }
 
 impl Default for Preferences {
@@ -143,6 +150,7 @@ impl Default for Preferences {
             palette_all_spaces: true,
             external_links_ask: false,
             welcomed: false,
+            chrome_transparency: DEFAULT_CHROME_TRANSPARENCY,
         }
     }
 }
@@ -213,6 +221,11 @@ impl Preferences {
                         prefs.welcomed = flag;
                     }
                 }
+                "chrome_transparency" => {
+                    if let Some(percent) = value.parse::<u8>().ok().filter(|p| *p <= 100) {
+                        prefs.chrome_transparency = percent;
+                    }
+                }
                 "external_links" => match value {
                     "ask" => prefs.external_links_ask = true,
                     "last_space" => prefs.external_links_ask = false,
@@ -245,7 +258,7 @@ impl Preferences {
         format!(
             "appearance={appearance}\nincrease_contrast={}\nreduce_motion={}\ndensity={density}\n\
              default_paper={paper}\npeek_new_windows={}\npalette_all_spaces={}\n\
-             external_links={}\nwelcomed={}\n",
+             external_links={}\nwelcomed={}\nchrome_transparency={}\n",
             self.increase_contrast.key(),
             self.reduce_motion.key(),
             self.peek_new_windows,
@@ -256,6 +269,7 @@ impl Preferences {
                 "last_space"
             },
             self.welcomed,
+            self.chrome_transparency,
         )
     }
 }
@@ -298,8 +312,24 @@ mod tests {
             palette_all_spaces: false,
             external_links_ask: true,
             welcomed: true,
+            chrome_transparency: 85,
         };
         assert_eq!(Preferences::parse(&prefs.render()), prefs);
+        // Out-of-range or malformed transparency keeps the calibrated default.
+        for body in [
+            "chrome_transparency=101",
+            "chrome_transparency=-5",
+            "chrome_transparency=x",
+        ] {
+            assert_eq!(
+                Preferences::parse(body).chrome_transparency,
+                DEFAULT_CHROME_TRANSPARENCY
+            );
+        }
+        assert_eq!(
+            Preferences::parse("chrome_transparency=0").chrome_transparency,
+            0
+        );
         let tolerant = Preferences::parse("appearance=purple\nfuture=1\ndensity=small\nnonsense");
         assert_eq!(tolerant.appearance, AppearanceChoice::System);
         assert_eq!(tolerant.density, DensityChoice::Small);

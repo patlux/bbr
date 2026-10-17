@@ -7,7 +7,8 @@
 //! change of shared state re-renders a window, an idle one does not; every
 //! window comes back after a restart; a closed window comes back from its
 //! toast or ⇧⌘T; a tab dragged onto another window's rail or card moves
-//! there. Every step waits on typed snapshot state under a deadline.
+//! there; the Settings sidebar transparency re-presents every window live.
+//! Every step waits on typed snapshot state under a deadline.
 
 #![cfg(target_os = "macos")]
 
@@ -17,6 +18,7 @@ mod e2e_common;
 mod drag;
 mod lifecycle;
 mod restore;
+mod transparency;
 
 use bbr_testkit::protocol::{CommandSurface, Snapshot, WindowEntry};
 use e2e_common::*;

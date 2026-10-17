@@ -1,6 +1,17 @@
 <!-- bbr:current-delivery -->
 # Current delivery
 
+## Active sidebar transparency setting
+
+Patrick requested a live Settings › Appearance slider for the transparency
+strength (2026-10-17). The same local writer implements the
+[transparency setting packet](../roadmap/tasks/chrome-transparency-setting.md)
+on `main` after `b09ee0e0`; no delegation, lanes or other queue work. Verified
+locally: full `just verify`, strict Clippy, hardened Tart Windows/Settings/Sidebar
+suites and final sealed visual batch `1792239668826525000-11638` (review
+required). Details are in the packet ledger. Patrick's live check is open;
+performance execution stays deferred and baselines/remote stay untouched.
+
 ## Active chrome visibility correction
 
 Patrick rejected the nearly opaque initial result (“ich seh davon nicht”) and

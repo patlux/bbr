@@ -1250,6 +1250,17 @@ fn drive_matrix_inner(
             page_one,
             &mut operation,
         );
+        // Settings › Appearance sidebar transparency: the slider's
+        // production event until the browser window paints the new tint
+        // (the in-app probe requires the exact armed coverage). The block
+        // restores the default before the blocks below assert glass.
+        let transparency_samples = super::chrome_glass::drive_transparency_scenarios(
+            client,
+            harness,
+            &mut since,
+            config,
+            &mut operation,
+        );
 
         // BBR context menu over web content (queue item 12, part B): the
         // production event-driven open — the exact seam the native bridge's
@@ -1485,6 +1496,7 @@ fn drive_matrix_inner(
         raw.extend(downloads_samples);
         raw.extend(error_surface_samples);
         raw.extend(zoom_samples);
+        raw.extend(transparency_samples);
         raw.extend(context_menu_samples);
         // Tab/Favorite context menus (task packet
         // `tab-favorite-context-menus`): the production right-click open

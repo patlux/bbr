@@ -31,6 +31,7 @@ mod dispatch_benchmark_context_menu;
 mod dispatch_benchmark_downloads;
 mod dispatch_benchmark_find;
 mod dispatch_benchmark_gestures;
+mod dispatch_benchmark_glass;
 mod dispatch_benchmark_library;
 mod dispatch_benchmark_peek;
 mod dispatch_benchmark_responsiveness;

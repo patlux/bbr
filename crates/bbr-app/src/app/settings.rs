@@ -28,6 +28,8 @@ pub(crate) struct SettingsState {
     pub selected_profile: Option<bbr_web::ProfileId>,
     /// Blueprint D06: the open profile sheet.
     pub sheet: Option<super::settings_profiles::ProfileSheet>,
+    /// The slider the arrow keys step (pressed or its row selected last).
+    pub active_slider: Option<SharedString>,
 }
 
 /// The curated engines in Settings order.
@@ -380,6 +382,7 @@ impl BbrApp {
                     .detail("Follows the macOS accessibility setting"),
                 ],
             ),
+            self.transparency_section(),
             section(
                 "Density",
                 vec![SettingsRow::new(
@@ -422,19 +425,36 @@ impl BbrApp {
             SettingsEvent::Pane(pane) => {
                 self.settings.get().pane = pane;
                 self.settings.get().open_select = None;
+                self.settings.get().active_slider = None;
             }
             SettingsEvent::OpenSelect(row) => {
                 let reopen = self.settings.read().open_select.as_ref() == Some(&row);
                 self.settings.get().open_select = (!reopen).then_some(row);
             }
-            SettingsEvent::Dismiss => self.settings.get().open_select = None,
+            SettingsEvent::Dismiss => {
+                self.settings.get().open_select = None;
+                self.settings.get().active_slider = None;
+            }
             SettingsEvent::Key { key, .. } => {
                 if key.as_ref() == "escape" {
                     self.settings.get().open_select = None;
+                    self.settings.get().active_slider = None;
+                } else {
+                    self.step_active_slider(key.as_ref(), cx);
                 }
             }
-            SettingsEvent::Select(_)
-            | SettingsEvent::SheetField(_)
+            SettingsEvent::Slide(row, value) => {
+                self.settings.get().open_select = None;
+                self.settings.get().active_slider = Some(row.clone());
+                self.set_slider(row.as_ref(), value, cx);
+            }
+            SettingsEvent::Select(row) => {
+                // A press on the slider's row hands it the arrow keys.
+                let slider =
+                    (row.as_ref() == super::settings_transparency::TRANSPARENCY_ROW).then_some(row);
+                self.settings.get().active_slider = slider;
+            }
+            SettingsEvent::SheetField(_)
             | SettingsEvent::SheetSwatch(_)
             | SettingsEvent::SheetCancel
             | SettingsEvent::SheetConfirm => {}

@@ -45,6 +45,8 @@ mod benchmarks_responsiveness;
 #[cfg(feature = "testkit")]
 mod benchmarks_u2;
 mod chrome_glass;
+#[cfg(feature = "testkit")]
+mod chrome_glass_benchmarks;
 mod command_activate;
 #[cfg(feature = "testkit")]
 mod command_benchmark_history;
@@ -110,6 +112,7 @@ mod settings_profiles;
 mod settings_shortcuts;
 #[cfg(feature = "testkit")]
 mod settings_testkit;
+mod settings_transparency;
 /// Blueprint D14 portal ids shared with the portal render.
 pub(crate) mod nav_history_ids {
     pub const BACKDROP: &str = super::nav_history::NAV_HISTORY_BACKDROP_ID;

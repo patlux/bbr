@@ -9,6 +9,7 @@
 mod controls;
 mod render;
 mod sheet;
+mod slider;
 
 use std::rc::Rc;
 
@@ -19,6 +20,7 @@ use crate::theme::Theme;
 
 pub use render::settings_surface;
 pub use sheet::{SETTINGS_SHEET_ID, SETTINGS_SHEET_VEIL_ID};
+pub use slider::{slider_value_at, SLIDER_TRACK_WIDTH};
 
 /// The §15 id of the Settings root.
 pub const SETTINGS_ID: &str = "bbr-settings";
@@ -117,6 +119,14 @@ pub enum SettingsControl {
     Keys(Vec<SharedString>),
     /// The three density cards (`None`: automatic, none pinned).
     Density(Option<usize>),
+    /// A 0–100 percent slider in `step` steps with its value `label`;
+    /// `focused`: the arrow keys step it.
+    Slider {
+        value: u8,
+        step: u8,
+        label: SharedString,
+        focused: bool,
+    },
     /// A profile chip alone.
     Chip {
         letter: char,
@@ -218,6 +228,8 @@ pub enum SettingsEvent {
     Toggle(SharedString),
     /// A choice (select option, segment, density card).
     Choose(SharedString, usize),
+    /// A slider press or drag at this percent.
+    Slide(SharedString, u8),
     /// A button or link.
     Press(SharedString),
     OpenSelect(SharedString),

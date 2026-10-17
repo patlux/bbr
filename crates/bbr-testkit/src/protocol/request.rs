@@ -1177,6 +1177,15 @@ pub enum Request {
         operation_id: BenchmarkOperationId,
         level: u16,
     },
+    /// Measure the Settings › Appearance sidebar-transparency change through
+    /// the exact event the slider sends: the sample commits only from the
+    /// browser-window render that painted the armed tint coverage with the
+    /// native material in the matching state (warm-interaction class; no
+    /// tab, session or geometry changes).
+    BenchmarkChromeTransparency {
+        operation_id: BenchmarkOperationId,
+        percent: u8,
+    },
     /// Measure the production BBR context-menu open over the active web
     /// view (task packet `bbr-context-menus-over-web`): the exact
     /// event-driven open path the native bridge's `ContextMenuRequested`
@@ -1867,6 +1876,12 @@ pub enum SettingsInput {
     },
     OpenSelect {
         row: String,
+    },
+    /// A slider press or drag at `value` percent (the event the control's
+    /// pointer path sends).
+    Slide {
+        row: String,
+        value: u8,
     },
     Dismiss,
     /// Blueprint D06: a press on a row, and the profile sheet.

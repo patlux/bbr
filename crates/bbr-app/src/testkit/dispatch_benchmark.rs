@@ -14,6 +14,7 @@ use crate::window_seam::with_app;
 
 use super::dispatch_benchmark_background_links::dispatch_benchmark_background_links;
 use super::dispatch_benchmark_find::dispatch_benchmark_find;
+use super::dispatch_benchmark_glass::dispatch_benchmark_glass;
 use super::dispatch_benchmark_peek::dispatch_benchmark_peek;
 use super::dispatch_benchmark_tab_menu::dispatch_benchmark_tab_menu;
 use super::dispatch_benchmark_zoom::dispatch_benchmark_zoom;
@@ -51,6 +52,10 @@ pub(crate) fn dispatch_benchmark(
     // Zoom benchmarks route through their focused module (the
     // `BenchmarkZoomStep` arm).
     if let Some(response) = dispatch_benchmark_zoom(req, window, app, cx) {
+        return Some(response);
+    }
+    // The Settings transparency benchmark (`BenchmarkChromeTransparency`).
+    if let Some(response) = dispatch_benchmark_glass(req, window, app, cx) {
         return Some(response);
     }
     let response = match req {

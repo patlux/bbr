@@ -215,6 +215,12 @@ pub enum BenchmarkKind {
     /// committed — the warm-interaction class (no tab or session is
     /// created or touched).
     ZoomStep,
+    /// Settings › Appearance sidebar transparency changed through the event
+    /// the slider sends: the browser-window render painted the armed tint
+    /// coverage (and native material state) for the new percent — the
+    /// warm-interaction class. The fast-but-wrong guard rejects a frame that
+    /// still painted the previous coverage.
+    ChromeTransparencyChange,
     /// The production BBR context-menu open over the active web view (task
     /// packet `bbr-context-menus-over-web`): the sample starts at the exact
     /// event-driven open path the native bridge's `ContextMenuRequested`

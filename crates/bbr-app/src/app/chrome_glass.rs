@@ -5,25 +5,41 @@ use super::BbrApp;
 use bbr_ui::theme::{motion::Moment, ContrastMode, Theme};
 use gpui::{div, prelude::*, AnimationExt, AnyElement, Context, Rgba, SharedString, Window};
 
-/// Coverage of the space tint over AppKit's Sidebar material. The rest of
-/// the frosted desktop stays visible: the original near-opaque compensation
-/// (91.6–95.5 %) left nothing to see. These are the smallest coverages that
-/// keep primary labels (`ink`) at WCAG AA 4.5:1 for every space tint even
-/// over a raw black or white desktop, i.e. before the material's own frosting
-/// moves the backdrop towards the rail. Secondary text and accents rely on
-/// that frosting; Increase Contrast and Reduce Transparency restore the
-/// opaque rail with its full D3 floors.
+use crate::preferences::DEFAULT_CHROME_TRANSPARENCY;
+
+/// Coverage of the space tint over AppKit's Sidebar material at the default
+/// transparency. The rest of the frosted desktop stays visible: the original
+/// near-opaque compensation (91.6–95.5 %) left nothing to see. These are the
+/// smallest coverages that keep primary labels (`ink`) at WCAG AA 4.5:1 for
+/// every space tint even over a raw black or white desktop, i.e. before the
+/// material's own frosting moves the backdrop towards the rail. Secondary
+/// text and accents rely on that frosting; Increase Contrast and Reduce
+/// Transparency restore the opaque rail with its full D3 floors.
 const LIGHT_TINT_ALPHA: f32 = 0.55;
 const DARK_TINT_ALPHA: f32 = 0.66;
 
+/// The tint coverage for a Settings transparency (0–100 percent). The
+/// default lands exactly on the calibrated coverage; the scale is linear in
+/// the material that shows through, from opaque (0) to twice the default's
+/// share (100: light 10 %, dark 32 % coverage). Above the default, label
+/// legibility depends on the desktop: the user's explicit choice.
+pub(crate) fn tint_coverage(mode: bbr_ui::theme::ThemeMode, transparency: u8) -> f32 {
+    let calibrated = match mode {
+        bbr_ui::theme::ThemeMode::Light => LIGHT_TINT_ALPHA,
+        bbr_ui::theme::ThemeMode::Dark => DARK_TINT_ALPHA,
+    };
+    let share = f32::from(transparency.min(100)) / f32::from(DEFAULT_CHROME_TRANSPARENCY);
+    1.0 - share * (1.0 - calibrated)
+}
+
 /// The tint keeps its own hue and luminance; over the similarly toned native
 /// material it reads as the original rail with the desktop blurred into it.
-pub(super) fn glass_tint(mut color: Rgba, theme: &Theme, enabled: bool) -> Rgba {
-    if enabled && theme.contrast != ContrastMode::Increased {
-        color.a = match theme.mode {
-            bbr_ui::theme::ThemeMode::Light => LIGHT_TINT_ALPHA,
-            bbr_ui::theme::ThemeMode::Dark => DARK_TINT_ALPHA,
-        };
+/// `None`: glass is off (accessibility, 0 %, or no native material).
+pub(super) fn glass_tint(mut color: Rgba, theme: &Theme, transparency: Option<u8>) -> Rgba {
+    if let Some(transparency) = transparency {
+        if theme.contrast != ContrastMode::Increased {
+            color.a = tint_coverage(theme.mode, transparency);
+        }
     }
     color
 }
@@ -48,6 +64,12 @@ impl BbrApp {
         let _ = window;
     }
 
+    /// The transparency the chrome paints with, or `None` when glass is off.
+    pub(super) fn glass_transparency(&self) -> Option<u8> {
+        self.glass_enabled()
+            .then(|| self.preferences.read().chrome_transparency)
+    }
+
     pub(super) fn glass_enabled(&self) -> bool {
         #[cfg(target_os = "macos")]
         {
@@ -55,6 +77,7 @@ impl BbrApp {
             self.chrome_material.borrow().is_some()
                 && !prefs.reduce_transparency
                 && !prefs.increase_contrast
+                && self.preferences.read().chrome_transparency > 0
         }
         #[cfg(not(target_os = "macos"))]
         {
@@ -85,7 +108,7 @@ impl BbrApp {
                 tint_alpha: glass_tint(
                     self.active_chrome_tint(),
                     &self.theme(),
-                    self.glass_enabled(),
+                    self.glass_transparency(),
                 )
                 .a,
                 reduce_transparency: self.effective_accessibility().reduce_transparency,
@@ -108,9 +131,13 @@ impl BbrApp {
         _cx: &mut Context<Self>,
     ) -> AnyElement {
         let theme = self.theme();
-        let enabled = self.glass_enabled();
+        let transparency = self.glass_transparency();
+        let enabled = transparency.is_some();
         let target = self.active_chrome_tint();
-        let to = glass_tint(target, &theme, enabled);
+        let to = glass_tint(target, &theme, transparency);
+        // Presentation milestone: the coverage this frame paints.
+        #[cfg(feature = "testkit")]
+        self.performance.observe_chrome_tint(to.a, enabled);
         let presented = std::rc::Rc::new(std::cell::Cell::new(to));
         let animated_color = presented.clone();
         #[cfg(target_os = "macos")]
@@ -162,7 +189,7 @@ impl BbrApp {
                                     a: 1.0,
                                 },
                                 &theme,
-                                enabled,
+                                transparency,
                             );
                             animated_color.set(color);
                             element.bg(color)
@@ -213,7 +240,7 @@ mod tests {
     #[test]
     fn glass_tint_leaves_the_native_material_visible() {
         every_tint(|mode, theme, token, intensity, tint| {
-            let fill = glass_tint(tint, theme, true);
+            let fill = glass_tint(tint, theme, Some(DEFAULT_CHROME_TRANSPARENCY));
             assert!(
                 fill.a <= 0.67,
                 "{mode:?}/{token:?}/{intensity:?}: {} hides the material",
@@ -226,7 +253,7 @@ mod tests {
     #[test]
     fn primary_labels_stay_legible_over_any_raw_desktop() {
         every_tint(|mode, theme, token, intensity, tint| {
-            let fill = glass_tint(tint, theme, true);
+            let fill = glass_tint(tint, theme, Some(DEFAULT_CHROME_TRANSPARENCY));
             // Channel-wise extremes bound every possible desktop RGB; the
             // native frosting only moves the backdrop towards the rail.
             for backdrop in [gpui::rgb(0), gpui::rgb(0xFFFFFF)] {
@@ -245,7 +272,7 @@ mod tests {
             let fails_thinner = SpaceTheme::ALL.iter().any(|&token| {
                 TintIntensity::ALL.iter().any(|&intensity| {
                     let tint = space_tint(token, intensity, &theme).chrome;
-                    let fill = glass_tint(tint, &theme, true);
+                    let fill = glass_tint(tint, &theme, Some(DEFAULT_CHROME_TRANSPARENCY));
                     let thinner = Rgba {
                         a: fill.a - 0.01,
                         ..fill
@@ -264,10 +291,45 @@ mod tests {
     #[test]
     fn accessibility_and_unsupported_modes_restore_the_opaque_rail() {
         every_tint(|mode, theme, _, _, tint| {
-            assert_eq!(glass_tint(tint, theme, false), tint);
+            assert_eq!(glass_tint(tint, theme, None), tint);
             let high = Theme::new(mode, ContrastMode::Increased, Density::Normal);
             let high_tint = Rgba { a: 1.0, ..tint };
-            assert_eq!(glass_tint(high_tint, &high, true).a, 1.0);
+            assert_eq!(glass_tint(high_tint, &high, Some(100)).a, 1.0);
+        });
+    }
+
+    #[test]
+    fn the_settings_scale_runs_from_opaque_through_the_calibrated_default() {
+        for (mode, most) in [(ThemeMode::Light, 0.10), (ThemeMode::Dark, 0.32)] {
+            assert_eq!(tint_coverage(mode, 0), 1.0);
+            let calibrated = tint_coverage(mode, DEFAULT_CHROME_TRANSPARENCY);
+            assert_eq!(
+                calibrated,
+                if mode == ThemeMode::Light {
+                    LIGHT_TINT_ALPHA
+                } else {
+                    DARK_TINT_ALPHA
+                }
+            );
+            assert!((tint_coverage(mode, 100) - most).abs() < 1e-6, "{mode:?}");
+            // More transparency always shows more material; out of range clamps.
+            for step in 1..=100u8 {
+                assert!(tint_coverage(mode, step) < tint_coverage(mode, step - 1));
+            }
+            assert_eq!(tint_coverage(mode, 250), tint_coverage(mode, 100));
+        }
+        // Up to the default, primary labels keep AA over any raw desktop.
+        every_tint(|mode, theme, token, intensity, tint| {
+            for transparency in 0..=DEFAULT_CHROME_TRANSPARENCY {
+                let fill = glass_tint(tint, theme, Some(transparency));
+                for backdrop in [gpui::rgb(0), gpui::rgb(0xFFFFFF)] {
+                    let contrast = ratio(theme.palette.ink, bbr_ui::palette::over(fill, backdrop));
+                    assert!(
+                        contrast >= 4.5,
+                        "{mode:?}/{token:?}/{intensity:?}@{transparency}: {contrast}"
+                    );
+                }
+            }
         });
     }
 }

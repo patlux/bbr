@@ -252,6 +252,12 @@ pub(super) fn control(
                 ))
                 .into_any_element()
         }
+        SettingsControl::Slider {
+            value,
+            step,
+            label,
+            focused,
+        } => super::slider::slider(theme, row, *value, *step, label, *focused, events),
         SettingsControl::Chip { letter, hue } => chip(theme, *letter, *hue),
         SettingsControl::ChipButton { letter, hue, label } => div()
             .flex()

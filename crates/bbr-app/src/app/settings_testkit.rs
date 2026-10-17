@@ -26,6 +26,12 @@ impl BbrApp {
             pane: model.pane.key().to_string(),
             rows,
             open_select: model.open_select.map(|row| row.to_string()),
+            active_slider: self
+                .settings
+                .read()
+                .active_slider
+                .as_ref()
+                .map(|row| row.to_string()),
             sheet: model
                 .sheet
                 .map(|sheet| bbr_testkit::protocol::SettingsSheetSnapshot {
@@ -57,6 +63,7 @@ impl BbrApp {
             SettingsInput::Choose { row, index } => SettingsEvent::Choose(row.into(), index),
             SettingsInput::Press { row } => SettingsEvent::Press(row.into()),
             SettingsInput::OpenSelect { row } => SettingsEvent::OpenSelect(row.into()),
+            SettingsInput::Slide { row, value } => SettingsEvent::Slide(row.into(), value),
             SettingsInput::Dismiss => SettingsEvent::Dismiss,
             SettingsInput::Select { row } => SettingsEvent::Select(row.into()),
             SettingsInput::SheetField { index } => SettingsEvent::SheetField(index),
@@ -96,6 +103,7 @@ fn control_value(control: &SettingsControl) -> String {
             Some(1) => "normal".to_string(),
             Some(_) => "large".to_string(),
         },
+        SettingsControl::Slider { label, .. } => label.to_string(),
         SettingsControl::Chip { letter, .. } => letter.to_string(),
         SettingsControl::ChipButton { letter, label, .. } => format!("{letter} {label}"),
     }

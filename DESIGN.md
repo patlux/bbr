@@ -121,6 +121,19 @@ transitions interpolate one paint rather than stacking translucent layers.
 Foreground tokens and all card geometry stay unchanged. This is native macOS
 translucency, not a Liquid Glass claim; Patrick's visual acceptance is open.
 
+Settings › Appearance › Window › **Sidebar transparency** (row
+`appearance-transparency`) sets the strength live in every browser window:
+0–100 % in 5 % steps, default 50 % = the coverage above. 0 % is the opaque
+rail with the material hidden; 100 % shows twice the default's material share
+(10 % light / 32 % dark coverage). Up to the default the primary-label floor
+above holds; beyond it the detail line says that text contrast depends on the
+wallpaper. The slider is a 168 pt `border.strong` track with an accent fill, a 16 pt
+field-colored thumb (`elev:lift`, accent ring while the arrow keys own it) and
+a trailing percent label. Press sets the value under the pointer, a drag
+follows it, ←/→/↑/↓ step 5 %, Home/End jump to the ends, Escape releases it.
+Reduce Transparency and Increase Contrast still force the opaque rail; the
+detail line then names the setting that wins.
+
 Reduce Transparency and Increase Contrast select the original opaque tint
 and disable the effect. Unsupported/native-install failure does the same.
 A public Core Animation mask removes only the four inverse card-corner wedges

@@ -378,6 +378,14 @@ pub fn contract_budget(kind: &str) -> Option<Budget> {
             p95_ms: 50.0,
             max_ms: Some(100.0),
         },
+        // Settings › Appearance sidebar transparency: the slider's event
+        // until the browser window paints the new tint — a warm main-thread
+        // repaint of existing chrome in the same 50/100 ms interaction class
+        // (no new class invented).
+        "chrome_transparency_change" => Budget {
+            p95_ms: 50.0,
+            max_ms: Some(100.0),
+        },
         // BBR context menu over web content (task packet
         // `bbr-context-menus-over-web`): `context_menu_open` spans the
         // production event-driven open path — the row-model build, the
@@ -672,6 +680,7 @@ impl Baseline {
             "downloads_clear",
             "error_surface_present",
             "zoom_step",
+            "chrome_transparency_change",
             "context_menu_open",
             "tab_context_menu_open",
             "tab_context_menu_submenu_commit",
@@ -1016,6 +1025,25 @@ mod tests {
         assert!(r.iter().any(|x| x.rule == "abs_max"));
         let mut ok = BTreeMap::new();
         ok.insert("sidebar_settle".into(), measured(275.0, 310.0));
+        assert!(evaluate(&ok, &b, false).is_empty());
+    }
+
+    #[test]
+    fn chrome_transparency_budget_is_seeded_and_enforced() {
+        let b = Baseline::seed();
+        let entry = b
+            .entries
+            .get("chrome_transparency_change")
+            .expect("seed baseline must carry the transparency budget");
+        assert_eq!(entry.budget_p95_ms, 50.0);
+        assert_eq!(entry.budget_max_ms, Some(100.0));
+        let mut slow = BTreeMap::new();
+        slow.insert("chrome_transparency_change".into(), measured(60.0, 120.0));
+        let r = evaluate(&slow, &b, false);
+        assert!(r.iter().any(|x| x.rule == "abs_p95"));
+        assert!(r.iter().any(|x| x.rule == "abs_max"));
+        let mut ok = BTreeMap::new();
+        ok.insert("chrome_transparency_change".into(), measured(20.0, 60.0));
         assert!(evaluate(&ok, &b, false).is_empty());
     }
 

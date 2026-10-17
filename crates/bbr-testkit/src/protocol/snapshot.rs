@@ -1162,6 +1162,9 @@ pub struct SettingsSnapshot {
     /// Blueprint D06: the open sheet.
     #[serde(default)]
     pub sheet: Option<SettingsSheetSnapshot>,
+    /// The slider row the arrow keys step (older snapshots: none).
+    #[serde(default)]
+    pub active_slider: Option<String>,
 }
 
 /// Blueprint D06: the open profile sheet.
