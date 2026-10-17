@@ -43,7 +43,8 @@ allowed distribution before the test fails.
 | Move a tab between spaces of the same profile → tab presented in the destination with its warm session | next display frame | p95 ≤ 50 ms; max ≤ 100 ms |
 | Move a tab across profiles → fresh native session presented in the destination profile's store | ≤ 100 ms | p95 ≤ 100 ms; max ≤ 150 ms |
 | Reopen a closed tab → fresh native session presented with preserved identity | ≤ 100 ms | p95 ≤ 100 ms; max ≤ 150 ms |
-| Open, close, or toggle the sidebar → chrome and native content geometry committed | next display frame | p95 ≤ 50 ms; max ≤ 100 ms |
+| Open, close, or toggle the sidebar → state committed and its first presented frame (Reduce Motion: the final chrome and native content geometry) | next display frame | p95 ≤ 50 ms; max ≤ 100 ms |
+| Sidebar toggle slide (DESIGN §6 1a) → chrome and native content geometry settled at the committed state | `dur:emphasis` (260 ms) | p95 ≤ 300 ms; max ≤ 400 ms |
 | Focus a tab/split pane or route a browser command to the active target | next display frame when visual | p95 ≤ 50 ms; max ≤ 100 ms |
 | Commit web-content Back/Forward gesture → correct history state presented | next display frame after native commit | p95 ≤ 50 ms; max ≤ 100 ms |
 | Commit Back at a regular child tab's root → child closed and exact warm opener presented | next display frame | p95 ≤ 50 ms; max ≤ 100 ms |
@@ -52,6 +53,15 @@ allowed distribution before the test fails.
 | Promote Peek → same preview session presented as a regular tab without reload | next display frame | p95 ≤ 50 ms; max ≤ 100 ms |
 | Hung active renderer: Cmd-W close or warm-neighbor selection → exact neighbor presented | next display frame | p95 ≤ 50 ms; max ≤ 100 ms |
 | Idle renderer probe cadence tick → unchanged warm presentation, no due probe traffic | no visible frame cost | p95 ≤ 50 ms; max ≤ 100 ms |
+
+**Sidebar slide (Patrick, 2026-10-17).** The toggle stays in the warm
+next-frame class: its state, persistence, focus and first presented frame
+commit within 50/100 ms. Only the presentation then travels for
+`dur:emphasis`, with the native slot re-framed every frame. The separate
+settle row bounds that travel: from the toggle commit to the first rendered
+frame at exactly the committed rail edge, card and native slot. A settle
+sample is accepted only after the full slide (≥ 260 ms from a settled rail)
+and only at the exact committed geometry.
 
 Budgets cover the production mutation path, render/layout work, native-view
 visibility or geometry updates, and presentation-commit observation. Testkit

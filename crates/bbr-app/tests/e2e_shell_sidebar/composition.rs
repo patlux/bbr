@@ -326,6 +326,9 @@ fn command_and_downloads_compose_with_sidebar_focus_and_collapse() {
     let result = catch_unwind(AssertUnwindSafe(|| {
         let mut client = connect(&socket);
         client.hello(&token).expect("hello");
+        // §11.4: exercise the production-default slide (the VM guest runs
+        // with Reduce Motion on).
+        full_motion(&mut client);
         let replay = client.attach(None).expect("attach");
         let mut since = replay.iter().map(|(seq, _)| *seq).max().unwrap_or(0);
 
@@ -473,12 +476,11 @@ fn command_and_downloads_compose_with_sidebar_focus_and_collapse() {
         assert_eq!(rect.content_rect[3], height, "no vertical drift");
 
         // Cmd-S collapse/expand with the command surface closed: the rail
-        // yields to width 0, the native slot re-flows to the full window,
-        // expand restores the last expanded width, and the selected
-        // session never changes.
+        // yields to width 0, the native slot ends on the full window once
+        // the §11.4 slide settles, expand restores the last expanded width,
+        // and the selected session never changes.
         keystroke(&mut client, "cmd-s");
-        flush_frame(&mut client);
-        let collapsed = client.snapshot().expect("collapsed snapshot");
+        let collapsed = wait_sidebar_settled(&mut client);
         assert!(!collapsed.sidebar_visible);
         assert_eq!(collapsed.sidebar_width, 0.0);
         assert!(
@@ -502,8 +504,7 @@ fn command_and_downloads_compose_with_sidebar_focus_and_collapse() {
         );
 
         keystroke(&mut client, "cmd-s");
-        flush_frame(&mut client);
-        let expanded = client.snapshot().expect("expanded snapshot");
+        let expanded = wait_sidebar_settled(&mut client);
         assert!(expanded.sidebar_visible);
         assert_eq!(expanded.sidebar_width, SIDEBAR_DEFAULT);
         assert_eq!(expanded.active_web_view, Some(first_view));

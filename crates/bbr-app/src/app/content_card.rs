@@ -141,7 +141,8 @@ impl BbrApp {
         &self,
         window: &Window,
     ) -> bbr_testkit::protocol::ContentCardSnapshot {
-        let card = self.content_card_frame(window);
+        // §11.4: the frame on screen, interpolated while the rail slides.
+        let card = self.presented_card_frame(window);
         #[cfg(target_os = "macos")]
         let native_radius = self.geometry_engine.as_ref().and_then(|engine| {
             let view = self.controller.read().snapshot().active_view?;

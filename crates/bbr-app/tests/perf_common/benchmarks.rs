@@ -162,6 +162,60 @@ pub(crate) fn benchmark_sidebar(
     measured
 }
 
+/// §11.4 slide settle: draw production frames until the last toggle's
+/// presentation reached the committed rail edge, card and native slot, and
+/// return the in-app monotonic commit → settled-frame time in ns. The
+/// harness window has no display link, so each step forces one real draw at
+/// the current time; the settled frame must show exactly the committed
+/// geometry (a fast-but-wrong settle is rejected). `from_rest` asserts that
+/// the toggle slid the whole way (it started from a settled rail).
+pub(crate) fn wait_sidebar_settle(
+    client: &mut Client,
+    expected_visible: bool,
+    from_rest: bool,
+) -> u64 {
+    let end = Instant::now() + Duration::from_secs(10);
+    loop {
+        client
+            .send_ok(&Request::FlushFrame)
+            .expect("flush while the sidebar slides");
+        let snapshot = client.snapshot().expect("sidebar slide snapshot");
+        let motion = &snapshot.sidebar_motion;
+        if let (Some(settle_ms), false) = (motion.last_settle_ms, motion.animating) {
+            assert_eq!(snapshot.sidebar_visible, expected_visible);
+            if from_rest {
+                assert_eq!(motion.variant.as_deref(), Some("animated"));
+                assert!(
+                    settle_ms >= 259.0,
+                    "a full slide travels dur:emphasis: settled after {settle_ms} ms"
+                );
+            }
+            let edge = if expected_visible {
+                snapshot.sidebar_width
+            } else {
+                0.0
+            };
+            assert!(
+                (motion.presented_width - edge).abs() <= 0.5,
+                "settled at the committed rail edge: {motion:?}"
+            );
+            // The native slot sits flush with the rail, or one
+            // `sp:content-inset` in from the window edge when collapsed.
+            let slot_x = if expected_visible { edge } else { 10.0 };
+            assert!(
+                (snapshot.content_rect[0] - slot_x).abs() <= 0.5,
+                "the native slot settled at {:?}, expected x {slot_x}",
+                snapshot.content_rect
+            );
+            return (f64::from(settle_ms) * 1_000_000.0) as u64;
+        }
+        assert!(
+            Instant::now() < end,
+            "the sidebar slide did not settle: {motion:?}"
+        );
+    }
+}
+
 /// Resize the sidebar to an absolute width through the production resize
 /// path (the mutation the pointer and keyboard listeners share). The sample
 /// commits only at the exact clamped geometry the render enforces, so a

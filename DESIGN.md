@@ -58,7 +58,7 @@ and geometry and only swaps the token set.
 | Color | saturated gradient accents | site-adaptive pastels | ambient translucency | single hardcoded grays | soft neutral hierarchy + one Phosphor accent + semantic indicator hues |
 | Tabs | large rounded chips | large rounded cards | compact tabs with favicon | none (text placeholder) | readable inset rows with quiet selected surface and exact favicon/monogram identity |
 | Geometry | organic, large radii | organic | respectable | none | 4 pt rhythm, 6–10 px row radii, reference-calibrated tiles and 36–40 pt normal rows |
-| Motion | playful spring choreography | animated everywhere | subtle | none | commit-first snaps; animation only on transient indication |
+| Motion | playful spring choreography | animated everywhere | subtle | none | commit-first; animation only on transient indication and the one sidebar slide (§6 1a) |
 | Content relation | sidebar overlays page | sidebar overlays page | toolbar merges | separate | sidebar is a physical rail; content is never overlapped or sampled |
 
 **App icon (v2 D8).** The packaged app carries "Phosphor b": a lowercase b on
@@ -90,7 +90,9 @@ hardcoded render colors or a Gallery-local shell.
    glass is one hairline, then silence.
 5. **Commit first, indicate after.** Selection and layout changes snap on the
    next frame (budgets in the performance contract); animation is allowed only
-   for transient indication (loading, attention, press) after the fact.
+   for transient indication (loading, attention, press) after the fact. The
+   one layout exception is the sidebar slide (§6 1a): the toggle commits on
+   the next frame, then its geometry travels with the rail.
 6. **Restraint under pressure.** At 500 tabs, dense mode, long titles, missing
    favicons, crashed pages — the system degrades by *removing* detail, never
    by adding noise.
@@ -422,9 +424,29 @@ pills around text; `density:radius` is S 6 / N 10 / XL 12.
 ### Principles
 
 1. **Commit first.** Selection, tab switches, sidebar open/close/toggle, and
-   split changes snap to their final geometry within the performance contract
-   window (≤ 50 ms p95, next display frame). **No cross-fades, slides, or
-   elastic settling on state changes.**
+   split changes commit within the performance contract window (≤ 50 ms
+   p95, next display frame). Selection, tab switches, resize and split
+   changes snap to their final geometry. **No cross-fades or elastic
+   settling on state changes**; the only slide is 1a.
+
+   **1a. The sidebar slide** (Patrick, 2026-10-17; reference: the Athas
+   Browser vertical-tab toggle). A committed sidebar toggle is presented as one
+   layout transition: the rail keeps its width and slides out past the
+   leading window edge (or in from it), and the content card with its native
+   web view follows the rail edge, so the page travels with the rail instead
+   of jumping at the end. The card's leading inset (0 ↔ `sp:content-inset`)
+   and top inset (`sp:content-inset` ↔ titlebar band) interpolate with the
+   same share; every intermediate value sits on whole points. `dur:emphasis`,
+   `ease:standard` (most of the travel in the first frames, then a short
+   settle). The toggle's state, persistence, focus, semantic tree and
+   titlebar glyph are final on the commit frame; only the presentation
+   travels. A leaving rail takes no pointer and never floats; ⌥⌘S or ⌘L
+   during the exit end it at once so only the floating panel shows. A toggle
+   mid-slide reverses from the presented position over the remaining
+   distance. Docking the floating rail (⌘S while it floats) presents the
+   committed geometry at once, since the panel already shows the full rail.
+   Window restore, persistence and Reduce Motion never slide. The web view
+   is resized natively each frame; it is never captured or scaled.
 2. **Transient indication animates; persistent state snaps.** Hover,
    pressed, attention, loading, drag feedback may animate briefly *after* the
    fact they indicate is already true.
@@ -1102,12 +1124,15 @@ using the IDs of §15. All rows use `density` geometry from §8.
   focus domain per the interaction contract (New Folder hands chrome focus
   to the rename, §11.11).
 - **Behavior:** width per §5 (`win:sidebar.*`), draggable 4 pt hairline
-  (`bbr-sidebar-divider`), collapse Cmd-S to 0 **instantly** (performance
-  contract next-frame; the opening glass gets no animation), expand
-  restores the previous width. On collapse the content card keeps its
-  trailing and bottom inset, gains the leading inset, and its top inset grows
-  to the titlebar band (§2 rule 5); inset, radius and shadow land in the same
-  frame as the width. Collapse memory is **global in v1** — one
+  (`bbr-sidebar-divider`), collapse Cmd-S to 0 (committed on the next
+  frame per the performance contract, presented as the §6 1a slide; Reduce
+  Motion: instantly), expand restores the previous width. On collapse the
+  content card keeps its trailing and bottom inset, gains the leading inset,
+  and its top inset grows to the titlebar band (§2 rule 5); inset, radius
+  and shadow travel with the rail edge in the same frames as the width.
+  While the rail slides it renders at its full width inside a strip as wide
+  as the presented edge (`bbr-sidebar-slide`); a leaving rail carries an
+  occluding veil (`bbr-sidebar-slide-veil`). Collapse memory is **global in v1** — one
   last-expanded width per window, restored on expand; per-space memory is
   an open decision (§17). Divider keyboard focus provides `←`/`→` resize
   and `0` reset (DESIGN §9 pointer/keyboard parity). Resize commits
@@ -2379,9 +2404,10 @@ is stable for the profile's lifetime.
 - Floating surfaces (palette, peek) are the only chrome allowed to overlap
   the glass, are `elev:2`, and must be dismissible with Escape/one pointer
   action; peek's temporary state is covered by its own roadmap task.
-- When the sidebar collapses, the slot re-flows instantly (§11.4) — no
-  intermediate chrome geometry is ever shown; the card's inset, radius and
-  clip change in the same frame.
+- When the sidebar collapses or expands, the slot follows the §6 1a slide:
+  the native web view is re-framed every frame together with the card's
+  inset, radius and clip, so chrome and glass never disagree in any frame
+  (Reduce Motion: one frame).
 
 ## 14. Anti-generic checklist
 
@@ -2751,6 +2777,7 @@ shell requests **no animation frames** (asserted).
 | Appearing surfaces (D08, board V-6) | every surface that appears — palette, menus, popovers, sheets with their veil — fades in over `dur:fine` (linear); nothing scales or slides, and the committed state is on screen first | shown at once |
 | Toast (D08) | `dur:fine` fade in with a 4 pt rise; after 4 s a `dur:fine` fade out | fade only, no rise |
 | Zoom readout (D08) | `dur:fine` fade in on the first step of a burst; leaves 1.2 s after the last step | no fade |
+| Sidebar toggle (§6 1a, Patrick 2026-10-17) | layout transition, not a decoration: the committed toggle's rail slides with the card and the native web view, `dur:emphasis`, `ease:standard` | the committed geometry on the first frame |
 
 The §10.5 content-pane progress bar and the “one-frame amber surface flash”
 of §10.6 are withdrawn (the first cannot paint above native glass; the

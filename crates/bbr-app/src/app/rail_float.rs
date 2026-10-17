@@ -77,10 +77,11 @@ impl BbrApp {
         }
     }
 
-    /// A reveal is blocked: the rail is docked, or a surface that owns the
-    /// pointer or the keyboard is open.
+    /// A reveal is blocked: the rail is docked or still sliding out (§11.4),
+    /// or a surface that owns the pointer or the keyboard is open.
     fn rail_reveal_blocked(&self) -> bool {
         self.sidebar_visible
+            || self.sidebar_sliding_out()
             || self.command_surface.is_open()
             || self.context_menu.state.open
             || self.tab_menu.state.open
@@ -230,6 +231,9 @@ impl BbrApp {
 
     /// ⌘L / ⌥⌘S on a hidden rail: float it (never dock).
     pub(crate) fn float_rail(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        // §11.4: a docked rail still sliding out gives way at once, so the
+        // floating panel is the only rail on screen.
+        self.settle_sidebar_slide();
         let action = self.floating_rail.reveal.show_now();
         self.apply_rail_reveal(action, window, cx);
         // The rail is on screen this frame (its field anchors ⌘L).

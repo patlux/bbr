@@ -133,6 +133,7 @@ mod saved_pages;
 #[cfg(feature = "testkit")]
 mod saved_pages_benchmarks;
 mod sidebar;
+mod sidebar_motion;
 mod sidebar_view;
 pub(crate) mod space_chooser;
 mod space_config;
@@ -313,6 +314,9 @@ pub struct BbrApp {
     /// §18.5 after-commit moments (favorite pop, download check, ⌘T
     /// entrance/glide, D4 tint fade).
     moments: moments::Moments,
+    /// §11.4 slide of the docked rail on toggle (presentation only; the
+    /// committed state is `sidebar_visible`).
+    sidebar_motion: sidebar_motion::SidebarMotion,
     /// §11.14 titlebar hover state: the control under the pointer (DESIGN
     /// §10.2 wash), driven by the production `on_hover` listener. `None` at
     /// rest.
@@ -1140,6 +1144,10 @@ impl BbrApp {
     pub fn toggle_sidebar(&mut self, window: &mut Window, cx: &mut Context<Self>) {
         // Blueprint D02: ⌘S while the rail floats docks it at the remembered
         // width (the floating panel gives way to the docked rail).
+        let was_floating = self.rail_floating();
+        // §11.4: the share of the rail on screen before the commit, where
+        // the slide starts (mid-way when a slide is still travelling).
+        let presented = self.sidebar_presence_at(std::time::Instant::now());
         self.end_floating_rail(window, cx);
         if self.sidebar_visible {
             self.sidebar.collapse();
@@ -1148,6 +1156,10 @@ impl BbrApp {
         }
         self.sidebar_visible = !self.sidebar_visible;
         self.persist_structure();
+        // Commit first: the state above is final; only the presentation
+        // travels (the floating panel already shows the full rail, so
+        // docking it presents the committed geometry at once).
+        self.start_sidebar_slide(presented, was_floating, cx);
         #[cfg(feature = "testkit")]
         {
             self.performance.arm_browser_state_if_pending(

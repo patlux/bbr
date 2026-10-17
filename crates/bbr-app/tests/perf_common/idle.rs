@@ -1,8 +1,9 @@
 //! v2 motion idle scenario (task packet `v2-motion-core`, DESIGN §18.5):
 //! after the warm interaction matrix settles, the optimized app must request
 //! no animation frames while nothing transient is presented. Only animated
-//! moments request frames, so the budget is **zero** animation elements
-//! built across a run of forced frames — a render-side count that holds
+//! moments and a travelling §11.4 sidebar slide request frames, so the
+//! budget is **zero** animation elements built and zero slide frames
+//! requested across a run of forced frames — render-side counts that hold
 //! whether or not the display link ticks.
 
 use bbr_testkit::protocol::Request;
@@ -40,6 +41,10 @@ pub(crate) fn assert_idle_requests_no_frames(client: &mut Client) {
         assert_eq!(
             motion.animated_elements, start.animated_elements,
             "idle frame {frame} built an animation element (requests frames)"
+        );
+        assert_eq!(
+            motion.transition_frames, start.transition_frames,
+            "idle frame {frame} requested a sidebar slide frame"
         );
     }
 }

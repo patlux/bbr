@@ -1374,6 +1374,32 @@ and keys its appearance; a new kind restarts it, and after the two 1400 ms
 cycles the render passes `None`, so the rest frame builds no animation
 element.
 
+**Sidebar slide (DESIGN §6 1a, Patrick 2026-10-17).** The one layout
+transition. `bbr-ui::theme::motion::Transition::SidebarSlide` is its timing
+authority (`dur:emphasis`, `ease:standard`, `None` under Reduce Motion), and
+`bbr-ui::sidebar::transition` is the pure model: a `SidebarTransition` eases
+the rail's *presence* (1 expanded, 0 collapsed) from the share on screen to
+the committed share — a reversal starts at the presented share and covers
+only the remaining distance — and `SidebarPresentation::resolve` maps a
+presence to the rail edge and a `CardInsets` blended between the collapsed
+and expanded frames, on whole points between the settled ends.
+`toggle_sidebar` commits `sidebar_visible`, persistence and focus exactly as
+before and then starts the slide (`app::sidebar_motion`). Each render
+resolves the presentation, lays the full-width rail into a strip as wide as
+the presented edge, and hands the card frame to the chassis, the native
+chrome material and the Peek wash; GPUI then gives every
+`NativeWebViewSlot` its interpolated bounds, so the WKWebViews are re-framed
+every frame (`setFrame:`, never captured). While the slide travels the
+render calls `request_animation_frame`; a timer for the slide's duration
+notifies once more, so the committed geometry renders even when no
+display-link frame arrives. A leaving rail carries an occluding veil and
+blocks the edge reveal; `float_rail` ends a running exit. Semantic ids,
+the semantic tree and every command path read the committed state, never
+the presentation. The testkit reports `sidebar_motion` (variant, presence,
+presented edge, settle ms and a bounded per-frame trace with the native
+slot x) and `motion.transition_frames`, the frames the slide requested, for
+the idle proof.
+
 ## 10. Build & verification (bounded recipes, `justfile`)
 
 From repo root in the dev shell (`nix develop` or direnv):

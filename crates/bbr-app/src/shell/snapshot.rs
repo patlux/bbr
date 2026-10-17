@@ -97,6 +97,8 @@ pub struct TestSnapshot {
     pub active_appearance: Option<bbr_testkit::protocol::SpaceAppearanceSnapshot>,
     /// §6/§18.5 transient-motion evidence and the idle render counter.
     pub motion: bbr_testkit::protocol::MotionSnapshot,
+    /// §11.4 sidebar slide evidence.
+    pub sidebar_motion: bbr_testkit::protocol::SidebarMotionSnapshot,
     /// §11.3/§11.4 strip scroll evidence (read-only from the production
     /// `space_strip_scroll` handle): the viewport, the signed offset, the
     /// max offset, and each chip's raw layout bounds in canonical order.

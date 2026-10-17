@@ -21,7 +21,8 @@ use super::benchmarks::{
     benchmark_pin_tab, benchmark_press, benchmark_reopen, benchmark_reorder_tab,
     benchmark_resize_sidebar, benchmark_restore_sidebar, benchmark_select, benchmark_sidebar,
     benchmark_space_switch, benchmark_space_switch_cross_profile, benchmark_swipe_commit,
-    benchmark_web_history_swipe_back, wait_browser_change, wait_history_events, wait_title,
+    benchmark_web_history_swipe_back, wait_browser_change, wait_history_events,
+    wait_sidebar_settle, wait_title,
 };
 use super::drive::u2::{drive_u2_sidebar, strip_presence};
 use super::find_drive::drive_find_scenarios;
@@ -131,12 +132,23 @@ fn drive_matrix_inner(
             operation += 1;
         }
 
+        // §11.4: measure the production-default slide (the VM guest runs
+        // with Reduce Motion on); the observed system value returns after
+        // the sidebar block. The glass setup stays.
+        super::chrome_glass::full_motion(client, true);
         benchmark_sidebar(client, &mut since, operation, false);
+        wait_sidebar_settle(client, false, true);
         operation += 1;
         benchmark_sidebar(client, &mut since, operation, true);
+        wait_sidebar_settle(client, true, true);
         operation += 1;
 
+        // §11.4: each toggle commits within the warm class (the measured
+        // sample), then its slide settles at the committed geometry (the
+        // separate `sidebar_settle` distribution). Every toggle starts from
+        // a settled rail.
         let mut sidebar_samples = Vec::with_capacity(config.interaction_samples);
+        let mut settle_samples = Vec::with_capacity(config.interaction_samples);
         let mut expected_sidebar = true;
         for _ in 0..config.interaction_samples {
             expected_sidebar = !expected_sidebar;
@@ -148,6 +160,14 @@ fn drive_matrix_inner(
                 .entry("sidebar_toggle".into())
                 .or_default()
                 .push(measured.duration_ns);
+            let settle = wait_sidebar_settle(client, expected_sidebar, true);
+            settle_samples.push(settle);
+            harness
+                .raw_log
+                .interactions
+                .entry("sidebar_settle".into())
+                .or_default()
+                .push(settle);
             operation += 1;
         }
 
@@ -186,6 +206,28 @@ fn drive_matrix_inner(
                 .push(measured.duration_ns);
             operation += 1;
         }
+        // The last restore's slide settles before the next scenario (the
+        // restore collapses and expands in one call: little or no travel).
+        wait_sidebar_settle(client, true, false);
+        super::chrome_glass::full_motion(client, false);
+        // The sidebar block's distributions in the log, even when a later
+        // scenario ends the trial before the report.
+        let ms = |samples: &[u64], p: usize| {
+            let mut sorted = samples.to_vec();
+            sorted.sort_unstable();
+            super::stats::percentile(&sorted, p) as f64 / 1_000_000.0
+        };
+        eprintln!(
+            "sidebar slide: toggle p50 {:.1} / p95 {:.1} / max {:.1} ms; \
+             settle p50 {:.1} / p95 {:.1} / max {:.1} ms ({} samples)",
+            ms(&sidebar_samples, 50),
+            ms(&sidebar_samples, 95),
+            ms(&sidebar_samples, 100),
+            ms(&settle_samples, 50),
+            ms(&settle_samples, 95),
+            ms(&settle_samples, 100),
+            settle_samples.len(),
+        );
 
         let mut new_tab_command_samples = Vec::with_capacity(config.new_tab_samples);
         let mut new_tab_open_samples = Vec::with_capacity(config.new_tab_samples);
@@ -1415,6 +1457,7 @@ fn drive_matrix_inner(
         raw.insert("tab_activate_keyboard".to_string(), activate_samples);
         raw.insert("tab_reopen".to_string(), reopen_samples);
         raw.insert("sidebar_toggle".to_string(), sidebar_samples);
+        raw.insert("sidebar_settle".to_string(), settle_samples);
         raw.insert("sidebar_resize".to_string(), resize_samples);
         raw.insert("sidebar_restore".to_string(), restore_samples);
         raw.insert("new_tab_command_bar".to_string(), new_tab_command_samples);

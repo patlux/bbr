@@ -348,6 +348,7 @@ impl BbrApp {
             space_chips,
             active_appearance,
             motion: self.motion_snapshot(&rows),
+            sidebar_motion: self.sidebar_motion_snapshot(window),
             space_strip_scroll: self.space_strip_scroll_snapshot(),
             space_config: self.space_config_snapshot(window),
             space_delete: self.space_delete_snapshot(),

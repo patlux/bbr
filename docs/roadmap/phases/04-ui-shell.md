@@ -72,6 +72,7 @@ canonical owner stays Phase 8 through the
 ## Shell and interaction
 
 - [ ] Add [desktop glass to the sidebar and content surround](../tasks/chrome-desktop-glass.md), without changing website or WKWebView opacity.
+- [ ] Slide the rail, the content card and the native web view together when the sidebar is shown or hidden, committing the toggle first, via the [sidebar slide](../tasks/sidebar-slide-motion.md) (Patrick, 2026-10-17).
 
 The bounded [Portal window-lifecycle regression](../tasks/portal-window-lifecycle.md)
 keeps the Command Palette attached to its owning browser window across activation.

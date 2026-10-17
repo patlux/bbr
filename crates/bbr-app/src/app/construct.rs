@@ -327,6 +327,7 @@ impl BbrApp {
             address_hovered: false,
             motion: motion::MotionState::default(),
             moments: moments::Moments::default(),
+            sidebar_motion: sidebar_motion::SidebarMotion::default(),
             titlebar_hovered: None,
             footer_hovered: None,
             titlebar_pressed: None,

@@ -17,6 +17,19 @@ pub(super) fn prepare(client: &mut Client) {
     assert_present(&client.snapshot().expect("glass setup snapshot"));
 }
 
+/// §11.4: switch full motion on (or back to the observed system value)
+/// while keeping the glass setup of [`prepare`]: one override carries all
+/// three display options, so motion never clears the glass overrides.
+pub(super) fn full_motion(client: &mut Client, on: bool) {
+    client
+        .send_ok(&dsl::set_display_accessibility(
+            Some(false),
+            on.then_some(false),
+            Some(false),
+        ))
+        .expect("motion override with the glass setup");
+}
+
 pub(super) fn assert_present(snapshot: &Snapshot) {
     let material = snapshot
         .content_card

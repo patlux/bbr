@@ -21,6 +21,8 @@
 //! - [`regions`] — the favorites grid, folders list, plus menu, space
 //!   strip, and footer row.
 //! - [`strip`] — the §11.3 permanent space strip and identity chips.
+//! - [`transition`] — the pure model of the docked rail's slide on toggle
+//!   (presence, reversal, the interpolated rail edge and card frame).
 //!
 //! No browser/session/profile/space/ranking/persistence authority lives
 //! here: the compositions receive fully-built models, and activation/
@@ -34,6 +36,7 @@ pub mod regions;
 pub mod render;
 pub mod strip;
 pub mod tabs;
+pub mod transition;
 
 pub use geometry::{
     sidebar_divider, SidebarGeometry, CONTENT_MIN, RESIZE_HANDLE_WIDTH, RESIZE_STEP,
@@ -47,3 +50,4 @@ pub use render::{sidebar_surface, SidebarChildren};
 pub use strip::{
     space_chip, space_chip_id, space_identity_id, space_strip, ChipState, SPACE_STRIP_ID,
 };
+pub use transition::{presence_for, SidebarPresentation, SidebarTransition};

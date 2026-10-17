@@ -89,6 +89,9 @@ fn downloads_open_close_reopen_in_the_floating_rail_preserves_browser_identity()
     let result = catch_unwind(AssertUnwindSafe(|| {
         let mut client = connect(&socket);
         client.hello(&token).expect("hello");
+        // §11.4: exercise the production-default slide (the VM guest runs
+        // with Reduce Motion on).
+        full_motion(&mut client);
         let replay = client.attach(None).expect("attach");
         let since = replay.iter().map(|(seq, _)| *seq).max().unwrap_or(0);
         let settled = wait_for_window_settled(&mut client, deadline());
@@ -101,7 +104,8 @@ fn downloads_open_close_reopen_in_the_floating_rail_preserves_browser_identity()
             );
         }
         keystroke(&mut client, "cmd-s");
-        assert!(!frame(&mut client).sidebar_visible);
+        // §11.4: the leaving rail never floats; reveal once it settled.
+        assert!(!wait_sidebar_settled(&mut client).sidebar_visible);
         for (x, time_ms) in [(500.0, 0.0), (4.0, 40.0)] {
             client
                 .send_ok(&Request::RailPointer {

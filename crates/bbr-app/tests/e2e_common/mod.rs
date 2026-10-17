@@ -425,6 +425,45 @@ pub fn wait_for_window_settled(
     }
 }
 
+/// Force full motion for this app (the Tart golden image runs with macOS
+/// Reduce Motion on): suites that toggle the sidebar then exercise the
+/// production-default §11.4 slide instead of the static variant. The
+/// contrast option stays the observed system value.
+pub fn full_motion(client: &mut Client) {
+    client
+        .send_ok(&bbr_testkit::protocol::dsl::set_accessibility_override(
+            None,
+            Some(false),
+        ))
+        .expect("full motion");
+}
+
+/// §11.4 slide: draw production frames until the last sidebar toggle has
+/// presented its committed geometry, and return that settled snapshot. The
+/// toggle itself is committed at once (`sidebar_visible`); only the rail
+/// edge, the card and the native slot travel. The harness window is hidden
+/// and has no display link, so each wait step forces one real GPUI draw at
+/// the current time (the slide is time-based) instead of sleeping. Call it
+/// only after a toggle (the settle is measured per toggle).
+pub fn wait_sidebar_settled(client: &mut Client) -> bbr_testkit::protocol::Snapshot {
+    let end = deadline();
+    loop {
+        client
+            .send_ok(&bbr_testkit::Request::FlushFrame)
+            .expect("flush while the sidebar slides");
+        let snapshot = client.snapshot().expect("sidebar slide snapshot");
+        let motion = &snapshot.sidebar_motion;
+        if motion.last_settle_ms.is_some() && !motion.animating {
+            return snapshot;
+        }
+        assert!(
+            Instant::now() < end,
+            "the sidebar slide did not settle: {motion:?}"
+        );
+        std::thread::yield_now();
+    }
+}
+
 /// Two snapshots count as the same window geometry only when the window
 /// bounds (width AND height) and the native content rect are all unchanged
 /// within the half-point tolerance. A late AppKit frame adjustment changes

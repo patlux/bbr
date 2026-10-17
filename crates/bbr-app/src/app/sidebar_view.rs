@@ -68,6 +68,19 @@ impl BbrApp {
                 )
                 .into_any()
             }
+            // §11.4: while the docked rail slides (and on its settling
+            // frame) the field moves; an open ⌘L overlay follows it.
+            None if self.sidebar_slide_moving() => {
+                match window.window_handle().downcast::<gpui_component::Root>() {
+                    Some(browser) => crate::app::palette::command_field_anchor_following(
+                        self.command_field_rect.clone(),
+                        cx.entity(),
+                        browser,
+                    )
+                    .into_any(),
+                    None => self.command_field_anchor_element(),
+                }
+            }
             None => self.command_field_anchor_element(),
         };
         let favorites_band_anchor = self.favorites_band_anchor_element();

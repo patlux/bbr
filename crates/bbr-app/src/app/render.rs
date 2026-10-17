@@ -103,11 +103,13 @@ impl Render for BbrApp {
                 bounds.size.height.into(),
             ])));
         }
-        let sidebar_width = if self.sidebar_visible {
-            self.sidebar.effective_width(window_width)
-        } else {
-            0.0
-        };
+        // §11.4 slide: the toggle is committed (`sidebar_visible`); this
+        // frame presents the rail edge and the card frame at the share of
+        // the rail on screen, so the card and every native slot travel with
+        // the rail edge. At rest this is exactly the committed geometry.
+        let full_width = self.sidebar.effective_width(window_width);
+        let presentation = self.sidebar_presentation(full_width, window);
+        let sidebar_width = presentation.rail_width;
         // Blueprint D02: the floating rail's geometry for this frame, the
         // downloads fade primed in this window's render (the Portal builds
         // the floating rail outside it), and the keyboard twin.
@@ -116,10 +118,19 @@ impl Render for BbrApp {
         let rail_keyboard = self
             .rail_floating()
             .then(|| self.floating_rail_keyboard(cx));
-        let sidebar = self.sidebar_surface(&theme, sidebar_width, chrome_focused, window, cx);
+        // The rail lays out at its full width and slides: the presented
+        // width is its trailing edge.
+        let sidebar = self.sidebar_surface(
+            &theme,
+            if sidebar_width > 0.0 { full_width } else { 0.0 },
+            chrome_focused,
+            window,
+            cx,
+        );
+        let sidebar = self.sliding_rail(sidebar, presentation, full_width);
         // §2 seated content card: one frame for the chassis, the card and
         // every native slot's clip.
-        let card = self.content_card_frame(window);
+        let card = presentation.card;
         // Blueprint D09: the portal washes the card around the inset
         // preview, so it needs the card's inner box of this exact frame.
         self.record_peek_card(card, sidebar_width, window, cx);
@@ -530,7 +541,7 @@ impl Render for BbrApp {
             .on_mouse_move(cx.listener(Self::on_split_divider_move))
             .on_mouse_up(MouseButton::Left, cx.listener(Self::on_split_divider_end))
             .on_mouse_up_out(MouseButton::Left, cx.listener(Self::on_split_divider_end))
-            .when(self.sidebar_visible, |root| root.child(sidebar))
+            .children(sidebar)
             .child(self.seated_content(&theme, card, content, cx))
             // Blueprint D02: the command field's platform text-input client
             // (IME, dead keys) while the field owns the keyboard.

@@ -97,6 +97,9 @@ fn split_collapse_expand_keeps_native_geometry_and_identity() {
     let result = catch_unwind(AssertUnwindSafe(|| {
         let mut client = connect(&socket);
         client.hello(&token).expect("hello");
+        // §11.4: exercise the production-default slide (the VM guest runs
+        // with Reduce Motion on).
+        full_motion(&mut client);
         let replay = client.attach(None).expect("attach");
         let mut since = replay.iter().map(|(seq, _)| *seq).max().unwrap_or(0);
 
@@ -150,8 +153,7 @@ fn split_collapse_expand_keeps_native_geometry_and_identity() {
         // the focused pane's rect is the full window, and both sessions
         // stay live.
         keystroke(&mut client, "cmd-s");
-        flush_frame(&mut client);
-        let collapsed = client.snapshot().expect("collapsed split snapshot");
+        let collapsed = wait_sidebar_settled(&mut client);
         assert!(!collapsed.sidebar_visible);
         assert_eq!(collapsed.sidebar_width, 0.0);
         let [card_x, band, card_w, card_h] =
@@ -179,8 +181,7 @@ fn split_collapse_expand_keeps_native_geometry_and_identity() {
         // Expand: the rail returns to the default width and both panes
         // reflow back to the rail-offset split; identity is untouched.
         keystroke(&mut client, "cmd-s");
-        flush_frame(&mut client);
-        let expanded = client.snapshot().expect("expanded split snapshot");
+        let expanded = wait_sidebar_settled(&mut client);
         assert!(expanded.sidebar_visible);
         assert_eq!(expanded.sidebar_width, SIDEBAR_DEFAULT);
         let restored = wait_for_pane_rects(

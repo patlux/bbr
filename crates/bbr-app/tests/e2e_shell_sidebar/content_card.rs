@@ -50,6 +50,9 @@ fn content_card_seats_the_native_slot_through_resize_collapse_and_full_screen() 
     let result = catch_unwind(AssertUnwindSafe(|| {
         let mut client = connect(&socket);
         client.hello(&token).expect("hello");
+        // §11.4: exercise the production-default slide (the VM guest runs
+        // with Reduce Motion on).
+        full_motion(&mut client);
         client.attach(None).expect("attach");
         client
             .send_ok(&dsl::set_display_accessibility(

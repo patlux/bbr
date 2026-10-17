@@ -43,9 +43,62 @@ pub struct MotionSnapshot {
     pub illustration: Option<IllustrationSnapshot>,
     /// Root-view renders since launch (proves a forced frame rendered).
     pub root_renders: u64,
-    /// Animation elements the render has built since launch. Only animated
-    /// moments request animation frames, so a rendered frame that builds
-    /// none requests none — the idle proof that does not depend on the
-    /// display link ticking.
+    /// Animation elements the render has built since launch. Together with
+    /// [`Self::transition_frames`] these are the only animation-frame
+    /// requests, so a rendered frame that adds to neither requests none —
+    /// the idle proof that does not depend on the display link ticking.
     pub animated_elements: u64,
+    /// Animation frames the layout transitions (the §11.4 sidebar slide)
+    /// have requested since launch: one per rendered frame while a slide
+    /// travels, none once it rests.
+    #[serde(default)]
+    pub transition_frames: u64,
+}
+
+/// §11.4 sidebar slide evidence (DESIGN §6 principle 1a, Patrick
+/// 2026-10-17): the committed toggle and how its presentation travelled.
+#[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
+pub struct SidebarMotionSnapshot {
+    /// The variant the last toggle presented: `animated`, or `static`
+    /// (Reduce Motion, or docking the floating rail). `None` before the
+    /// first toggle.
+    pub variant: Option<String>,
+    /// Whether a slide is travelling at snapshot time.
+    pub animating: bool,
+    /// The presented share of the docked rail at snapshot time: `1`
+    /// expanded, `0` collapsed.
+    pub presence: f32,
+    /// The presented rail edge at snapshot time (window points).
+    pub presented_width: f32,
+    /// Toggles presented since launch (animated or static).
+    pub toggles: u64,
+    /// The share the last slide started from (the share on screen at the
+    /// toggle: mid-way for a reversal); `None` for a static toggle.
+    #[serde(default)]
+    pub start_presence: Option<f32>,
+    /// How long the last slide travels: `dur:emphasis` for a full slide,
+    /// the matching share of it for a reversal; `None` for a static toggle.
+    #[serde(default)]
+    pub duration_ms: Option<f32>,
+    /// Monotonic milliseconds from the last toggle's commit to the first
+    /// rendered frame that presented the committed geometry; `None` while
+    /// the presentation still travels.
+    pub last_settle_ms: Option<f32>,
+    /// The frames the last toggle rendered, oldest first (bounded).
+    pub frames: Vec<SidebarMotionFrame>,
+}
+
+/// One rendered frame of a sidebar slide.
+#[derive(Debug, Clone, Copy, PartialEq, Default, Serialize, Deserialize)]
+pub struct SidebarMotionFrame {
+    /// Milliseconds since the toggle committed.
+    pub at_ms: f32,
+    /// The presented share this frame laid out.
+    pub presence: f32,
+    /// The rail edge this frame laid out.
+    pub rail_width: f32,
+    /// The x of the focused native slot the engine held when this frame
+    /// rendered (the previous frame's layout): the WKWebView travels with
+    /// the rail edge instead of jumping at the end.
+    pub native_x: f32,
 }

@@ -203,6 +203,9 @@ fn titlebar_toggle_parity_and_collapse_removes_the_header() {
     let result = catch_unwind(AssertUnwindSafe(|| {
         let mut client = connect(&socket);
         client.hello(&token).expect("hello");
+        // §11.4: exercise the production-default slide (the VM guest runs
+        // with Reduce Motion on).
+        full_motion(&mut client);
         let replay = client.attach(None).expect("attach");
         let _since = replay.iter().map(|(seq, _)| *seq).max().unwrap_or(0);
 
@@ -230,12 +233,17 @@ fn titlebar_toggle_parity_and_collapse_removes_the_header() {
         );
 
         // Pointer toggle collapse: the titlebar toggle click mutates the
-        // same sidebar geometry authority as Cmd-S.
+        // same sidebar geometry authority as Cmd-S (and slides the same
+        // way, §11.4: the header leaves with the rail once it settles).
         client
             .send_ok(&dsl::click_titlebar_toggle())
             .expect("titlebar toggle click");
-        flush_frame(&mut client);
-        let collapsed = client.snapshot().expect("collapsed snapshot");
+        let collapsed = wait_sidebar_settled(&mut client);
+        assert_eq!(
+            collapsed.sidebar_motion.variant.as_deref(),
+            Some("animated"),
+            "the titlebar toggle slides like Cmd-S"
+        );
         assert!(!collapsed.sidebar_visible);
         assert_eq!(collapsed.sidebar_width, 0.0);
         assert!(collapsed.titlebar.sidebar_collapsed);
@@ -281,8 +289,7 @@ fn titlebar_toggle_parity_and_collapse_removes_the_header() {
         // Cmd-S expands: the last expanded width (320) and the complete
         // header (toggle + cluster) are restored.
         keystroke(&mut client, "cmd-s");
-        flush_frame(&mut client);
-        let expanded = client.snapshot().expect("expanded snapshot");
+        let expanded = wait_sidebar_settled(&mut client);
         assert!(expanded.sidebar_visible);
         assert_eq!(
             expanded.sidebar_width,

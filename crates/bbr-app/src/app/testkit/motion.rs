@@ -84,6 +84,7 @@ impl BbrApp {
             illustration,
             root_renders: self.motion.root_renders,
             animated_elements: bbr_ui::theme::motion::animated_elements_built(),
+            transition_frames: self.sidebar_motion.evidence.frame_requests,
         }
     }
 }

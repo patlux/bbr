@@ -62,9 +62,10 @@ pub use snapshot::{
     PreviewZOrder, ProfileSnapshot, ReloadRestSurface, RestoreDisposition,
     SavedPagesCollectionSnapshot, SavedPagesLibraryRowSnapshot, SavedPagesLibrarySnapshot,
     SemanticNode, SemanticRole, SettingsRowSnapshot, SettingsSheetSnapshot, SettingsSnapshot,
-    Snapshot, SpaceAppearanceSnapshot, SpaceChipSnapshot, SpaceConfigSnapshot, SpaceDeleteSnapshot,
-    SpaceSnapshot, SpaceStripScrollSnapshot, StoreDiscardReasonSnapshot, StoreLoadSnapshot,
-    StoreSnapshot, SwipeSnapshot, TabMenuRowSnapshot, TabMenuSnapshot, TabSnapshot, TabVisualState,
+    SidebarMotionFrame, SidebarMotionSnapshot, Snapshot, SpaceAppearanceSnapshot,
+    SpaceChipSnapshot, SpaceConfigSnapshot, SpaceDeleteSnapshot, SpaceSnapshot,
+    SpaceStripScrollSnapshot, StoreDiscardReasonSnapshot, StoreLoadSnapshot, StoreSnapshot,
+    SwipeSnapshot, TabMenuRowSnapshot, TabMenuSnapshot, TabSnapshot, TabVisualState,
     TextInputReadback, TitlebarSnapshot, ToastSnapshot, WebContentProbe, ZoomSnapshot,
 };
 pub use split::{SplitDropSnapshot, SplitInput, SplitPaneSnapshot, SplitSnapshot};

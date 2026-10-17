@@ -85,6 +85,9 @@ fn the_hidden_rail_floats_over_the_card_and_works_like_the_docked_rail() {
     let result = catch_unwind(AssertUnwindSafe(|| {
         let mut client = connect(&socket);
         client.hello(&token).expect("hello");
+        // §11.4: exercise the production-default slide (the VM guest runs
+        // with Reduce Motion on).
+        full_motion(&mut client);
         let replay = client.attach(None).expect("attach");
         let mut since = replay.iter().map(|(seq, _)| *seq).max().unwrap_or(0);
         let settled = wait_for_window_settled(&mut client, deadline());
@@ -96,9 +99,10 @@ fn the_hidden_rail_floats_over_the_card_and_works_like_the_docked_rail() {
         let docked = flushed(&mut client);
         let remembered = docked.sidebar_width;
 
-        // Hide the rail; the card takes the collapsed geometry.
+        // Hide the rail; the card takes the collapsed geometry once the
+        // §11.4 slide settles (a leaving rail never floats).
         keystroke(&mut client, "cmd-s");
-        let hidden = flushed(&mut client);
+        let hidden = wait_sidebar_settled(&mut client);
         assert!(!hidden.sidebar_visible);
         assert_eq!(hidden.rail_reveal, "idle");
         let collapsed_card = hidden.content_rect;
@@ -205,12 +209,20 @@ fn the_hidden_rail_floats_over_the_card_and_works_like_the_docked_rail() {
             "the first Escape closes the overlay only"
         );
 
-        // ⌘S while floating docks at the remembered width.
+        // ⌘S while floating docks at the remembered width. The panel already
+        // shows the full rail, so docking presents the committed geometry
+        // at once instead of sliding the rail in a second time (§11.4).
         keystroke(&mut client, "cmd-s");
         let redocked = flushed(&mut client);
         assert!(redocked.sidebar_visible);
         assert!(redocked.floating_rail.is_none());
         assert!((redocked.sidebar_width - remembered).abs() < 0.5);
+        assert_eq!(redocked.sidebar_motion.variant.as_deref(), Some("static"));
+        assert!(!redocked.sidebar_motion.animating);
+        assert_eq!(
+            redocked.sidebar_motion.presented_width,
+            redocked.sidebar_width
+        );
         // Docked: the edge never floats a second rail.
         pointer(&mut client, 500.0, 5000.0);
         pointer(&mut client, 4.0, 5040.0);

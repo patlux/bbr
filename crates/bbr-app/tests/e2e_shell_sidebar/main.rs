@@ -309,6 +309,9 @@ fn collapse_reopen_restores_width_and_compact_window_keeps_content_positive() {
     let result = catch_unwind(AssertUnwindSafe(|| {
         let mut client = connect(&socket);
         client.hello(&token).expect("hello");
+        // §11.4: exercise the production-default slide (the VM guest runs
+        // with Reduce Motion on).
+        full_motion(&mut client);
         let replay = client.attach(None).expect("attach");
         let _since = replay.iter().map(|(seq, _)| *seq).max().unwrap_or(0);
 
@@ -346,12 +349,19 @@ fn collapse_reopen_restores_width_and_compact_window_keeps_content_positive() {
             deadline(),
         );
 
-        // Cmd-S collapses: the rail is gone (width 0) and the native slot
-        // re-flows instantly to the full window; the selected session is
-        // untouched.
+        // Cmd-S collapses: the state commits at once (width 0), the rail
+        // slides out and leaves the tree, and the native slot ends on the
+        // full window (§11.4 slide); the selected session is untouched.
         keystroke(&mut client, "cmd-s");
-        flush_frame(&mut client);
-        let collapsed = client.snapshot().expect("collapsed snapshot");
+        let committed = client.snapshot().expect("committed collapse");
+        assert!(!committed.sidebar_visible, "the toggle commits first");
+        assert_eq!(committed.sidebar_width, 0.0);
+        let collapsed = wait_sidebar_settled(&mut client);
+        assert_eq!(
+            collapsed.sidebar_motion.variant.as_deref(),
+            Some("animated"),
+            "the collapse slid"
+        );
         assert!(!collapsed.sidebar_visible);
         assert_eq!(collapsed.sidebar_width, 0.0);
         assert!(
@@ -381,8 +391,7 @@ fn collapse_reopen_restores_width_and_compact_window_keeps_content_positive() {
         // Cmd-S expands: the last expanded width (320) is restored, not the
         // default.
         keystroke(&mut client, "cmd-s");
-        flush_frame(&mut client);
-        let expanded = client.snapshot().expect("expanded snapshot");
+        let expanded = wait_sidebar_settled(&mut client);
         assert!(expanded.sidebar_visible);
         assert_eq!(
             expanded.sidebar_width,
@@ -499,6 +508,7 @@ mod lift;
 mod moments;
 mod motion;
 mod reference_polish;
+mod slide;
 mod support;
 mod u2_favorites;
 mod u2_favorites_drag;

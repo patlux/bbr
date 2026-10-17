@@ -223,6 +223,7 @@ impl SnapshotExt for crate::shell::TestSnapshot {
             space_chips: self.space_chips.clone(),
             active_appearance: self.active_appearance.clone(),
             motion: self.motion.clone(),
+            sidebar_motion: self.sidebar_motion.clone(),
             space_strip_scroll: self.space_strip_scroll.clone(),
             space_config: self.space_config.clone(),
             space_delete: self.space_delete.clone(),

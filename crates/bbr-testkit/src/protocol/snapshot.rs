@@ -13,7 +13,10 @@ mod motion;
 mod u2;
 pub use card::{ChromeMaterialSnapshot, ContentCardSnapshot};
 pub use footer::FooterSnapshot;
-pub use motion::{IllustrationSnapshot, MotionMomentSnapshot, MotionSnapshot};
+pub use motion::{
+    IllustrationSnapshot, MotionMomentSnapshot, MotionSnapshot, SidebarMotionFrame,
+    SidebarMotionSnapshot,
+};
 pub use u2::{
     ChipCompanionSnapshot, FavoriteTileSnapshot, FolderRowSnapshot, NavHistorySnapshot,
     SpaceAppearanceSnapshot, SpaceChipSnapshot, SpaceConfigSnapshot, SpaceDeleteSnapshot,
@@ -1363,6 +1366,10 @@ pub struct Snapshot {
     /// §6/§18.5 transient-motion evidence and the idle render counter.
     #[serde(default)]
     pub motion: MotionSnapshot,
+    /// §11.4 sidebar slide evidence: the last toggle's variant, the
+    /// presented share and rail edge, and its rendered frames.
+    #[serde(default)]
+    pub sidebar_motion: SidebarMotionSnapshot,
     /// §11.3/§11.4 strip scroll evidence: the strip viewport, the signed
     /// tracked-scroll offset, the max offset, and each chip's raw layout
     /// bounds in canonical display order — read-only from the production

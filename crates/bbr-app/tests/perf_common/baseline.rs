@@ -125,6 +125,16 @@ pub fn contract_budget(kind: &str) -> Option<Budget> {
             p95_ms: 50.0,
             max_ms: Some(100.0),
         },
+        // §11.4 slide (Patrick 2026-10-17): the toggle above still commits
+        // and presents its first frame within the 50/100 ms class; the
+        // presentation then travels for `dur:emphasis` (260 ms). Settle is
+        // the toggle commit → the first rendered frame at the committed
+        // rail edge, card and native slot geometry: 260 ms plus at most a
+        // few frames.
+        "sidebar_settle" => Budget {
+            p95_ms: 300.0,
+            max_ms: Some(400.0),
+        },
         "new_tab_command_bar" => Budget {
             p95_ms: 50.0,
             max_ms: Some(100.0),
@@ -631,6 +641,7 @@ impl Baseline {
             "sidebar_toggle",
             "sidebar_resize",
             "sidebar_restore",
+            "sidebar_settle",
             "new_tab_command_bar",
             "new_tab_open",
             "active_tab_close",
@@ -983,6 +994,29 @@ mod tests {
         m.insert("warm_tab_switch".into(), measured(45.0, 90.0));
         m.insert("sidebar_toggle".into(), measured(40.0, 75.0));
         assert!(evaluate(&m, &b, true).is_empty());
+    }
+
+    #[test]
+    fn sidebar_settle_budget_is_seeded_and_enforced() {
+        // §11.4: the slide's settle carries its own ceiling (dur:emphasis
+        // plus frames) while the toggle commit keeps the 50/100 ms class.
+        let b = Baseline::seed();
+        let entry = b
+            .entries
+            .get("sidebar_settle")
+            .expect("seed baseline must carry the sidebar_settle budget");
+        assert_eq!(entry.budget_p95_ms, 300.0);
+        assert_eq!(entry.budget_max_ms, Some(400.0));
+        let toggle = &b.entries["sidebar_toggle"];
+        assert_eq!(toggle.budget_p95_ms, 50.0);
+        let mut slow = BTreeMap::new();
+        slow.insert("sidebar_settle".into(), measured(320.0, 420.0));
+        let r = evaluate(&slow, &b, false);
+        assert!(r.iter().any(|x| x.rule == "abs_p95"));
+        assert!(r.iter().any(|x| x.rule == "abs_max"));
+        let mut ok = BTreeMap::new();
+        ok.insert("sidebar_settle".into(), measured(275.0, 310.0));
+        assert!(evaluate(&ok, &b, false).is_empty());
     }
 
     #[test]

@@ -277,6 +277,51 @@ impl Moment {
     }
 }
 
+/// Layout transitions (DESIGN §6 principle 1a, Patrick 2026-10-17): a
+/// committed geometry change of a docked surface is *presented* through a
+/// bounded interpolation. Unlike a [`Moment`], a transition drives layout —
+/// the native web-view slot follows it frame by frame — so it is not built
+/// as a GPUI animation element: the app requests frames while it runs and
+/// renders the committed geometry once it ends.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Transition {
+    /// §11.4: the docked rail slides in or out with the toggle; the content
+    /// card and its native slot follow the rail edge.
+    SidebarSlide,
+}
+
+impl Transition {
+    /// The stable wire/evidence name of the transition.
+    pub const fn name(self) -> &'static str {
+        match self {
+            Transition::SidebarSlide => "sidebar-slide",
+        }
+    }
+
+    /// The transition's plan for `mode`; `None` snaps to the committed
+    /// geometry on the commit frame (Reduce Motion has no travel variant).
+    pub fn plan(self, mode: MotionMode) -> Option<MomentPlan> {
+        match self {
+            // `dur:emphasis` with `ease:standard`: most of the travel in
+            // the first frames, then a short settle.
+            Transition::SidebarSlide => (!mode.is_reduced()).then_some(MomentPlan {
+                duration: Motion::emphasis(),
+                repeat: false,
+                easing: Easing::Standard,
+                reduced: false,
+            }),
+        }
+    }
+
+    /// The evidence variant under `mode`: `animated` or `static`.
+    pub fn variant(self, mode: MotionMode) -> &'static str {
+        match self.plan(mode) {
+            Some(_) => "animated",
+            None => "static",
+        }
+    }
+}
+
 /// §18.5 attention pulse sample at eased time `t`: `(dot scale, dot opacity,
 /// ring diameter pt, ring opacity)`. Two beats — out and back — with one
 /// ring expanding 4 → 16 pt and fading; the reduced variant keeps the
@@ -452,6 +497,26 @@ mod tests {
         assert!(Moment::CommandResults.plan(reduced).unwrap().reduced);
         assert_eq!(Moment::CommandCursor.plan(reduced), None);
         assert_eq!(Moment::SpaceTintFade.plan(reduced), None);
+    }
+
+    #[test]
+    fn the_sidebar_slide_is_a_bounded_one_shot_that_snaps_under_reduce_motion() {
+        let plan = Transition::SidebarSlide
+            .plan(MotionMode::Standard)
+            .expect("the slide animates under full motion");
+        assert_eq!(plan.duration, Motion::emphasis(), "≤ dur:emphasis");
+        assert_eq!(plan.easing, Easing::Standard);
+        assert!(!plan.repeat && !plan.reduced);
+        assert_eq!(Transition::SidebarSlide.plan(MotionMode::Reduced), None);
+        assert_eq!(
+            Transition::SidebarSlide.variant(MotionMode::Standard),
+            "animated"
+        );
+        assert_eq!(
+            Transition::SidebarSlide.variant(MotionMode::Reduced),
+            "static"
+        );
+        assert_eq!(Transition::SidebarSlide.name(), "sidebar-slide");
     }
 
     #[test]
