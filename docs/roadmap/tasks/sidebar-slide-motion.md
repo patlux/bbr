@@ -100,6 +100,17 @@ Integration order:       after the active desktop-glass correction settles on `m
       toggle and then assert geometry force full motion and assert the
       animated variant.
 
+### Visual (steady state)
+
+- [x] `just visual-check` on the slice and on its base commit: all 162
+      captured browser PNGs are byte-identical, so the slice changes no
+      chrome pixel at rest (batches
+      `reports/visual/batches/1792199813187650000-92577` and
+      `reports/visual/batches/1792200198684690000-26111`). Both batches
+      report the same 88 changed / 74 same cases against the accepted
+      baselines; those differences come from the desktop-glass base and
+      await its own acceptance. The slide itself has no official stills.
+
 ### Performance
 
 - [ ] `just e2e-vm e2e-perf`: the sidebar block measures `sidebar_toggle`
@@ -150,7 +161,8 @@ view and slide only chrome).
 Outcome:            implemented on the lane branch
 Commits:            the e2e runner's offline dependency import, then this slice
 Functional evidence: just verify (via mbx), clippy -D warnings (testkit), bbr-ui transition/motion and perf baseline unit tests
-Real-app E2E:       Tart VM: the affected suites with full motion green on the final code; the full `just e2e` sequence green except `e2e-perf` (57 of 58 executables)
+Real-app E2E:       Tart VM: the affected suites with full motion green; the full `just e2e` sequence on the slice commit green except `e2e-perf` (57 of 58 executables; settle p95 261.8 ms)
+Visual evidence:    162 of 162 browser captures byte-identical to the base commit
 Performance evidence: VM report-only sidebar numbers above; the e2e-perf recipe red in the deferred responsiveness scenario
 Roadmap/documentation updates: DESIGN §6 1a/§11.4/§13/§18.5, performance contract, ARCHITECTURE §9f, Phase 4
 Open blockers and non-goals: canonical host performance evidence needs Patrick's go; integration into `main` waits for the active desktop-glass writer
