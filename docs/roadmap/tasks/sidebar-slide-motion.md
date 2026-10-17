@@ -104,12 +104,17 @@ Integration order:       after the active desktop-glass correction settles on `m
 
 - [x] `just visual-check` on the slice and on its base commit: all 162
       captured browser PNGs are byte-identical, so the slice changes no
-      chrome pixel at rest (batches
-      `reports/visual/batches/1792199813187650000-92577` and
-      `reports/visual/batches/1792200198684690000-26111`). Both batches
-      report the same 88 changed / 74 same cases against the accepted
-      baselines; those differences come from the desktop-glass base and
-      await its own acceptance. The slide itself has no official stills.
+      chrome pixel at rest (slice batch
+      `reports/visual/batches/1792199813187650000-92577`, base batch
+      `1792200198684690000-26111`). Both batches report the same 88 changed
+      / 74 same cases against the accepted baselines; those differences
+      come from the desktop-glass base and await its own acceptance. The
+      slide itself has no official stills. *(Lane cleanup removed the lane
+      worktree while its batches were being copied: the slice batch keeps
+      all 162 captures and its collection but an incomplete review report;
+      the base batch's report was lost. Byte identity was re-verified from
+      both sealed guest returns afterwards; `just visual-check` on
+      `dab28a2c` and `63283996` reproduces both batches.)*
 
 ### Performance
 
