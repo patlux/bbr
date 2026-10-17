@@ -144,6 +144,38 @@ def nix_dependencies(paths: list[Path]) -> list[str]:
     return sorted(store)
 
 
+def import_dependencies(ssh: list[str], deps: list[str], artifacts: Path) -> None:
+    """Copy the executables' /nix/store dependencies (with their closure)
+    from the host store into the disposable guest's store. The guest needs
+    no network and no substituter: `nix-store --import` skips paths it
+    already has, and the prepare step's `--realise` then only checks them."""
+    if not deps:
+        return
+    closure = tart_vm.run(["nix-store", "--query", "--requisites", *deps]).stdout.split()
+    (artifacts / "declared-dependencies.txt").write_text("\n".join(closure) + "\n")
+    export = artifacts / "declared-dependencies.export"
+    with export.open("wb") as out:
+        subprocess.run(["nix-store", "--export", *closure], stdout=out, check=True, timeout=240)
+    # sshd can drop the first sessions right after boot (rc 255): retry
+    # those only, like the prepare step.
+    for _ in range(4):
+        with export.open("rb") as source:
+            imported = subprocess.run(
+                [*ssh, "sudo -n /nix/var/nix/profiles/default/bin/nix-store --import "
+                       "--option substitute false"],
+                stdin=source, capture_output=True, timeout=600, check=False,
+            )
+        if imported.returncode != 255:
+            break
+        time.sleep(15)
+    (artifacts / "dependencies-import.log").write_bytes(imported.stdout + imported.stderr)
+    if imported.returncode:
+        raise tart_vm.RunnerError(
+            f"guest dependency import failed ({imported.returncode}); "
+            f"see {artifacts / 'dependencies-import.log'}"
+        )
+
+
 def main(argv: list[str]) -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("recipes", nargs="+", help="just e2e recipes, or `e2e` for all")
@@ -169,6 +201,7 @@ def main(argv: list[str]) -> int:
     )
     atexit.register(clone.cleanup)
     print(banner, flush=True)
+    import_dependencies(ssh, deps, artifacts)
 
     prepare = f'''set -euo pipefail
 sudo pmset -a displaysleep 0 sleep 0 disksleep 0
